@@ -173,3 +173,12 @@ func TestRequireURLParamInt_Missing(t *testing.T) {
 		t.Fatal("expected error for missing param")
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkParsePagination(b *testing.B) {
+	q := url.Values{"page": {"3"}, "limit": {"25"}}
+	for b.Loop() {
+		ParsePagination(q, 20, 100)
+	}
+}

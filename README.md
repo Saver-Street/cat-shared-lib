@@ -20,6 +20,7 @@ Shared Go library for Catherine (Auto-Apps) microservices.
 | `scan` | Generic database row scanning (Rows, Row) | 100% |
 | `sanitize` | Filename sanitization, NilIfEmpty, IsDuplicateKey | 100% |
 | `security` | Input validation, PII redaction (RedactPII) | 100% |
+| `health` | Standardized health check handlers with concurrent checkers | 100% |
 
 ## Usage
 
@@ -34,6 +35,7 @@ import (
     "github.com/Saver-Street/cat-shared-lib/scan"
     "github.com/Saver-Street/cat-shared-lib/sanitize"
     "github.com/Saver-Street/cat-shared-lib/security"
+    "github.com/Saver-Street/cat-shared-lib/health"
 )
 ```
 

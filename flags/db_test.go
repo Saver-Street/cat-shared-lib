@@ -1,21 +1,24 @@
 package flags
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestIsFeatureEnabled_NilPool(t *testing.T) {
-	if !IsFeatureEnabled(nil, nil, FlagAIScoring) {
+	if !IsFeatureEnabled(context.TODO(), nil, FlagAIScoring) {
 		t.Error("nil pool should return true (safe default)")
 	}
 }
 
 func TestIsMaintenanceModeActive_NilPool(t *testing.T) {
-	if IsMaintenanceModeActive(nil, nil) {
+	if IsMaintenanceModeActive(context.TODO(), nil) {
 		t.Error("nil pool should return false for maintenance mode")
 	}
 }
 
 func TestIsGlobalAutomationPaused_NilPool(t *testing.T) {
-	if IsGlobalAutomationPaused(nil, nil) {
+	if IsGlobalAutomationPaused(context.TODO(), nil) {
 		t.Error("nil pool should return false for automation pause")
 	}
 }

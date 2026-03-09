@@ -6,8 +6,13 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// Querier is the minimal interface for database query operations.
+// *pgxpool.Pool, *pgx.Conn, and pgx.Tx all satisfy this interface.
+type Querier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
 
 // contextKey is the package-private type for context keys to avoid collisions.
 type contextKey string
@@ -33,9 +38,9 @@ func GetExtCandidateID(r *http.Request) string {
 
 // LookupCandidateID queries candidate_profiles for the candidate ID of the given user.
 // Returns the candidate ID, or an error if no profile exists.
-func LookupCandidateID(ctx context.Context, pool *pgxpool.Pool, userID string) (string, error) {
+func LookupCandidateID(ctx context.Context, db Querier, userID string) (string, error) {
 	var candidateID string
-	err := pool.QueryRow(ctx,
+	err := db.QueryRow(ctx,
 		"SELECT id FROM candidate_profiles WHERE user_id = $1", userID,
 	).Scan(&candidateID)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -48,7 +53,7 @@ func LookupCandidateID(ctx context.Context, pool *pgxpool.Pool, userID string) (
 // Checks for an extension-provided candidate ID first, then falls back to
 // looking up the candidate profile for the authenticated user.
 // Returns empty string (not an error) if no identity is present.
-func ResolveCandidate(r *http.Request, pool *pgxpool.Pool) (string, error) {
+func ResolveCandidate(r *http.Request, db Querier) (string, error) {
 	if id := GetExtCandidateID(r); id != "" {
 		return id, nil
 	}
@@ -56,5 +61,5 @@ func ResolveCandidate(r *http.Request, pool *pgxpool.Pool) (string, error) {
 	if userID == "" {
 		return "", nil
 	}
-	return LookupCandidateID(r.Context(), pool, userID)
+	return LookupCandidateID(r.Context(), db, userID)
 }

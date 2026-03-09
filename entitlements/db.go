@@ -3,16 +3,22 @@ package entitlements
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 )
+
+// Querier is the minimal interface for database query operations.
+// *pgxpool.Pool, *pgx.Conn, and pgx.Tx all satisfy this interface.
+type Querier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
 
 // GetUserTierAndUsage returns the subscription tier, monthly application count,
 // and any error for the given user. If subscription_status is "past_due", returns
 // "free" tier limits to enforce payment.
-func GetUserTierAndUsage(ctx context.Context, pool *pgxpool.Pool, userID string) (string, int, error) {
+func GetUserTierAndUsage(ctx context.Context, db Querier, userID string) (string, int, error) {
 	var tier string
 	var status *string
-	err := pool.QueryRow(ctx,
+	err := db.QueryRow(ctx,
 		`SELECT COALESCE(subscription_tier, 'free'), subscription_status FROM users WHERE id = $1`,
 		userID,
 	).Scan(&tier, &status)
@@ -26,7 +32,7 @@ func GetUserTierAndUsage(ctx context.Context, pool *pgxpool.Pool, userID string)
 	}
 
 	var appCount int
-	_ = pool.QueryRow(ctx,
+	_ = db.QueryRow(ctx,
 		`SELECT COUNT(*) FROM applications a
 		 JOIN candidate_profiles cp ON cp.id = a.candidate_id
 		 WHERE cp.user_id = $1
@@ -38,7 +44,7 @@ func GetUserTierAndUsage(ctx context.Context, pool *pgxpool.Pool, userID string)
 }
 
 // GetUserTier is a convenience wrapper that returns only the tier string.
-func GetUserTier(ctx context.Context, pool *pgxpool.Pool, userID string) (string, error) {
-	tier, _, err := GetUserTierAndUsage(ctx, pool, userID)
+func GetUserTier(ctx context.Context, db Querier, userID string) (string, error) {
+	tier, _, err := GetUserTierAndUsage(ctx, db, userID)
 	return tier, err
 }

@@ -96,3 +96,21 @@ func TestIsExemptFromRateLimit(t *testing.T) {
 		}
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkGetClientIP(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("X-Forwarded-For", "203.0.113.5, 10.0.0.1")
+	for b.Loop() {
+		GetClientIP(r)
+	}
+}
+
+func BenchmarkIsExemptFromRateLimit(b *testing.B) {
+	for b.Loop() {
+		IsExemptFromRateLimit("/api/apply")
+		IsExemptFromRateLimit("/assets/main.js")
+		IsExemptFromRateLimit("/health")
+	}
+}

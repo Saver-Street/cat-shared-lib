@@ -79,3 +79,18 @@ func TestIsDuplicateKey_Nil(t *testing.T) {
 		t.Error("expected false for nil error")
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkDocFilename(b *testing.B) {
+	for b.Loop() {
+		DocFilename("../path/to/my\x00file\x7fname.pdf")
+	}
+}
+
+func BenchmarkNilIfEmpty(b *testing.B) {
+	for b.Loop() {
+		NilIfEmpty("")
+		NilIfEmpty("hello")
+	}
+}

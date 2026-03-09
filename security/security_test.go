@@ -139,3 +139,29 @@ func TestRedactPII_CaseInsensitiveField(t *testing.T) {
 		t.Errorf("Password field not redacted: %v", result["Password"])
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkContainsSuspiciousInput_Clean(b *testing.B) {
+	for b.Loop() {
+		ContainsSuspiciousInput("Hello, this is a normal user message with no attacks.")
+	}
+}
+
+func BenchmarkContainsSuspiciousInput_SQLi(b *testing.B) {
+	for b.Loop() {
+		ContainsSuspiciousInput("1; DROP TABLE users; --")
+	}
+}
+
+func BenchmarkRedactPII_Mixed(b *testing.B) {
+	data := map[string]any{
+		"email":   "user@example.com",
+		"name":    "Jane Doe",
+		"message": "Call me at 555-123-4567 or email bob@test.com",
+		"count":   42,
+	}
+	for b.Loop() {
+		RedactPII(data)
+	}
+}

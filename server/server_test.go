@@ -137,6 +137,66 @@ func TestListenAndServe_BadAddr(t *testing.T) {
 	}
 }
 
+func TestListenAndServe_ShutdownTimeout(t *testing.T) {
+	// Handler that blocks until explicitly released, keeping a connection
+	// alive so that Shutdown's context deadline is exceeded.
+	release := make(chan struct{})
+	mux := http.NewServeMux()
+	mux.HandleFunc("/slow", func(w http.ResponseWriter, r *http.Request) {
+		<-release
+		w.WriteHeader(200)
+	})
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	ln.Close()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- ListenAndServe(Config{
+			Addr:            addr,
+			Handler:         mux,
+			ShutdownTimeout: 1 * time.Millisecond,
+		})
+	}()
+
+	// Wait for server to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Start a slow request that keeps a connection busy
+	go func() {
+		resp, err := http.Get("http://" + addr + "/slow")
+		if err == nil {
+			resp.Body.Close()
+		}
+	}()
+
+	// Wait for the request to be in-flight
+	time.Sleep(50 * time.Millisecond)
+
+	// Send SIGTERM to trigger shutdown
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+	proc.Signal(syscall.SIGTERM)
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("expected shutdown timeout error, got nil")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for shutdown")
+	}
+
+	// Release the blocked handler to avoid leaking goroutines
+	close(release)
+}
+
 func TestConfig_Fields(t *testing.T) {
 	mux := http.NewServeMux()
 	cfg := Config{

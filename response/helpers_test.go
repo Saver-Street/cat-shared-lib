@@ -78,3 +78,22 @@ func TestJSON_EncodingError(t *testing.T) {
 		t.Errorf("status = %d, want 200 (set before encode)", w.Code)
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkJSON(b *testing.B) {
+	data := map[string]any{"id": "abc-123", "status": "ok", "count": 42}
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		JSON(w, http.StatusOK, data)
+	}
+}
+
+func BenchmarkDecodeJSON(b *testing.B) {
+	body := `{"name":"test","value":123}`
+	for b.Loop() {
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+		var v map[string]any
+		DecodeJSON(r, &v)
+	}
+}

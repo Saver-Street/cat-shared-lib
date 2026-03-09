@@ -90,86 +90,86 @@ func TestParsePagination_Page2Offset(t *testing.T) {
 // ── RequireURLParam Tests ───────────────────────────────────────────────────
 
 func mockParamFn(params map[string]string) URLParamFunc {
-return func(r *http.Request, key string) string {
-return params[key]
-}
+	return func(r *http.Request, key string) string {
+		return params[key]
+	}
 }
 
 func TestRequireURLParam_Present(t *testing.T) {
-r := httptest.NewRequest("GET", "/test", nil)
-val, err := RequireURLParam(r, "id", mockParamFn(map[string]string{"id": "42"}))
-if err != nil {
-t.Fatalf("unexpected error: %v", err)
-}
-if val != "42" {
-t.Errorf("got %q, want %q", val, "42")
-}
+	r := httptest.NewRequest("GET", "/test", nil)
+	val, err := RequireURLParam(r, "id", mockParamFn(map[string]string{"id": "42"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if val != "42" {
+		t.Errorf("got %q, want %q", val, "42")
+	}
 }
 
 func TestRequireURLParam_Missing(t *testing.T) {
-r := httptest.NewRequest("GET", "/test", nil)
-_, err := RequireURLParam(r, "id", mockParamFn(map[string]string{}))
-if err == nil {
-t.Fatal("expected error for missing param")
-}
-if !strings.Contains(err.Error(), "missing") {
-t.Errorf("expected 'missing' in error, got: %v", err)
-}
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireURLParam(r, "id", mockParamFn(map[string]string{}))
+	if err == nil {
+		t.Fatal("expected error for missing param")
+	}
+	if !strings.Contains(err.Error(), "missing") {
+		t.Errorf("expected 'missing' in error, got: %v", err)
+	}
 }
 
 func TestRequireURLParam_Empty(t *testing.T) {
-r := httptest.NewRequest("GET", "/test", nil)
-_, err := RequireURLParam(r, "id", mockParamFn(map[string]string{"id": ""}))
-if err == nil {
-t.Fatal("expected error for empty param")
-}
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireURLParam(r, "id", mockParamFn(map[string]string{"id": ""}))
+	if err == nil {
+		t.Fatal("expected error for empty param")
+	}
 }
 
 func TestRequireURLParamInt_ValidInt(t *testing.T) {
-r := httptest.NewRequest("GET", "/test", nil)
-n, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "123"}))
-if err != nil {
-t.Fatalf("unexpected error: %v", err)
-}
-if n != 123 {
-t.Errorf("got %d, want 123", n)
-}
+	r := httptest.NewRequest("GET", "/test", nil)
+	n, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "123"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if n != 123 {
+		t.Errorf("got %d, want 123", n)
+	}
 }
 
 func TestRequireURLParamInt_NotAnInt(t *testing.T) {
-r := httptest.NewRequest("GET", "/test", nil)
-_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "abc"}))
-if err == nil {
-t.Fatal("expected error for non-integer")
-}
-if !strings.Contains(err.Error(), "integer") {
-t.Errorf("expected 'integer' in error, got: %v", err)
-}
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "abc"}))
+	if err == nil {
+		t.Fatal("expected error for non-integer")
+	}
+	if !strings.Contains(err.Error(), "integer") {
+		t.Errorf("expected 'integer' in error, got: %v", err)
+	}
 }
 
 func TestRequireURLParamInt_Zero(t *testing.T) {
-r := httptest.NewRequest("GET", "/test", nil)
-_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "0"}))
-if err == nil {
-t.Fatal("expected error for zero")
-}
-if !strings.Contains(err.Error(), "positive") {
-t.Errorf("expected 'positive' in error, got: %v", err)
-}
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "0"}))
+	if err == nil {
+		t.Fatal("expected error for zero")
+	}
+	if !strings.Contains(err.Error(), "positive") {
+		t.Errorf("expected 'positive' in error, got: %v", err)
+	}
 }
 
 func TestRequireURLParamInt_Negative(t *testing.T) {
-r := httptest.NewRequest("GET", "/test", nil)
-_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "-5"}))
-if err == nil {
-t.Fatal("expected error for negative")
-}
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "-5"}))
+	if err == nil {
+		t.Fatal("expected error for negative")
+	}
 }
 
 func TestRequireURLParamInt_Missing(t *testing.T) {
-r := httptest.NewRequest("GET", "/test", nil)
-_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{}))
-if err == nil {
-t.Fatal("expected error for missing param")
-}
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{}))
+	if err == nil {
+		t.Fatal("expected error for missing param")
+	}
 }

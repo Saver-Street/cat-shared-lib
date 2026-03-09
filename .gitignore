@@ -1,0 +1,18 @@
+# Binaries
+*.exe
+*.out
+*.test
+
+# Coverage
+coverage.out
+cov.out
+*-cov.out
+
+# Vendor
+/vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

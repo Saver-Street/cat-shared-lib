@@ -1,6 +1,6 @@
 module github.com/Saver-Street/cat-shared-lib
 
-go 1.24.0
+go 1.25.8
 
 require github.com/jackc/pgx/v5 v5.8.0
 

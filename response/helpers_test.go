@@ -69,3 +69,12 @@ func TestDecodeOrFail_InvalidJSON(t *testing.T) {
 		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
+
+func TestJSON_EncodingError(t *testing.T) {
+	w := httptest.NewRecorder()
+	// Channels cannot be JSON-encoded — triggers the error path
+	JSON(w, http.StatusOK, make(chan int))
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200 (set before encode)", w.Code)
+	}
+}

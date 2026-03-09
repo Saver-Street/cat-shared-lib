@@ -17,8 +17,8 @@ func (m *mockRow) Scan(dest ...any) error { return m.scanFunc(dest...) }
 
 // mockQuerier implements Querier for testing.
 type mockQuerier struct {
-	calls    []mockCall
-	callIdx  int
+	calls   []mockCall
+	callIdx int
 }
 
 type mockCall struct {

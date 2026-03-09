@@ -4,12 +4,12 @@ import "time"
 
 // User represents an authenticated user account.
 type User struct {
-	ID                string     `json:"id"`
-	Email             string     `json:"email"`
-	Role              string     `json:"role"`
-	SubscriptionTier  string     `json:"subscriptionTier"`
+	ID                 string    `json:"id"`
+	Email              string    `json:"email"`
+	Role               string    `json:"role"`
+	SubscriptionTier   string    `json:"subscriptionTier"`
 	SubscriptionStatus string    `json:"subscriptionStatus"`
-	CreatedAt         time.Time  `json:"createdAt"`
+	CreatedAt          time.Time `json:"createdAt"`
 }
 
 // CandidateProfile represents the job-seeker profile linked to a User.

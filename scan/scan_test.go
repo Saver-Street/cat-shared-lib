@@ -36,7 +36,7 @@ func (m *mockRows) Scan(dest ...any) error {
 	return nil
 }
 
-func (m *mockRows) Close() { m.closed = true }
+func (m *mockRows) Close()     { m.closed = true }
 func (m *mockRows) Err() error { return m.iterErr }
 
 type item struct {

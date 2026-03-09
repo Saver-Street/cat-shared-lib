@@ -29,8 +29,8 @@ type checkerFunc struct {
 	checkFn func(ctx context.Context) error
 }
 
-func (c *checkerFunc) Name() string                       { return c.name }
-func (c *checkerFunc) Check(ctx context.Context) error    { return c.checkFn(ctx) }
+func (c *checkerFunc) Name() string                    { return c.name }
+func (c *checkerFunc) Check(ctx context.Context) error { return c.checkFn(ctx) }
 
 // NewChecker creates a Checker from a name and function.
 func NewChecker(name string, fn func(ctx context.Context) error) Checker {

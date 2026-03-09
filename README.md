@@ -1,5 +1,7 @@
 # cat-shared-lib
 
+[![CI](https://github.com/Saver-Street/cat-shared-lib/actions/workflows/ci.yml/badge.svg)](https://github.com/Saver-Street/cat-shared-lib/actions/workflows/ci.yml)
+
 Shared Go library for Catherine (Auto-Apps) microservices.
 
 **Wave 0 — required by all service extractions.**

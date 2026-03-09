@@ -1,0 +1,93 @@
+package middleware
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/Saver-Street/cat-shared-lib/response"
+)
+
+// contextKey is the package-private type for context keys.
+type contextKey string
+
+const (
+	// UserIDKey is the context key for the authenticated user ID.
+	UserIDKey contextKey = "userId"
+	// UserRoleKey is the context key for the user role.
+	UserRoleKey contextKey = "userRole"
+	// UserEmailKey is the context key for the user email.
+	UserEmailKey contextKey = "userEmail"
+	// ExtCandidateIDKey is the context key set by extension token middleware.
+	ExtCandidateIDKey contextKey = "extCandidateId"
+	// ExtUserIDKey is the context key for the extension user ID.
+	ExtUserIDKey contextKey = "extUserId"
+	// ExtTokenIDKey is the context key for the extension token ID.
+	ExtTokenIDKey contextKey = "extTokenId"
+)
+
+// GetUserID extracts the authenticated user ID from the request context.
+func GetUserID(r *http.Request) string {
+	v, _ := r.Context().Value(UserIDKey).(string)
+	return v
+}
+
+// GetUserRole extracts the user role from the request context.
+func GetUserRole(r *http.Request) string {
+	v, _ := r.Context().Value(UserRoleKey).(string)
+	return v
+}
+
+// GetUserEmail extracts the user email from the request context.
+func GetUserEmail(r *http.Request) string {
+	v, _ := r.Context().Value(UserEmailKey).(string)
+	return v
+}
+
+// GetExtCandidateID extracts the extension-provided candidate ID from context.
+func GetExtCandidateID(r *http.Request) string {
+	v, _ := r.Context().Value(ExtCandidateIDKey).(string)
+	return v
+}
+
+// SetUserID returns a new context with the given user ID set.
+// Used by each service's own JWT parsing middleware.
+func SetUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, UserIDKey, userID)
+}
+
+// SetUserRole returns a new context with the given user role set.
+func SetUserRole(ctx context.Context, role string) context.Context {
+	return context.WithValue(ctx, UserRoleKey, role)
+}
+
+// SetUserEmail returns a new context with the given user email set.
+func SetUserEmail(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, UserEmailKey, email)
+}
+
+// RequireAuth is a middleware that rejects unauthenticated requests.
+// It expects the user ID to have been set in context by an upstream auth middleware.
+func RequireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if GetUserID(r) == "" {
+			response.Error(w, http.StatusUnauthorized, "Authentication required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// RequireAdmin rejects requests where the user role is not "admin".
+func RequireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if GetUserID(r) == "" {
+			response.Error(w, http.StatusUnauthorized, "Authentication required")
+			return
+		}
+		if GetUserRole(r) != "admin" {
+			response.Error(w, http.StatusForbidden, "Admin access required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}

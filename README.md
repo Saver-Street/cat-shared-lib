@@ -14,6 +14,10 @@ Shared Go library for Catherine (Auto-Apps) microservices.
 | `types` | Shared domain types (User, CandidateProfile, Pagination) | 100% |
 | `response` | JSON response helpers | 100% |
 | `middleware` | JWT context, rate limiting, brute-force protection | 100% |
+| `request` | HTTP request parsing (ParsePagination) | 100% |
+| `scan` | Generic database row scanning (Rows, Row) | 100% |
+| `sanitize` | Filename sanitization, NilIfEmpty, IsDuplicateKey | 100% |
+| `security` | Input validation, PII redaction (RedactPII) | 100% |
 
 ## Usage
 
@@ -24,6 +28,10 @@ import (
     "github.com/Saver-Street/cat-shared-lib/identity"
     "github.com/Saver-Street/cat-shared-lib/response"
     "github.com/Saver-Street/cat-shared-lib/middleware"
+    "github.com/Saver-Street/cat-shared-lib/request"
+    "github.com/Saver-Street/cat-shared-lib/scan"
+    "github.com/Saver-Street/cat-shared-lib/sanitize"
+    "github.com/Saver-Street/cat-shared-lib/security"
 )
 ```
 
@@ -56,12 +64,12 @@ candidateID, err := identity.LookupCandidateID(ctx, conn, userID)
 - **DirectDB only** in Phase C — no HTTP service-to-service calls
 - **Boolean flags are plain-text** (`"true"` / `"false"`) — no encryption
 - **Rate limiter** is per-IP sliding window, safe for concurrent use
-- **100% test coverage** across all 6 packages (verified v1.2.0)
+- **100% test coverage** across all 10 packages (verified v1.3.0)
 - **Querier interface** for DB functions — accepts pool, conn, or tx
 
 ## Import in services
 
 ```go
 // go.mod
-require github.com/Saver-Street/cat-shared-lib v1.2.0
+require github.com/Saver-Street/cat-shared-lib v1.3.0
 ```

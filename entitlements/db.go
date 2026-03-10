@@ -2,6 +2,7 @@ package entitlements
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -32,13 +33,15 @@ func GetUserTierAndUsage(ctx context.Context, db Querier, userID string) (string
 	}
 
 	var appCount int
-	_ = db.QueryRow(ctx,
+	if err := db.QueryRow(ctx,
 		`SELECT COUNT(*) FROM applications a
 		 JOIN candidate_profiles cp ON cp.id = a.candidate_id
 		 WHERE cp.user_id = $1
 		 AND a.created_date >= date_trunc('month', CURRENT_TIMESTAMP)`,
 		userID,
-	).Scan(&appCount)
+	).Scan(&appCount); err != nil {
+		slog.Warn("entitlements: failed to query monthly app count", "user_id", userID, "error", err)
+	}
 
 	return tier, appCount, nil
 }

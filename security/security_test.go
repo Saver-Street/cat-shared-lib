@@ -253,6 +253,113 @@ func TestContainsSuspiciousInput_SafeInputs(t *testing.T) {
 	}
 }
 
+func TestRedactPII_NilMap(t *testing.T) {
+	result := RedactPII(nil)
+	if result == nil {
+		t.Error("RedactPII(nil) should return non-nil empty map")
+	}
+	if len(result) != 0 {
+		t.Errorf("expected empty map, got %v", result)
+	}
+}
+
+func TestRedactPII_AllPIIFieldNames(t *testing.T) {
+	fields := []string{
+		"email", "phone", "address", "ssn", "password", "resume",
+		"socialSecurityNumber", "phoneNumber", "emailAddress",
+		"streetAddress", "zipCode", "postalCode", "dateOfBirth",
+	}
+	for _, field := range fields {
+		data := map[string]any{field: "sensitive-value"}
+		result := RedactPII(data)
+		if result[field] != "[REDACTED]" {
+			t.Errorf("field %q not redacted: got %v", field, result[field])
+		}
+	}
+}
+
+func TestRedactPII_NonPIIFieldPassthrough(t *testing.T) {
+	data := map[string]any{
+		"status":    "active",
+		"count":     int64(99),
+		"threshold": 0.5,
+		"flag":      false,
+	}
+	result := RedactPII(data)
+	if result["status"] != "active" {
+		t.Errorf("status changed: %v", result["status"])
+	}
+	if result["count"] != int64(99) {
+		t.Errorf("count changed: %v", result["count"])
+	}
+	if result["threshold"] != 0.5 {
+		t.Errorf("threshold changed: %v", result["threshold"])
+	}
+	if result["flag"] != false {
+		t.Errorf("flag changed: %v", result["flag"])
+	}
+}
+
+func TestRedactPII_EmptyArray(t *testing.T) {
+	data := map[string]any{"items": []any{}}
+	result := RedactPII(data)
+	items := result["items"].([]any)
+	if len(items) != 0 {
+		t.Errorf("expected empty array, got %v", items)
+	}
+}
+
+func TestRedactPII_MixedArrayTypes(t *testing.T) {
+	data := map[string]any{
+		"mixed": []any{"user@test.com", 42, true, nil, "clean text"},
+	}
+	result := RedactPII(data)
+	items := result["mixed"].([]any)
+	if items[0] == "user@test.com" {
+		t.Error("email in array not redacted")
+	}
+	if items[1] != 42 {
+		t.Errorf("int changed: %v", items[1])
+	}
+	if items[2] != true {
+		t.Errorf("bool changed: %v", items[2])
+	}
+	if items[3] != nil {
+		t.Errorf("nil changed: %v", items[3])
+	}
+	if items[4] != "clean text" {
+		t.Errorf("clean text changed: %v", items[4])
+	}
+}
+
+func TestContainsSuspiciousInput_AllPatterns(t *testing.T) {
+	// Verify each suspicious pattern individually
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"DROP TABLE", "DROP TABLE users"},
+		{"SELECT * FROM", "SELECT * FROM accounts"},
+		{"UNION SELECT", "1 UNION SELECT password"},
+		{"INSERT INTO", "INSERT INTO logs VALUES"},
+		{"DELETE FROM", "DELETE FROM sessions"},
+		{"UPDATE SET", "UPDATE users SET role"},
+		{"script tag", "<script>alert(1)</script>"},
+		{"javascript:", "javascript: void(0)"},
+		{"event handler", "onload=hack()"},
+		{"iframe", "<iframe src=evil>"},
+		{"object", "<object data=x>"},
+		{"embed", "<embed src=x>"},
+		{"svg event", "<svg onclick=x>"},
+		{"data URI", "data: text/html,payload"},
+	}
+	for _, tt := range tests {
+		if !ContainsSuspiciousInput(tt.input) {
+			t.Errorf("pattern %q not detected in %q", tt.name, tt.input)
+		}
+	}
+}
+
 // --- Benchmarks ---
 
 func BenchmarkContainsSuspiciousInput_Clean(b *testing.B) {

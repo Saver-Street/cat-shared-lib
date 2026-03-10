@@ -62,8 +62,15 @@ func ListenAndServe(cfg Config, cleanup ...func()) error {
 		}
 	}()
 
+	runCleanup := func() {
+		for _, fn := range cleanup {
+			fn()
+		}
+	}
+
 	select {
 	case err := <-errCh:
+		runCleanup()
 		return err
 	case sig := <-done:
 		slog.Info("received signal, shutting down", "signal", sig)
@@ -74,13 +81,11 @@ func ListenAndServe(cfg Config, cleanup ...func()) error {
 
 	if err := srv.Shutdown(ctx); err != nil {
 		slog.Error("shutdown error", "error", err)
+		runCleanup()
 		return err
 	}
 
-	for _, fn := range cleanup {
-		fn()
-	}
-
+	runCleanup()
 	slog.Info("server stopped")
 	return nil
 }

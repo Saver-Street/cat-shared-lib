@@ -119,11 +119,14 @@ func TestListenAndServe_BadAddr(t *testing.T) {
 	}
 	defer ln.Close()
 
+	cleanupCalled := false
 	done := make(chan error, 1)
 	go func() {
 		done <- ListenAndServe(Config{
 			Addr:    ln.Addr().String(),
 			Handler: http.NewServeMux(),
+		}, func() {
+			cleanupCalled = true
 		})
 	}()
 
@@ -134,6 +137,10 @@ func TestListenAndServe_BadAddr(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for error")
+	}
+
+	if !cleanupCalled {
+		t.Error("cleanup should be called even on startup failure")
 	}
 }
 

@@ -229,25 +229,25 @@ func BenchmarkNewChecker(b *testing.B) {
 
 // errWriter is a ResponseWriter whose Write method always returns an error.
 type errWriter struct {
-header http.Header
-code   int
+	header http.Header
+	code   int
 }
 
 func (e *errWriter) Header() http.Header {
-if e.header == nil {
-e.header = make(http.Header)
-}
-return e.header
+	if e.header == nil {
+		e.header = make(http.Header)
+	}
+	return e.header
 }
 func (e *errWriter) WriteHeader(code int) { e.code = code }
 func (e *errWriter) Write([]byte) (int, error) {
-return 0, errors.New("write: broken pipe")
+	return 0, errors.New("write: broken pipe")
 }
 
 func TestHandler_EncodingError(t *testing.T) {
-h := Handler("svc", "v1.0.0")
-req := httptest.NewRequest("GET", "/health", nil)
-w := &errWriter{}
-// Must not panic when encoding fails.
-h.ServeHTTP(w, req)
+	h := Handler("svc", "v1.0.0")
+	req := httptest.NewRequest("GET", "/health", nil)
+	w := &errWriter{}
+	// Must not panic when encoding fails.
+	h.ServeHTTP(w, req)
 }

@@ -228,28 +228,28 @@ func BenchmarkRequireURLParamInt(b *testing.B) {
 }
 
 func TestParsePagination_ZeroDefaults(t *testing.T) {
-// Zero defaultLimit and maxLimit should apply sane built-in defaults.
-q := url.Values{}
-p := ParsePagination(q, 0, 0)
-if p.Limit != 20 {
-t.Errorf("expected Limit=20, got %d", p.Limit)
-}
+	// Zero defaultLimit and maxLimit should apply sane built-in defaults.
+	q := url.Values{}
+	p := ParsePagination(q, 0, 0)
+	if p.Limit != 20 {
+		t.Errorf("expected Limit=20, got %d", p.Limit)
+	}
 }
 
 func TestParsePagination_NegativeDefaults(t *testing.T) {
-q := url.Values{}
-p := ParsePagination(q, -5, -1)
-if p.Limit != 20 {
-t.Errorf("expected Limit=20, got %d", p.Limit)
-}
+	q := url.Values{}
+	p := ParsePagination(q, -5, -1)
+	if p.Limit != 20 {
+		t.Errorf("expected Limit=20, got %d", p.Limit)
+	}
 }
 
 func TestParsePagination_ZeroMaxLimitCapsCorrectly(t *testing.T) {
-// When maxLimit was 0 before the fix, any limit > 0 was capped to 0.
-// Now maxLimit defaults to 100, so explicit limit=50 should be honoured.
-q := url.Values{"limit": {"50"}}
-p := ParsePagination(q, 0, 0)
-if p.Limit != 50 {
-t.Errorf("expected Limit=50, got %d", p.Limit)
-}
+	// When maxLimit was 0 before the fix, any limit > 0 was capped to 0.
+	// Now maxLimit defaults to 100, so explicit limit=50 should be honoured.
+	q := url.Values{"limit": {"50"}}
+	p := ParsePagination(q, 0, 0)
+	if p.Limit != 50 {
+		t.Errorf("expected Limit=50, got %d", p.Limit)
+	}
 }

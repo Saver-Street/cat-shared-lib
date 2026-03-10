@@ -3,8 +3,9 @@ package sanitize
 import (
 	"errors"
 	"path/filepath"
-	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func FuzzDocFilename(f *testing.F) {
@@ -58,19 +59,21 @@ func FuzzNilIfEmpty(f *testing.F) {
 }
 
 func FuzzIsDuplicateKey(f *testing.F) {
-	f.Add("duplicate key value violates unique constraint (SQLSTATE 23505)")
-	f.Add("ERROR: 23505")
-	f.Add("some other error")
-	f.Add("")
-	f.Add("2350")
 	f.Add("23505")
+	f.Add("23503")
+	f.Add("")
+	f.Add("42000")
 
-	f.Fuzz(func(t *testing.T, s string) {
-		err := errors.New(s)
+	f.Fuzz(func(t *testing.T, code string) {
+		err := &pgconn.PgError{Code: code}
 		result := IsDuplicateKey(err)
-		expected := strings.Contains(s, "23505")
+		expected := code == "23505"
 		if result != expected {
-			t.Errorf("IsDuplicateKey(errors.New(%q)) = %v, want %v", s, result, expected)
+			t.Errorf("IsDuplicateKey(&pgconn.PgError{Code: %q}) = %v, want %v", code, result, expected)
+		}
+		// Plain errors should never match.
+		if IsDuplicateKey(errors.New(code)) {
+			t.Errorf("IsDuplicateKey(errors.New(%q)) should be false", code)
 		}
 	})
 }

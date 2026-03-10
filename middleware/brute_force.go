@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/response"
 )
 
 // BruteForceConfig configures the brute-force login protection.
@@ -143,7 +145,7 @@ func (g *BruteForceGuard) Middleware(next http.Handler) http.Handler {
 		if g.IsBlocked(ip) {
 			slog.Warn("brute: request blocked", "ip", ip, "path", r.URL.Path)
 			w.Header().Set("Retry-After", fmt.Sprintf("%.0f", g.cfg.BlockDuration.Seconds()))
-			http.Error(w, `{"error":"Too many failed attempts. Try again later."}`, http.StatusTooManyRequests)
+			response.TooManyRequests(w, "Too many failed attempts. Try again later.")
 			return
 		}
 		next.ServeHTTP(w, r)

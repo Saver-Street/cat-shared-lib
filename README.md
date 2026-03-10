@@ -155,7 +155,7 @@ healthHandler := health.Handler("billing-service", "1.2.0",
     }),
 )
 mux.Handle("/health", healthHandler)
-// Returns: {"status":"ok","service":"billing-service","version":"1.2.0","checks":{"db":"ok","redis":"ok"}}
+// Returns: {"status":"ok","service":"billing-service","version":"1.2.0","uptime":"5m30s","checks":{"db":"ok","redis":"ok"}}
 ```
 
 ### validation — Input Validation
@@ -269,7 +269,7 @@ library flexible and fully testable without a real database.
 
 - **DirectDB only** in Phase C — no HTTP service-to-service calls
 - **Boolean flags are plain-text** (`"true"` / `"false"`) — no encryption
-- **Rate limiter** is per-IP sliding window, safe for concurrent use
+- **Rate limiter** is per-IP sliding window + token bucket, safe for concurrent use
 - **98%+ test coverage** across all packages
 - **Querier interface** for DB functions — accepts pool, conn, or tx
 

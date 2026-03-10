@@ -142,6 +142,48 @@ func TestGetUserRole_Empty(t *testing.T) {
 	}
 }
 
+func TestSetUserID_Overwrite(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := SetUserID(r.Context(), "first")
+	ctx = SetUserID(ctx, "second")
+	r = r.WithContext(ctx)
+	if id := GetUserID(r); id != "second" {
+		t.Errorf("overwritten user ID = %q, want second", id)
+	}
+}
+
+func TestContextChain_MultipleSetters(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := SetUserID(r.Context(), "uid-1")
+	ctx = SetUserRole(ctx, "admin")
+	ctx = SetUserEmail(ctx, "admin@test.com")
+	r = r.WithContext(ctx)
+
+	if id := GetUserID(r); id != "uid-1" {
+		t.Errorf("chained user ID = %q, want uid-1", id)
+	}
+	if role := GetUserRole(r); role != "admin" {
+		t.Errorf("chained role = %q, want admin", role)
+	}
+	if email := GetUserEmail(r); email != "admin@test.com" {
+		t.Errorf("chained email = %q, want admin@test.com", email)
+	}
+}
+
+func TestRequireAuth_EmptyStringUserID(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("should not reach handler with empty user ID")
+	})
+	handler := RequireAuth(next)
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetUserID(r.Context(), ""))
+	handler.ServeHTTP(w, r)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("empty user ID: status = %d, want 401", w.Code)
+	}
+}
+
 func BenchmarkGetUserID(b *testing.B) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetUserID(r.Context(), "user-bench"))

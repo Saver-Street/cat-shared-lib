@@ -164,6 +164,42 @@ func TestHandler_MultipleUnhealthy(t *testing.T) {
 	}
 }
 
+func TestHandler_ContextCancelled(t *testing.T) {
+	checker := NewChecker("slow", func(ctx context.Context) error {
+		<-ctx.Done()
+		return ctx.Err()
+	})
+
+	h := Handler("svc", "v1.0.0", checker)
+	rr := httptest.NewRecorder()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+	req := httptest.NewRequest("GET", "/health", nil).WithContext(ctx)
+	h.ServeHTTP(rr, req)
+
+	var s Status
+	json.NewDecoder(rr.Body).Decode(&s)
+	if s.Status != "degraded" {
+		t.Errorf("cancelled context should cause degraded, got %s", s.Status)
+	}
+}
+
+func TestHandler_SingleChecker(t *testing.T) {
+	c := NewChecker("single", func(ctx context.Context) error { return nil })
+	h := Handler("svc", "v1.0.0", c)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	var s Status
+	json.NewDecoder(rr.Body).Decode(&s)
+	if s.Checks["single"] != "ok" {
+		t.Errorf("expected single=ok, got %s", s.Checks["single"])
+	}
+}
+
 func BenchmarkHandler_NoCheckers(b *testing.B) {
 	h := Handler("svc", "v1.0.0")
 	req := httptest.NewRequest("GET", "/health", nil)

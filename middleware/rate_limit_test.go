@@ -82,6 +82,48 @@ func TestGetClientIP_XForwardedFor(t *testing.T) {
 	}
 }
 
+func TestGetClientIP_IPv6XFF(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("X-Forwarded-For", "2001:db8::1, 10.0.0.1")
+	if ip := GetClientIP(r); ip != "2001:db8::1" {
+		t.Errorf("IPv6 X-Forwarded-For = %q, want 2001:db8::1", ip)
+	}
+}
+
+func TestGetClientIP_IPv6RemoteAddr(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.RemoteAddr = "[::1]:8080"
+	if ip := GetClientIP(r); ip != "::1" {
+		t.Errorf("IPv6 RemoteAddr = %q, want ::1", ip)
+	}
+}
+
+func TestGetClientIP_XFFWithSpaces(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("X-Forwarded-For", "  192.168.1.1  , 10.0.0.1")
+	if ip := GetClientIP(r); ip != "192.168.1.1" {
+		t.Errorf("XFF with spaces = %q, want 192.168.1.1", ip)
+	}
+}
+
+func TestRateLimiter_ConcurrentRequests(t *testing.T) {
+	rl := newTestRL(100)
+	defer rl.Stop()
+
+	done := make(chan int, 50)
+	for i := 0; i < 50; i++ {
+		go func() {
+			code := doRequest(rl, "concurrent-ip")
+			done <- code
+		}()
+	}
+
+	for i := 0; i < 50; i++ {
+		<-done
+	}
+	// No race, no panic — verified by -race flag
+}
+
 func TestIsExemptFromRateLimit(t *testing.T) {
 	exempt := []string{"/assets/app.js", "/icons/logo.png", "/static/x", "/health", "/api/health"}
 	for _, p := range exempt {

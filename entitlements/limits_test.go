@@ -1,6 +1,9 @@
 package entitlements
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestGetLimitsForTier_AllTiers(t *testing.T) {
 	tiers := []string{"free", "starter", "pro", "power", "concierge"}
@@ -93,6 +96,56 @@ func TestGetLimitsForTier_CaseSensitive(t *testing.T) {
 	limits := GetLimitsForTier("Free")
 	if limits.Tier != "free" {
 		t.Errorf("uppercase Free should fall back to free tier, got %q", limits.Tier)
+	}
+}
+
+func TestTierLimits_JSONRoundTrip(t *testing.T) {
+	limits := GetLimitsForTier("pro")
+	data, err := json.Marshal(limits)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var got TierLimits
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.Tier != "pro" {
+		t.Errorf("tier = %q, want pro", got.Tier)
+	}
+	if got.MonthlyApplications != 150 {
+		t.Errorf("monthly apps = %d, want 150", got.MonthlyApplications)
+	}
+	if !got.AutoSubmit {
+		t.Error("AutoSubmit should be true")
+	}
+}
+
+func TestTierConfig_AllTiersPresent(t *testing.T) {
+	expected := []string{"free", "starter", "pro", "power", "concierge"}
+	for _, tier := range expected {
+		if _, ok := TierConfig[tier]; !ok {
+			t.Errorf("TierConfig missing tier %q", tier)
+		}
+	}
+	if len(TierConfig) != len(expected) {
+		t.Errorf("TierConfig has %d tiers, want %d", len(TierConfig), len(expected))
+	}
+}
+
+func TestGetLimitsForTier_ProgressiveFeatures(t *testing.T) {
+	free := GetLimitsForTier("free")
+	starter := GetLimitsForTier("starter")
+	pro := GetLimitsForTier("pro")
+	power := GetLimitsForTier("power")
+
+	if free.MonthlyApplications >= starter.MonthlyApplications {
+		t.Error("free should have fewer apps than starter")
+	}
+	if starter.MonthlyApplications >= pro.MonthlyApplications {
+		t.Error("starter should have fewer apps than pro")
+	}
+	if pro.MonthlyApplications >= power.MonthlyApplications {
+		t.Error("pro should have fewer apps than power")
 	}
 }
 

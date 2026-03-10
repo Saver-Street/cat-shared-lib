@@ -49,6 +49,7 @@ func LookupCandidateID(ctx context.Context, db Querier, userID string) (string, 
 // Checks for an extension-provided candidate ID first, then falls back to
 // looking up the candidate profile for the authenticated user.
 // Returns empty string (not an error) if no identity is present.
+// Returns an error if an authenticated user is found but db is nil.
 func ResolveCandidate(r *http.Request, db Querier) (string, error) {
 	if id := GetExtCandidateID(r); id != "" {
 		return id, nil
@@ -56,6 +57,9 @@ func ResolveCandidate(r *http.Request, db Querier) (string, error) {
 	userID := GetUserID(r)
 	if userID == "" {
 		return "", nil
+	}
+	if db == nil {
+		return "", fmt.Errorf("identity: db must not be nil when resolving candidate for user %s", userID)
 	}
 	return LookupCandidateID(r.Context(), db, userID)
 }

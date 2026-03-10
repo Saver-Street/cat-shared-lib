@@ -247,3 +247,33 @@ func TestRows_CloseCalledOnScanError(t *testing.T) {
 		t.Error("rows should be closed even after scan error")
 	}
 }
+
+func TestRows_NilRows(t *testing.T) {
+	_, err := Rows[item](nil, scanItem)
+	if err == nil || err.Error() != "scan.Rows: rows must not be nil" {
+		t.Errorf("got err %v, want nil rows error", err)
+	}
+}
+
+func TestRows_NilScanFn(t *testing.T) {
+	rows := &mockRows{data: [][]any{}}
+	_, err := Rows[item](rows, nil)
+	if err == nil || err.Error() != "scan.Rows: scanFn must not be nil" {
+		t.Errorf("got err %v, want nil scanFn error", err)
+	}
+}
+
+func TestRow_NilRow(t *testing.T) {
+	_, err := Row[item](nil, scanItem)
+	if err == nil || err.Error() != "scan.Row: row must not be nil" {
+		t.Errorf("got err %v, want nil row error", err)
+	}
+}
+
+func TestRow_NilScanFn(t *testing.T) {
+	row := &mockRow{data: []any{"hello", "world"}}
+	_, err := Row[item](row, nil)
+	if err == nil || err.Error() != "scan.Row: scanFn must not be nil" {
+		t.Errorf("got err %v, want nil scanFn error", err)
+	}
+}

@@ -2,6 +2,7 @@ package flags
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -24,7 +25,7 @@ func IsFeatureEnabled(ctx context.Context, db Querier, flagName string) bool {
 	err := db.QueryRow(ctx,
 		"SELECT value FROM site_settings WHERE key = $1", "flag_"+flagName,
 	).Scan(&value)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return true
 	}
 	if err != nil {

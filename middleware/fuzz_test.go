@@ -38,6 +38,6 @@ func FuzzIsExemptFromRateLimit(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, path string) {
 		// Should not panic
-		IsExemptFromRateLimit(path)
+		_ = IsExemptFromRateLimit(path)
 	})
 }

@@ -129,7 +129,7 @@ func TestIsDuplicateKey_WrappedError(t *testing.T) {
 func TestNilIfEmpty_Whitespace(t *testing.T) {
 	got := NilIfEmpty(" ")
 	if got == nil {
-		t.Error("whitespace-only string should not be nil")
+		t.Fatal("whitespace-only string should not be nil")
 	}
 	if *got != " " {
 		t.Errorf("got %q, want single space", *got)

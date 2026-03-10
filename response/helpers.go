@@ -39,7 +39,7 @@ func InternalError(w http.ResponseWriter, msg string, err error) {
 
 // DecodeJSON decodes a JSON request body into the given struct.
 func DecodeJSON(r *http.Request, v any) error {
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 	limited := io.LimitReader(r.Body, 1<<20) // 1MB limit
 	return json.NewDecoder(limited).Decode(v)
 }

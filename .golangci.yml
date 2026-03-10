@@ -1,0 +1,34 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - bodyclose
+    - durationcheck
+    - errorlint
+    - gosec
+    - nilerr
+    - prealloc
+    - unconvert
+    - unparam
+  settings:
+    gosec:
+      excludes:
+        - G101
+        - G104
+        - G115
+    errcheck:
+      exclude-functions:
+        - (net/http.ResponseWriter).Write
+        - (*encoding/json.Encoder).Encode
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - unparam

@@ -43,7 +43,7 @@ func FuzzNilIfEmpty(f *testing.F) {
 			}
 		} else {
 			if result == nil {
-				t.Errorf("NilIfEmpty(%q) should not return nil", s)
+				t.Fatalf("NilIfEmpty(%q) should not return nil", s)
 			}
 			if *result != s {
 				t.Errorf("NilIfEmpty(%q) = %q, want %q", s, *result, s)

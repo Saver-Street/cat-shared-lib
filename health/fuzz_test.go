@@ -11,7 +11,7 @@ import (
 
 func TestHandler_ConcurrentRequests(t *testing.T) {
 	const checkerCount = 20
-	var checks []Checker
+	checks := make([]Checker, 0, checkerCount)
 	for i := range checkerCount {
 		name := "checker-" + string(rune('A'+i))
 		checks = append(checks, NewChecker(name, func(_ context.Context) error {

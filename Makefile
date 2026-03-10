@@ -14,9 +14,8 @@ test-v: ## Run unit tests (verbose)
 test-race: ## Run tests with race detector
 	go test ./... -race -count=1
 
-lint: ## Run linters (vet + staticcheck)
-	go vet ./...
-	@which staticcheck > /dev/null 2>&1 && staticcheck ./... || echo "staticcheck not installed, skipping"
+lint: ## Run linters (golangci-lint)
+	golangci-lint run --timeout 120s ./...
 
 cover: ## Generate coverage report
 	go test ./... -count=1 -coverprofile=coverage.out

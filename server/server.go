@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -40,7 +41,11 @@ func (c *Config) defaults() {
 // ListenAndServe starts the HTTP server and blocks until a SIGINT or SIGTERM
 // is received, then shuts down gracefully within the configured timeout.
 // cleanup functions run after server shutdown (e.g., closing DB pools).
+// Returns an error immediately if cfg.Handler is nil.
 func ListenAndServe(cfg Config, cleanup ...func()) error {
+	if cfg.Handler == nil {
+		return fmt.Errorf("server: Handler must not be nil")
+	}
 	cfg.defaults()
 
 	srv := &http.Server{

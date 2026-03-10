@@ -72,6 +72,19 @@ func UnprocessableEntity(w http.ResponseWriter, msg string) {
 	Error(w, http.StatusUnprocessableEntity, msg)
 }
 
+
+// TooManyRequests sends a 429 JSON error response.
+// Use this when a client exceeds a rate limit or brute-force threshold.
+func TooManyRequests(w http.ResponseWriter, msg string) {
+	Error(w, http.StatusTooManyRequests, msg)
+}
+
+// ServiceUnavailable sends a 503 JSON error response.
+// Use this during maintenance windows or when a critical dependency is down.
+func ServiceUnavailable(w http.ResponseWriter, msg string) {
+	Error(w, http.StatusServiceUnavailable, msg)
+}
+
 // InternalError logs the error and sends a 500 response.
 func InternalError(w http.ResponseWriter, msg string, err error) {
 	slog.Error(msg, "error", err)

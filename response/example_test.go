@@ -88,10 +88,18 @@ func ExampleNotFound() {
 	// {"error":"item not found"}
 }
 
-func ExampleConflict() {
+func ExampleTooManyRequests() {
 	w := httptest.NewRecorder()
-	response.Conflict(w, "duplicate key")
+	response.TooManyRequests(w, "slow down")
 	fmt.Println(w.Code)
 	// Output:
-	// 409
+	// 429
+}
+
+func ExampleServiceUnavailable() {
+	w := httptest.NewRecorder()
+	response.ServiceUnavailable(w, "down for maintenance")
+	fmt.Println(w.Code)
+	// Output:
+	// 503
 }

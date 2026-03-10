@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestDocFilename_Normal(t *testing.T) {
@@ -63,7 +65,7 @@ func TestNilIfEmpty_NonEmpty(t *testing.T) {
 }
 
 func TestIsDuplicateKey_True(t *testing.T) {
-	err := errors.New("ERROR: duplicate key value violates unique constraint (SQLSTATE 23505)")
+	err := &pgconn.PgError{Code: "23505"}
 	if !IsDuplicateKey(err) {
 		t.Error("expected true for 23505 error")
 	}
@@ -119,7 +121,7 @@ func TestDocFilename_Emoji(t *testing.T) {
 }
 
 func TestIsDuplicateKey_WrappedError(t *testing.T) {
-	inner := errors.New("SQLSTATE 23505")
+	inner := &pgconn.PgError{Code: "23505"}
 	wrapped := fmt.Errorf("insert failed: %w", inner)
 	if !IsDuplicateKey(wrapped) {
 		t.Error("expected true for wrapped 23505 error")
@@ -295,17 +297,16 @@ func TestIsDatabaseError(t *testing.T) {
 		code string
 		want bool
 	}{
-		{"unique violation match", errors.New("ERROR: duplicate key (SQLSTATE 23505)"), "23505", true},
-		{"foreign key violation", errors.New("ERROR: insert violates foreign key constraint (SQLSTATE 23503)"), "23503", true},
-		{"not null violation", errors.New("ERROR: null value in column (SQLSTATE 23502)"), "23502", true},
-		{"check violation", errors.New("ERROR: check constraint (SQLSTATE 23514)"), "23514", true},
-		{"non-matching code", errors.New("ERROR: something else"), "23505", false},
+		{"unique violation match", &pgconn.PgError{Code: "23505"}, "23505", true},
+		{"foreign key violation", &pgconn.PgError{Code: "23503"}, "23503", true},
+		{"not null violation", &pgconn.PgError{Code: "23502"}, "23502", true},
+		{"check violation", &pgconn.PgError{Code: "23514"}, "23514", true},
+		{"non-matching code", &pgconn.PgError{Code: "42000"}, "23505", false},
 		{"nil error", nil, "23505", false},
 		{"nil error different code", nil, "23503", false},
-		{"empty code", errors.New("some error"), "", true},
-		{"partial code match", errors.New("code 2350"), "23505", false},
-		{"wrapped error", fmt.Errorf("insert failed: %w", errors.New("SQLSTATE 23505")), "23505", true},
-		{"wrong code for unique", errors.New("ERROR: duplicate key (SQLSTATE 23505)"), "23503", false},
+		{"plain error not pgconn", errors.New("some error"), "23505", false},
+		{"wrapped pgconn error", fmt.Errorf("insert failed: %w", &pgconn.PgError{Code: "23505"}), "23505", true},
+		{"wrong code for unique", &pgconn.PgError{Code: "23505"}, "23503", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -337,7 +338,7 @@ func BenchmarkSanitizeEmail(b *testing.B) {
 }
 
 func BenchmarkIsDatabaseError(b *testing.B) {
-	err := errors.New("ERROR: duplicate key (SQLSTATE 23505)")
+	err := &pgconn.PgError{Code: "23505"}
 	for b.Loop() {
 		IsDatabaseError(err, "23505")
 	}

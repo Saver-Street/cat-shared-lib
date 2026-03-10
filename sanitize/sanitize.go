@@ -2,8 +2,11 @@
 package sanitize
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // DocFilename removes unsafe characters from a document filename.
@@ -78,7 +81,8 @@ func TrimAndNilIfEmpty(s string) *string {
 
 // IsDuplicateKey reports whether err is a PostgreSQL unique-constraint violation (SQLSTATE 23505).
 func IsDuplicateKey(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "23505")
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
 // SanitizeEmail trims whitespace and lowercases an email address.
@@ -87,11 +91,12 @@ func SanitizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-// IsDatabaseError checks whether err contains the given PostgreSQL error code.
+// IsDatabaseError checks whether err is a PostgreSQL error with the given SQLSTATE code.
 // Use standard 5-character SQLSTATE codes, e.g. "23505" (unique violation),
 // "23503" (foreign key violation), "23502" (not null violation).
 func IsDatabaseError(err error, code string) bool {
-	return err != nil && strings.Contains(err.Error(), code)
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == code
 }
 
 // NullString returns the dereferenced value of p, or defaultVal if p is nil.

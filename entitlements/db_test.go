@@ -211,6 +211,67 @@ func TestGetUserTier_PropagatesError(t *testing.T) {
 	}
 }
 
+func TestGetUserTierAndUsage_EmptyUserID(t *testing.T) {
+	db := &mockQuerier{calls: []mockCall{
+		{row: &mockRow{scanFunc: func(_ ...any) error {
+			return pgx.ErrNoRows
+		}}},
+	}}
+
+	tier, count, err := GetUserTierAndUsage(context.Background(), db, "")
+	if err == nil {
+		t.Fatal("expected error for empty user ID")
+	}
+	if tier != "free" {
+		t.Errorf("tier = %q, want free (default)", tier)
+	}
+	if count != 0 {
+		t.Errorf("count = %d, want 0", count)
+	}
+}
+
+func BenchmarkGetUserTierAndUsage(b *testing.B) {
+	active := "active"
+	db := &mockQuerier{calls: nil}
+	ctx := context.Background()
+	for b.Loop() {
+		db.calls = []mockCall{
+			{row: &mockRow{scanFunc: func(dest ...any) error {
+				*dest[0].(*string) = "pro"
+				*dest[1].(**string) = &active
+				return nil
+			}}},
+			{row: &mockRow{scanFunc: func(dest ...any) error {
+				*dest[0].(*int) = 42
+				return nil
+			}}},
+		}
+		db.callIdx = 0
+		GetUserTierAndUsage(ctx, db, "user-bench")
+	}
+}
+
+func BenchmarkGetUserTier(b *testing.B) {
+	active := "active"
+	db := &mockQuerier{calls: nil}
+	ctx := context.Background()
+	for b.Loop() {
+		db.calls = []mockCall{
+			{row: &mockRow{scanFunc: func(dest ...any) error {
+				*dest[0].(*string) = "pro"
+				*dest[1].(**string) = &active
+				return nil
+			}}},
+			{row: &mockRow{scanFunc: func(dest ...any) error {
+				*dest[0].(*int) = 10
+				return nil
+			}}},
+		}
+		db.callIdx = 0
+		GetUserTier(ctx, db, "user-bench")
+	}
+}
+
 func TestGetUserTierAndUsage_NonPastDueStatus(t *testing.T) {
 	canceled := "canceled"
 	db := &mockQuerier{calls: []mockCall{

@@ -87,3 +87,23 @@ func TestGetLimitsForTier_StarterGmail(t *testing.T) {
 		t.Error("starter: AutoSubmit should be false")
 	}
 }
+
+func TestGetLimitsForTier_CaseSensitive(t *testing.T) {
+	// Tier names are case-sensitive; "Free" should fall back to free defaults.
+	limits := GetLimitsForTier("Free")
+	if limits.Tier != "free" {
+		t.Errorf("uppercase Free should fall back to free tier, got %q", limits.Tier)
+	}
+}
+
+func BenchmarkGetLimitsForTier_Known(b *testing.B) {
+	for b.Loop() {
+		GetLimitsForTier("pro")
+	}
+}
+
+func BenchmarkGetLimitsForTier_Unknown(b *testing.B) {
+	for b.Loop() {
+		GetLimitsForTier("enterprise")
+	}
+}

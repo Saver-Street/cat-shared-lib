@@ -183,3 +183,25 @@ func TestResolveCandidate_ExtCandidateIDTakesPriorityOverDB(t *testing.T) {
 		t.Error("DB should not be called when ext candidate ID is present")
 	}
 }
+
+func BenchmarkLookupCandidateID(b *testing.B) {
+	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
+		return &mockRow{scanFunc: func(dest ...any) error {
+			*dest[0].(*string) = "cand-bench"
+			return nil
+		}}
+	}}
+	ctx := context.Background()
+	for b.Loop() {
+		LookupCandidateID(ctx, db, "user-bench")
+	}
+}
+
+func BenchmarkResolveCandidate_ExtID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := context.WithValue(r.Context(), extCandidateIDKey, "ext-cand-1")
+	r = r.WithContext(ctx)
+	for b.Loop() {
+		ResolveCandidate(r, nil)
+	}
+}

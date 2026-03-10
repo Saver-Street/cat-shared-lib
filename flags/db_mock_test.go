@@ -196,3 +196,33 @@ func TestIsGlobalAutomationPaused_DBError(t *testing.T) {
 		t.Error("DB error should return false")
 	}
 }
+
+func BenchmarkIsFeatureEnabled(b *testing.B) {
+	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
+		return newValueRow("true")
+	}}
+	ctx := context.Background()
+	for b.Loop() {
+		IsFeatureEnabled(ctx, db, FlagAIScoring)
+	}
+}
+
+func BenchmarkIsMaintenanceModeActive(b *testing.B) {
+	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
+		return newValueRow("false")
+	}}
+	ctx := context.Background()
+	for b.Loop() {
+		IsMaintenanceModeActive(ctx, db)
+	}
+}
+
+func BenchmarkIsGlobalAutomationPaused(b *testing.B) {
+	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
+		return newValueRow("false")
+	}}
+	ctx := context.Background()
+	for b.Loop() {
+		IsGlobalAutomationPaused(ctx, db)
+	}
+}

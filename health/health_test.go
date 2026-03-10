@@ -299,6 +299,7 @@ func TestStatus_HasErrors(t *testing.T) {
 
 func TestHandler_UptimePresent(t *testing.T) {
 	h := Handler("svc", "v1.0.0")
+	time.Sleep(10 * time.Millisecond)
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
@@ -308,5 +309,8 @@ func TestHandler_UptimePresent(t *testing.T) {
 	}
 	if s.Uptime == "" {
 		t.Error("expected uptime to be present")
+	}
+	if s.Uptime == "0s" {
+		t.Error("expected uptime > 0s")
 	}
 }

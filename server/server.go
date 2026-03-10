@@ -72,7 +72,7 @@ func ListenAndServe(cfg Config, cleanup ...func()) error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		slog.Info("server listening", "addr", cfg.Addr)
+		slog.Info("server: listening", "addr", cfg.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
@@ -89,19 +89,19 @@ func ListenAndServe(cfg Config, cleanup ...func()) error {
 		runCleanup()
 		return err
 	case sig := <-done:
-		slog.Info("received signal, shutting down", "signal", sig)
+		slog.Info("server: received signal, shutting down", "signal", sig)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		slog.Error("shutdown error", "error", err)
+		slog.Error("server: shutdown error", "error", err)
 		runCleanup()
 		return err
 	}
 
 	runCleanup()
-	slog.Info("server stopped")
+	slog.Info("server: stopped")
 	return nil
 }

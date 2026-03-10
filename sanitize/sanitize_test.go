@@ -446,27 +446,27 @@ func TestDeref_NonNilBool(t *testing.T) {
 }
 
 func TestStripHTML_Basic(t *testing.T) {
-if got := StripHTML("<p>Hello</p>"); got != "Hello" {
-t.Errorf("got %q, want %q", got, "Hello")
-}
+	if got := StripHTML("<p>Hello</p>"); got != "Hello" {
+		t.Errorf("got %q, want %q", got, "Hello")
+	}
 }
 
 func TestStripHTML_NoTags(t *testing.T) {
-if got := StripHTML("plain text"); got != "plain text" {
-t.Errorf("got %q, want %q", got, "plain text")
-}
+	if got := StripHTML("plain text"); got != "plain text" {
+		t.Errorf("got %q, want %q", got, "plain text")
+	}
 }
 
 func TestStripHTML_Empty(t *testing.T) {
-if got := StripHTML(""); got != "" {
-t.Errorf("got %q, want empty string", got)
-}
+	if got := StripHTML(""); got != "" {
+		t.Errorf("got %q, want empty string", got)
+	}
 }
 
 func TestStripHTML_NestedTags(t *testing.T) {
-if got := StripHTML("<div><b>bold</b> text</div>"); got != "bold text" {
-t.Errorf("got %q, want %q", got, "bold text")
-}
+	if got := StripHTML("<div><b>bold</b> text</div>"); got != "bold text" {
+		t.Errorf("got %q, want %q", got, "bold text")
+	}
 }
 
 func TestStripHTML_Attributes(t *testing.T) {
@@ -477,19 +477,19 @@ func TestStripHTML_Attributes(t *testing.T) {
 }
 
 func TestStripHTML_SelfClosing(t *testing.T) {
-if got := StripHTML("line1<br/>line2"); got != "line1line2" {
-t.Errorf("got %q, want %q", got, "line1line2")
-}
+	if got := StripHTML("line1<br/>line2"); got != "line1line2" {
+		t.Errorf("got %q, want %q", got, "line1line2")
+	}
 }
 
 func TestStripHTML_Script(t *testing.T) {
-if got := StripHTML("<script>alert(1)</script>safe"); got != "alert(1)safe" {
-t.Errorf("StripHTML strips tags not content; got %q", got)
-}
+	if got := StripHTML("<script>alert(1)</script>safe"); got != "alert(1)safe" {
+		t.Errorf("StripHTML strips tags not content; got %q", got)
+	}
 }
 
 func TestStripHTML_OnlyTags(t *testing.T) {
-if got := StripHTML("<p></p>"); got != "" {
-t.Errorf("got %q, want empty", got)
-}
+	if got := StripHTML("<p></p>"); got != "" {
+		t.Errorf("got %q, want empty", got)
+	}
 }

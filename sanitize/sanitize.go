@@ -79,7 +79,8 @@ func TrimAndNilIfEmpty(s string) *string {
 	return &trimmed
 }
 
-// IsDuplicateKey reports whether err is a PostgreSQL unique-constraint violation (SQLSTATE 23505).
+// IsDuplicateKey reports whether err is or wraps a *pgconn.PgError with SQLSTATE 23505
+// (unique-constraint violation). Plain errors.New strings are not matched.
 func IsDuplicateKey(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
@@ -91,15 +92,21 @@ func SanitizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-// IsDatabaseError checks whether err is a PostgreSQL error with the given SQLSTATE code.
-// Use standard 5-character SQLSTATE codes, e.g. "23505" (unique violation),
-// "23503" (foreign key violation), "23502" (not null violation).
+// IsDatabaseError reports whether err is or wraps a *pgconn.PgError whose SQLSTATE code
+// matches the given code. Use standard 5-character SQLSTATE codes, e.g.:
+//   - "23505" – unique-constraint violation
+//   - "23503" – foreign-key violation
+//   - "23502" – not-null violation
+//
+// Plain errors created with errors.New are not matched; the error must originate from pgx.
 func IsDatabaseError(err error, code string) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == code
 }
 
 // NullString returns the dereferenced value of p, or defaultVal if p is nil.
+//
+// Deprecated: Use Deref[string] instead.
 func NullString(p *string, defaultVal string) string {
 	if p == nil {
 		return defaultVal
@@ -108,6 +115,8 @@ func NullString(p *string, defaultVal string) string {
 }
 
 // NullInt64 returns the dereferenced value of p, or defaultVal if p is nil.
+//
+// Deprecated: Use Deref[int64] instead.
 func NullInt64(p *int64, defaultVal int64) int64 {
 	if p == nil {
 		return defaultVal
@@ -116,7 +125,18 @@ func NullInt64(p *int64, defaultVal int64) int64 {
 }
 
 // NullBool returns the dereferenced value of p, or defaultVal if p is nil.
+//
+// Deprecated: Use Deref[bool] instead.
 func NullBool(p *bool, defaultVal bool) bool {
+	if p == nil {
+		return defaultVal
+	}
+	return *p
+}
+
+// Deref returns the dereferenced value of p, or defaultVal if p is nil.
+// It is the generic equivalent of NullString, NullInt64, and NullBool.
+func Deref[T any](p *T, defaultVal T) T {
 	if p == nil {
 		return defaultVal
 	}

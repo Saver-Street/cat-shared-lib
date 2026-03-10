@@ -143,3 +143,42 @@ func RequireQueryParamInt(q url.Values, key string) (int64, error) {
 	}
 	return n, nil
 }
+
+// ParseCommaSeparated splits a comma-separated query parameter into a trimmed string slice.
+// Returns nil if the key is absent or all tokens are blank after trimming.
+func ParseCommaSeparated(q url.Values, key string) []string {
+	raw := q.Get(key)
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if t := strings.TrimSpace(p); t != "" {
+			out = append(out, t)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// ParseCommaSeparatedInts splits a comma-separated query parameter and parses each token
+// as an int64. Returns nil, nil if the key is absent. Returns an error if any token is
+// not a valid integer.
+func ParseCommaSeparatedInts(q url.Values, key string) ([]int64, error) {
+	tokens := ParseCommaSeparated(q, key)
+	if tokens == nil {
+		return nil, nil
+	}
+	out := make([]int64, len(tokens))
+	for i, t := range tokens {
+		n, err := strconv.ParseInt(t, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("query parameter %q: token %q is not a valid integer", key, t)
+		}
+		out[i] = n
+	}
+	return out, nil
+}

@@ -3,19 +3,32 @@ package entitlements
 
 // TierLimits defines the feature caps for a subscription tier.
 type TierLimits struct {
-	Tier                string `json:"tier"`
-	MonthlyApplications int    `json:"monthlyApplications"`
-	ResumeVersions      int    `json:"resumeVersions"`
-	TracksLimit         int    `json:"tracksLimit"`
-	AutoSubmit          bool   `json:"autoSubmit"`
-	SIAFIMode           bool   `json:"siafiMode"`
-	GmailIntegration    bool   `json:"gmailIntegration"`
-	CoverLetterGen      bool   `json:"coverLetterGen"`
-	ContinuousEmail     bool   `json:"continuousEmail"`
-	LearningMemory      bool   `json:"learningMemory"`
-	AdvancedAnalytics   bool   `json:"advancedAnalytics"`
-	PriorityQueue       bool   `json:"priorityQueue"`
-	CoachingSessions    int    `json:"coachingSessions"`
+	// Tier is the canonical tier name (e.g. "free", "starter", "pro").
+	Tier string `json:"tier"`
+	// MonthlyApplications is the maximum job applications per calendar month.
+	MonthlyApplications int `json:"monthlyApplications"`
+	// ResumeVersions is the number of saved resume versions allowed.
+	ResumeVersions int `json:"resumeVersions"`
+	// TracksLimit is the maximum number of active application tracks.
+	TracksLimit int `json:"tracksLimit"`
+	// AutoSubmit enables automated job application submission.
+	AutoSubmit bool `json:"autoSubmit"`
+	// SIAFIMode enables the Smart Intelligent Application Filing feature.
+	SIAFIMode bool `json:"siafiMode"`
+	// GmailIntegration enables Gmail OAuth for application tracking.
+	GmailIntegration bool `json:"gmailIntegration"`
+	// CoverLetterGen enables AI-generated cover letters.
+	CoverLetterGen bool `json:"coverLetterGen"`
+	// ContinuousEmail enables continuous email monitoring for job replies.
+	ContinuousEmail bool `json:"continuousEmail"`
+	// LearningMemory enables persistent AI learning from past applications.
+	LearningMemory bool `json:"learningMemory"`
+	// AdvancedAnalytics enables detailed application performance analytics.
+	AdvancedAnalytics bool `json:"advancedAnalytics"`
+	// PriorityQueue gives the user priority placement in the application queue.
+	PriorityQueue bool `json:"priorityQueue"`
+	// CoachingSessions is the number of human coaching sessions included per month.
+	CoachingSessions int `json:"coachingSessions"`
 }
 
 // TierConfig maps subscription tier names to their corresponding feature limits and entitlements.

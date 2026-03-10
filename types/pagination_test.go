@@ -122,21 +122,31 @@ func TestPaginationParams_HasNextPage_ZeroTotal(t *testing.T) {
 
 func TestTotalPages_Normal(t *testing.T) {
 	p := NormalizePage(1, 10)
-	if got := p.TotalPages(25); got != 3 { t.Errorf("got %d, want 3", got) }
+	if got := p.TotalPages(25); got != 3 {
+		t.Errorf("got %d, want 3", got)
+	}
 }
 func TestTotalPages_Exact(t *testing.T) {
 	p := NormalizePage(1, 10)
-	if got := p.TotalPages(30); got != 3 { t.Errorf("got %d, want 3", got) }
+	if got := p.TotalPages(30); got != 3 {
+		t.Errorf("got %d, want 3", got)
+	}
 }
 func TestTotalPages_ZeroTotal(t *testing.T) {
 	p := NormalizePage(1, 10)
-	if got := p.TotalPages(0); got != 0 { t.Errorf("got %d, want 0", got) }
+	if got := p.TotalPages(0); got != 0 {
+		t.Errorf("got %d, want 0", got)
+	}
 }
 func TestTotalPages_OneItem(t *testing.T) {
 	p := NormalizePage(1, 10)
-	if got := p.TotalPages(1); got != 1 { t.Errorf("got %d, want 1", got) }
+	if got := p.TotalPages(1); got != 1 {
+		t.Errorf("got %d, want 1", got)
+	}
 }
 func TestTotalPages_Negative(t *testing.T) {
 	p := NormalizePage(1, 10)
-	if got := p.TotalPages(-5); got != 0 { t.Errorf("got %d, want 0", got) }
+	if got := p.TotalPages(-5); got != 0 {
+		t.Errorf("got %d, want 0", got)
+	}
 }

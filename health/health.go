@@ -19,6 +19,8 @@ type Status struct {
 	Service string `json:"service"`
 	// Version is the running binary version.
 	Version string `json:"version"`
+	// Uptime is the duration since the handler was created, formatted as a string.
+	Uptime string `json:"uptime"`
 	// Checks contains per-checker results; omitted when no checkers are registered.
 	Checks map[string]string `json:"checks,omitempty"`
 }
@@ -51,12 +53,16 @@ func NewChecker(name string, fn func(ctx context.Context) error) Checker {
 
 // Handler returns an http.HandlerFunc that responds with health status JSON.
 // Checkers are run concurrently with a 5-second timeout.
+// The uptime field reflects time elapsed since Handler was called.
 func Handler(service, version string, checkers ...Checker) http.HandlerFunc {
+	startTime := time.Now()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		status := Status{
 			Status:  "ok",
 			Service: service,
 			Version: version,
+			Uptime:  time.Since(startTime).Round(time.Second).String(),
 		}
 
 		if len(checkers) > 0 {

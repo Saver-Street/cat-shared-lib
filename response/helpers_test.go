@@ -399,70 +399,70 @@ func BenchmarkDecodeOrFail(b *testing.B) {
 }
 
 func TestMethodNotAllowed_Status405(t *testing.T) {
-w := httptest.NewRecorder()
-MethodNotAllowed(w, "method not allowed")
-if w.Code != http.StatusMethodNotAllowed {
-t.Errorf("expected 405, got %d", w.Code)
-}
+	w := httptest.NewRecorder()
+	MethodNotAllowed(w, "method not allowed")
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected 405, got %d", w.Code)
+	}
 }
 
 func TestGone_Status410(t *testing.T) {
-w := httptest.NewRecorder()
-Gone(w, "resource deleted")
-if w.Code != http.StatusGone {
-t.Errorf("expected 410, got %d", w.Code)
-}
+	w := httptest.NewRecorder()
+	Gone(w, "resource deleted")
+	if w.Code != http.StatusGone {
+		t.Errorf("expected 410, got %d", w.Code)
+	}
 }
 
 func TestGatewayTimeout_Status504(t *testing.T) {
-w := httptest.NewRecorder()
-GatewayTimeout(w, "upstream timeout")
-if w.Code != http.StatusGatewayTimeout {
-t.Errorf("expected 504, got %d", w.Code)
-}
+	w := httptest.NewRecorder()
+	GatewayTimeout(w, "upstream timeout")
+	if w.Code != http.StatusGatewayTimeout {
+		t.Errorf("expected 504, got %d", w.Code)
+	}
 }
 
 func TestPaginated_EnvelopeFields(t *testing.T) {
-w := httptest.NewRecorder()
-Paginated(w, []string{"a", "b", "c"}, 50, 2, 3)
+	w := httptest.NewRecorder()
+	Paginated(w, []string{"a", "b", "c"}, 50, 2, 3)
 
-if w.Code != http.StatusOK {
-t.Fatalf("expected 200, got %d", w.Code)
-}
-var got PagedResult[string]
-if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
-t.Fatalf("decode: %v", err)
-}
-if got.Total != 50 || got.Page != 2 || got.Limit != 3 || len(got.Data) != 3 {
-t.Errorf("fields wrong: %+v", got)
-}
-if !got.HasMore {
-t.Error("has_more should be true (page*limit=6 < total=50)")
-}
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	var got PagedResult[string]
+	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Total != 50 || got.Page != 2 || got.Limit != 3 || len(got.Data) != 3 {
+		t.Errorf("fields wrong: %+v", got)
+	}
+	if !got.HasMore {
+		t.Error("has_more should be true (page*limit=6 < total=50)")
+	}
 }
 
 func TestPaginated_HasMore_False_OnLastPage(t *testing.T) {
-w := httptest.NewRecorder()
-Paginated(w, []int{4, 5}, 5, 2, 3)
+	w := httptest.NewRecorder()
+	Paginated(w, []int{4, 5}, 5, 2, 3)
 
-var got PagedResult[int]
-if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
-t.Fatalf("decode: %v", err)
-}
-if got.HasMore {
-t.Error("has_more should be false (page*limit=6 >= total=5)")
-}
+	var got PagedResult[int]
+	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.HasMore {
+		t.Error("has_more should be false (page*limit=6 >= total=5)")
+	}
 }
 
 func TestPaginated_EmptyData(t *testing.T) {
-w := httptest.NewRecorder()
-Paginated(w, []string{}, 0, 1, 10)
+	w := httptest.NewRecorder()
+	Paginated(w, []string{}, 0, 1, 10)
 
-var got PagedResult[string]
-if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
-t.Fatalf("decode: %v", err)
-}
-if got.Total != 0 || got.HasMore {
-t.Errorf("empty result wrong: %+v", got)
-}
+	var got PagedResult[string]
+	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Total != 0 || got.HasMore {
+		t.Errorf("empty result wrong: %+v", got)
+	}
 }

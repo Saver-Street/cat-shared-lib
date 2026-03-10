@@ -436,23 +436,33 @@ func TestParseCommaSeparated_Single(t *testing.T) {
 }
 func TestParseCommaSeparatedInts_Valid(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{"ids": {"1,2,3"}}, "ids")
-	if err != nil { t.Fatalf("unexpected error: %v", err) }
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if len(got) != 3 || got[0] != 1 || got[1] != 2 || got[2] != 3 {
 		t.Errorf("got %v, want [1 2 3]", got)
 	}
 }
 func TestParseCommaSeparatedInts_Absent(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{}, "ids")
-	if err != nil { t.Fatalf("unexpected error: %v", err) }
-	if got != nil { t.Errorf("got %v, want nil", got) }
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != nil {
+		t.Errorf("got %v, want nil", got)
+	}
 }
 func TestParseCommaSeparatedInts_Invalid(t *testing.T) {
 	_, err := ParseCommaSeparatedInts(url.Values{"ids": {"1,abc,3"}}, "ids")
-	if err == nil { t.Fatal("expected error") }
+	if err == nil {
+		t.Fatal("expected error")
+	}
 }
 func TestParseCommaSeparatedInts_Negative(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{"ids": {"-1,0,2"}}, "ids")
-	if err != nil { t.Fatalf("unexpected error: %v", err) }
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if got[0] != -1 || got[1] != 0 || got[2] != 2 {
 		t.Errorf("got %v, want [-1 0 2]", got)
 	}

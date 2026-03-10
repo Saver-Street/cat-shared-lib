@@ -34,3 +34,11 @@ func ExampleCanApplyThisMonth() {
 	// true
 	// false
 }
+
+func ExampleIsTierValid() {
+	fmt.Println(entitlements.IsTierValid("pro"))
+	fmt.Println(entitlements.IsTierValid("enterprise"))
+	// Output:
+	// true
+	// false
+}

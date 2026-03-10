@@ -177,6 +177,25 @@ func BenchmarkRow(b *testing.B) {
 	}
 }
 
+func BenchmarkFirst(b *testing.B) {
+	data := [][]any{{"name", "val"}, {"name2", "val2"}}
+	for b.Loop() {
+		rows := &mockRows{data: data}
+		First[item](rows, scanItem)
+	}
+}
+
+func BenchmarkRowsLimit(b *testing.B) {
+	data := make([][]any, 10)
+	for i := range data {
+		data[i] = []any{"name", "val"}
+	}
+	for b.Loop() {
+		rows := &mockRows{data: data}
+		RowsLimit[item](rows, scanItem, 5)
+	}
+}
+
 // intItem verifies generics work with different types.
 type intItem struct {
 	ID   int

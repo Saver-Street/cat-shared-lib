@@ -102,3 +102,38 @@ func ParseBoolParam(q url.Values, key string, defaultValue bool) bool {
 		return defaultValue
 	}
 }
+
+// OptionalQueryParam returns the query parameter value for key, or defaultValue if absent or empty.
+func OptionalQueryParam(q url.Values, key string, defaultValue string) string {
+	if val := q.Get(key); val != "" {
+		return val
+	}
+	return defaultValue
+}
+
+// OptionalQueryInt returns the query parameter parsed as int64, or defaultValue if absent or invalid.
+func OptionalQueryInt(q url.Values, key string, defaultValue int64) int64 {
+	raw := q.Get(key)
+	if raw == "" {
+		return defaultValue
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
+	return n
+}
+
+// RequireQueryParamInt returns the query parameter parsed as int64.
+// Returns an error if the parameter is absent, empty, or not a valid integer.
+func RequireQueryParamInt(q url.Values, key string) (int64, error) {
+	val, err := RequireQueryParam(q, key)
+	if err != nil {
+		return 0, err
+	}
+	n, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("query parameter %q must be an integer, got %q", key, val)
+	}
+	return n, nil
+}

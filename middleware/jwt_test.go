@@ -417,3 +417,77 @@ func TestRequireRole_RejectsUnauthenticated(t *testing.T) {
 		t.Errorf("unauthenticated: status = %d, want 401", w.Code)
 	}
 }
+
+func TestGetSetSubscriptionTier(t *testing.T) {
+	ctx := SetSubscriptionTier(context.Background(), "pro")
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(ctx)
+	if got := GetSubscriptionTier(r); got != "pro" {
+		t.Errorf("GetSubscriptionTier = %q, want pro", got)
+	}
+}
+
+func TestGetSubscriptionTier_Empty(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	if got := GetSubscriptionTier(r); got != "" {
+		t.Errorf("GetSubscriptionTier unset = %q, want empty", got)
+	}
+}
+
+func TestGetSetSubscriptionStatus(t *testing.T) {
+	ctx := SetSubscriptionStatus(context.Background(), "active")
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(ctx)
+	if got := GetSubscriptionStatus(r); got != "active" {
+		t.Errorf("GetSubscriptionStatus = %q, want active", got)
+	}
+}
+
+func TestGetSubscriptionStatus_Empty(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	if got := GetSubscriptionStatus(r); got != "" {
+		t.Errorf("GetSubscriptionStatus unset = %q, want empty", got)
+	}
+}
+
+func TestSubscriptionTier_AllValues(t *testing.T) {
+	tiers := []string{"free", "starter", "pro", "power", "concierge"}
+	for _, tier := range tiers {
+		ctx := SetSubscriptionTier(context.Background(), tier)
+		r, _ := http.NewRequest(http.MethodGet, "/", nil)
+		r = r.WithContext(ctx)
+		if got := GetSubscriptionTier(r); got != tier {
+			t.Errorf("tier %q: got %q", tier, got)
+		}
+	}
+}
+
+func TestGetSetSubscriptionTier(t *testing.T) {
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(SetSubscriptionTier(r.Context(), "pro"))
+if got := GetSubscriptionTier(r); got != "pro" {
+t.Errorf("GetSubscriptionTier = %q, want pro", got)
+}
+}
+
+func TestGetSubscriptionTier_Unset(t *testing.T) {
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+if got := GetSubscriptionTier(r); got != "" {
+t.Errorf("GetSubscriptionTier = %q, want empty", got)
+}
+}
+
+func TestGetSetSubscriptionStatus(t *testing.T) {
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(SetSubscriptionStatus(r.Context(), "active"))
+if got := GetSubscriptionStatus(r); got != "active" {
+t.Errorf("GetSubscriptionStatus = %q, want active", got)
+}
+}
+
+func TestGetSubscriptionStatus_Unset(t *testing.T) {
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+if got := GetSubscriptionStatus(r); got != "" {
+t.Errorf("GetSubscriptionStatus = %q, want empty", got)
+}
+}

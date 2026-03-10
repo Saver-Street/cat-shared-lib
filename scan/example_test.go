@@ -124,3 +124,41 @@ func ExampleRows_empty() {
 	// Output:
 	// found 0 people
 }
+
+func ExampleFirst() {
+	rows := &exampleRows{data: [][]any{
+		{"Alice", "Portland"},
+		{"Bob", "Seattle"},
+	}}
+	p, err := scan.First[person](rows, func(p *person) []any {
+		return []any{&p.Name, &p.City}
+	})
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	fmt.Printf("%s from %s\n", p.Name, p.City)
+	// Output:
+	// Alice from Portland
+}
+
+func ExampleRowsLimit() {
+	rows := &exampleRows{data: [][]any{
+		{"Alice", "Portland"},
+		{"Bob", "Seattle"},
+		{"Charlie", "Denver"},
+	}}
+	people, err := scan.RowsLimit[person](rows, func(p *person) []any {
+		return []any{&p.Name, &p.City}
+	}, 2)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	for _, p := range people {
+		fmt.Printf("%s from %s\n", p.Name, p.City)
+	}
+	// Output:
+	// Alice from Portland
+	// Bob from Seattle
+}

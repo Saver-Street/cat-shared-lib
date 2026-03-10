@@ -1,3 +1,5 @@
+// Package middleware provides HTTP middleware for authentication, authorization,
+// rate limiting, and brute-force protection used across microservices.
 package middleware
 
 import (
@@ -23,6 +25,12 @@ const (
 	ExtUserIDKey contextKey = "extUserId"
 	// ExtTokenIDKey is the context key for the extension token ID.
 	ExtTokenIDKey contextKey = "extTokenId"
+	// SubscriptionTierKey is the context key for the user's subscription tier.
+	// Typical values: "free", "starter", "pro", "power", "concierge".
+	SubscriptionTierKey contextKey = "subscriptionTier"
+	// SubscriptionStatusKey is the context key for the user's subscription status.
+	// Typical values: "active", "past_due", "canceled", "trialing".
+	SubscriptionStatusKey contextKey = "subscriptionStatus"
 )
 
 // GetUserID extracts the authenticated user ID from the request context.
@@ -90,6 +98,30 @@ func GetExtTokenID(r *http.Request) string {
 // SetExtTokenID returns a new context with the extension token ID set.
 func SetExtTokenID(ctx context.Context, tokenID string) context.Context {
 	return context.WithValue(ctx, ExtTokenIDKey, tokenID)
+}
+
+// GetSubscriptionTier extracts the user's subscription tier from the request context.
+// Returns an empty string if not set.
+func GetSubscriptionTier(r *http.Request) string {
+	v, _ := r.Context().Value(SubscriptionTierKey).(string)
+	return v
+}
+
+// SetSubscriptionTier returns a new context with the given subscription tier set.
+func SetSubscriptionTier(ctx context.Context, tier string) context.Context {
+	return context.WithValue(ctx, SubscriptionTierKey, tier)
+}
+
+// GetSubscriptionStatus extracts the user's subscription status from the request context.
+// Returns an empty string if not set.
+func GetSubscriptionStatus(r *http.Request) string {
+	v, _ := r.Context().Value(SubscriptionStatusKey).(string)
+	return v
+}
+
+// SetSubscriptionStatus returns a new context with the given subscription status set.
+func SetSubscriptionStatus(ctx context.Context, status string) context.Context {
+	return context.WithValue(ctx, SubscriptionStatusKey, status)
 }
 
 // RequireAuth is a middleware that rejects unauthenticated requests.

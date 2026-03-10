@@ -253,6 +253,12 @@ func BenchmarkCanApplyThisMonth(b *testing.B) {
 	}
 }
 
+func BenchmarkIsTierValid(b *testing.B) {
+	for b.Loop() {
+		IsTierValid("pro")
+	}
+}
+
 func TestIsTierValid_KnownTiers(t *testing.T) {
 	for _, tier := range AllTierNames() {
 		if !IsTierValid(tier) {

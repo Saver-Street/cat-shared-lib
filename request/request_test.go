@@ -329,3 +329,135 @@ func BenchmarkParseBoolParam(b *testing.B) {
 		ParseBoolParam(q, "active", false)
 	}
 }
+
+func TestOptionalQueryParam_Present(t *testing.T) {
+	q := url.Values{"name": {"alice"}}
+	if got := OptionalQueryParam(q, "name", "default"); got != "alice" {
+		t.Errorf("got %q, want alice", got)
+	}
+}
+
+func TestOptionalQueryParam_Missing(t *testing.T) {
+	q := url.Values{}
+	if got := OptionalQueryParam(q, "name", "default"); got != "default" {
+		t.Errorf("got %q, want default", got)
+	}
+}
+
+func TestOptionalQueryParam_Empty(t *testing.T) {
+	q := url.Values{"name": {""}}
+	if got := OptionalQueryParam(q, "name", "fallback"); got != "fallback" {
+		t.Errorf("got %q, want fallback", got)
+	}
+}
+
+func TestOptionalQueryInt_Present(t *testing.T) {
+	q := url.Values{"count": {"42"}}
+	if got := OptionalQueryInt(q, "count", 0); got != 42 {
+		t.Errorf("got %d, want 42", got)
+	}
+}
+
+func TestOptionalQueryInt_Missing(t *testing.T) {
+	q := url.Values{}
+	if got := OptionalQueryInt(q, "count", 10); got != 10 {
+		t.Errorf("got %d, want 10", got)
+	}
+}
+
+func TestOptionalQueryInt_Invalid(t *testing.T) {
+	q := url.Values{"count": {"notanint"}}
+	if got := OptionalQueryInt(q, "count", 99); got != 99 {
+		t.Errorf("got %d, want 99 (default on invalid)", got)
+	}
+}
+
+func TestOptionalQueryInt_Negative(t *testing.T) {
+	q := url.Values{"page": {"-5"}}
+	if got := OptionalQueryInt(q, "page", 1); got != -5 {
+		t.Errorf("got %d, want -5 (negatives are valid)", got)
+	}
+}
+
+func TestRequireQueryParamInt_Valid(t *testing.T) {
+	q := url.Values{"id": {"123"}}
+	n, err := RequireQueryParamInt(q, "id")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if n != 123 {
+		t.Errorf("got %d, want 123", n)
+	}
+}
+
+func TestRequireQueryParamInt_Missing(t *testing.T) {
+	q := url.Values{}
+	_, err := RequireQueryParamInt(q, "id")
+	if err == nil {
+		t.Fatal("expected error for missing param")
+	}
+}
+
+func TestRequireQueryParamInt_NotAnInt(t *testing.T) {
+	q := url.Values{"id": {"abc"}}
+	_, err := RequireQueryParamInt(q, "id")
+	if err == nil {
+		t.Fatal("expected error for non-integer value")
+	}
+}
+
+func TestOptionalQueryParam_Present(t *testing.T) {
+q := url.Values{"q": {"hello"}}
+if got := OptionalQueryParam(q, "q", "default"); got != "hello" {
+t.Errorf("got %q, want hello", got)
+}
+}
+
+func TestOptionalQueryParam_Absent(t *testing.T) {
+if got := OptionalQueryParam(url.Values{}, "q", "default"); got != "default" {
+t.Errorf("got %q, want default", got)
+}
+}
+
+func TestOptionalQueryInt_Present(t *testing.T) {
+q := url.Values{"n": {"42"}}
+if got := OptionalQueryInt(q, "n", 0); got != 42 {
+t.Errorf("got %d, want 42", got)
+}
+}
+
+func TestOptionalQueryInt_Absent(t *testing.T) {
+if got := OptionalQueryInt(url.Values{}, "n", 99); got != 99 {
+t.Errorf("got %d, want 99", got)
+}
+}
+
+func TestOptionalQueryInt_Invalid(t *testing.T) {
+q := url.Values{"n": {"notanint"}}
+if got := OptionalQueryInt(q, "n", 7); got != 7 {
+t.Errorf("got %d, want default 7", got)
+}
+}
+
+func TestRequireQueryParamInt_Valid(t *testing.T) {
+q := url.Values{"id": {"123"}}
+got, err := RequireQueryParamInt(q, "id")
+if err != nil || got != 123 {
+t.Errorf("got %d, %v; want 123, nil", got, err)
+}
+}
+
+func TestRequireQueryParamInt_Missing(t *testing.T) {
+_, err := RequireQueryParamInt(url.Values{}, "id")
+if err == nil {
+t.Error("expected error for missing param")
+}
+}
+
+func TestRequireQueryParamInt_Invalid(t *testing.T) {
+q := url.Values{"id": {"abc"}}
+_, err := RequireQueryParamInt(q, "id")
+if err == nil {
+t.Error("expected error for non-integer param")
+}
+}

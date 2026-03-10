@@ -57,7 +57,7 @@ func NewHTTPTestServer(t *testing.T) *HTTPTestServer {
 		routes: make(map[string][]RouteHandler),
 	}
 	s.Server = httptest.NewServer(http.HandlerFunc(s.dispatch))
-	t.Cleanup(s.Server.Close)
+	t.Cleanup(s.Close)
 	return s
 }
 

@@ -64,3 +64,39 @@ func TestResolveCandidate_ExtCandidateIDWins(t *testing.T) {
 		t.Errorf("ResolveCandidate = %q, want ext-cand-789", id)
 	}
 }
+
+func TestGetUserID_WrongType(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := context.WithValue(r.Context(), userIDKey, 12345)
+	r = r.WithContext(ctx)
+	if id := GetUserID(r); id != "" {
+		t.Errorf("non-string context value should return empty, got %q", id)
+	}
+}
+
+func TestGetExtCandidateID_WrongType(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := context.WithValue(r.Context(), extCandidateIDKey, 99)
+	r = r.WithContext(ctx)
+	if id := GetExtCandidateID(r); id != "" {
+		t.Errorf("non-string context value should return empty, got %q", id)
+	}
+}
+
+func BenchmarkGetUserID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := context.WithValue(r.Context(), userIDKey, "user-123")
+	r = r.WithContext(ctx)
+	for b.Loop() {
+		GetUserID(r)
+	}
+}
+
+func BenchmarkGetExtCandidateID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := context.WithValue(r.Context(), extCandidateIDKey, "cand-456")
+	r = r.WithContext(ctx)
+	for b.Loop() {
+		GetExtCandidateID(r)
+	}
+}

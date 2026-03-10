@@ -129,3 +129,50 @@ func TestRow_Error(t *testing.T) {
 		t.Errorf("got err %v, want no rows", err)
 	}
 }
+
+func TestRows_LargeDataSet(t *testing.T) {
+	data := make([][]any, 100)
+	for i := range data {
+		data[i] = []any{"name", "val"}
+	}
+	rows := &mockRows{data: data}
+	items, err := Rows[item](rows, scanItem)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 100 {
+		t.Fatalf("got %d items, want 100", len(items))
+	}
+}
+
+func TestRows_SingleRow(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"only", "one"}}}
+	items, err := Rows[item](rows, scanItem)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	if items[0].Name != "only" {
+		t.Errorf("got %q, want only", items[0].Name)
+	}
+}
+
+func BenchmarkRows(b *testing.B) {
+	data := make([][]any, 10)
+	for i := range data {
+		data[i] = []any{"name", "val"}
+	}
+	for b.Loop() {
+		rows := &mockRows{data: data}
+		Rows[item](rows, scanItem)
+	}
+}
+
+func BenchmarkRow(b *testing.B) {
+	for b.Loop() {
+		row := &mockRow{data: []any{"hello", "world"}}
+		Row[item](row, scanItem)
+	}
+}

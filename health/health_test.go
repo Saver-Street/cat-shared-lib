@@ -163,3 +163,30 @@ func TestHandler_MultipleUnhealthy(t *testing.T) {
 		t.Errorf("expected redis refused, got %s", s.Checks["redis"])
 	}
 }
+
+func BenchmarkHandler_NoCheckers(b *testing.B) {
+	h := Handler("svc", "v1.0.0")
+	req := httptest.NewRequest("GET", "/health", nil)
+	for b.Loop() {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+	}
+}
+
+func BenchmarkHandler_WithCheckers(b *testing.B) {
+	c1 := NewChecker("db", func(ctx context.Context) error { return nil })
+	c2 := NewChecker("cache", func(ctx context.Context) error { return nil })
+	h := Handler("svc", "v1.0.0", c1, c2)
+	req := httptest.NewRequest("GET", "/health", nil)
+	for b.Loop() {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+	}
+}
+
+func BenchmarkNewChecker(b *testing.B) {
+	fn := func(ctx context.Context) error { return nil }
+	for b.Loop() {
+		NewChecker("test", fn)
+	}
+}

@@ -219,3 +219,58 @@ func TestConfig_Fields(t *testing.T) {
 	cancel()
 	_ = ctx // just verify context is usable
 }
+
+func TestDefaults_PartialOverride(t *testing.T) {
+	c := Config{
+		ReadTimeout: 5 * time.Second,
+	}
+	c.defaults()
+	if c.ReadTimeout != 5*time.Second {
+		t.Errorf("expected ReadTimeout 5s, got %v", c.ReadTimeout)
+	}
+	if c.WriteTimeout != 30*time.Second {
+		t.Errorf("expected WriteTimeout 30s (default), got %v", c.WriteTimeout)
+	}
+}
+
+func TestListenAndServe_NoCleanupFuncs(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	ln.Close()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- ListenAndServe(Config{
+			Addr:            addr,
+			Handler:         http.NewServeMux(),
+			ShutdownTimeout: 2 * time.Second,
+		})
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+	proc.Signal(syscall.SIGTERM)
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for shutdown")
+	}
+}
+
+func BenchmarkDefaults(b *testing.B) {
+	for b.Loop() {
+		c := Config{}
+		c.defaults()
+	}
+}

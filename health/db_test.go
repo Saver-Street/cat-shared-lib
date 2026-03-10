@@ -32,3 +32,11 @@ func TestDBChecker_Unhealthy(t *testing.T) {
 		t.Errorf("expected 'connection refused', got %s", err.Error())
 	}
 }
+
+func BenchmarkDBChecker(b *testing.B) {
+	c := DBChecker(&mockPool{})
+	ctx := context.Background()
+	for b.Loop() {
+		c.Check(ctx)
+	}
+}

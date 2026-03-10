@@ -70,6 +70,28 @@ func SetExtCandidateID(ctx context.Context, candidateID string) context.Context 
 	return context.WithValue(ctx, ExtCandidateIDKey, candidateID)
 }
 
+// GetExtUserID extracts the extension user ID from the request context.
+func GetExtUserID(r *http.Request) string {
+	v, _ := r.Context().Value(ExtUserIDKey).(string)
+	return v
+}
+
+// SetExtUserID returns a new context with the extension user ID set.
+func SetExtUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, ExtUserIDKey, userID)
+}
+
+// GetExtTokenID extracts the extension token ID from the request context.
+func GetExtTokenID(r *http.Request) string {
+	v, _ := r.Context().Value(ExtTokenIDKey).(string)
+	return v
+}
+
+// SetExtTokenID returns a new context with the extension token ID set.
+func SetExtTokenID(ctx context.Context, tokenID string) context.Context {
+	return context.WithValue(ctx, ExtTokenIDKey, tokenID)
+}
+
 // RequireAuth is a middleware that rejects unauthenticated requests.
 // It expects the user ID to have been set in context by an upstream auth middleware.
 func RequireAuth(next http.Handler) http.Handler {

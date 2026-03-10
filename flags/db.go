@@ -3,6 +3,7 @@ package flags
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -29,6 +30,7 @@ func IsFeatureEnabled(ctx context.Context, db Querier, flagName string) bool {
 		return true
 	}
 	if err != nil {
+		slog.Error("flags: failed to query feature flag", "flag", flagName, "error", err)
 		return true
 	}
 	return value == "true"
@@ -45,6 +47,9 @@ func IsMaintenanceModeActive(ctx context.Context, db Querier) bool {
 		"SELECT value FROM site_settings WHERE key = 'flag_maintenanceMode'",
 	).Scan(&value)
 	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("flags: failed to query maintenance mode", "error", err)
+		}
 		return false
 	}
 	return value == "true"
@@ -61,6 +66,9 @@ func IsGlobalAutomationPaused(ctx context.Context, db Querier) bool {
 		"SELECT value FROM site_settings WHERE key = 'flag_globalAutomationPause'",
 	).Scan(&value)
 	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("flags: failed to query global automation pause", "error", err)
+		}
 		return false
 	}
 	return value == "true"

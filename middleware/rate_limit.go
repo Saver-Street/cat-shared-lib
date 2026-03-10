@@ -28,6 +28,7 @@ type RateLimiter struct {
 	visitors map[string]*visitor
 	mu       sync.RWMutex
 	stopCh   chan struct{}
+	stopOnce sync.Once
 }
 
 // NewRateLimiter creates a rate limiter with automatic stale-entry cleanup.
@@ -44,9 +45,9 @@ func NewRateLimiter(cfg RateLimiterConfig) *RateLimiter {
 	return rl
 }
 
-// Stop terminates the cleanup goroutine.
+// Stop terminates the cleanup goroutine. Safe to call multiple times.
 func (rl *RateLimiter) Stop() {
-	close(rl.stopCh)
+	rl.stopOnce.Do(func() { close(rl.stopCh) })
 }
 
 func (rl *RateLimiter) cleanupLoop() {

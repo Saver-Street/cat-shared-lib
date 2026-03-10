@@ -1,30 +1,24 @@
 package identity_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/Saver-Street/cat-shared-lib/identity"
+	"github.com/Saver-Street/cat-shared-lib/middleware"
 )
 
 func ExampleGetUserID() {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	// Without context value, returns empty string.
+	// Without a user ID in context, returns empty string.
 	fmt.Printf("empty: %q\n", identity.GetUserID(r))
 
-	// With context value set (typically by auth middleware).
-	type ctxKey string
-	// Simulate what middleware does internally — set via context.
-	ctx := context.WithValue(r.Context(), ctxKey("userId"), "user-123")
-	r = r.WithContext(ctx)
-	// Note: identity.GetUserID uses its own unexported key, so direct
-	// context.WithValue with a different key type won't match.
-	// This example demonstrates the empty-return behavior.
-	fmt.Printf("wrong key type: %q\n", identity.GetUserID(r))
+	// With user ID set via middleware.SetUserID (as done by JWT auth middleware).
+	r = r.WithContext(middleware.SetUserID(r.Context(), "user-123"))
+	fmt.Printf("with user: %q\n", identity.GetUserID(r))
 	// Output:
 	// empty: ""
-	// wrong key type: ""
+	// with user: "user-123"
 }
 
 func ExampleGetExtCandidateID() {

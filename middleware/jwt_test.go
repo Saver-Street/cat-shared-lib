@@ -152,11 +152,38 @@ func TestSetUserID_Overwrite(t *testing.T) {
 	}
 }
 
+func TestSetExtCandidateID_RoundTrip(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetExtCandidateID(r.Context(), "cand-42"))
+	if id := GetExtCandidateID(r); id != "cand-42" {
+		t.Errorf("round trip SetExtCandidateID/GetExtCandidateID = %q, want cand-42", id)
+	}
+}
+
+func TestSetExtCandidateID_Empty(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetExtCandidateID(r.Context(), ""))
+	if id := GetExtCandidateID(r); id != "" {
+		t.Errorf("empty SetExtCandidateID = %q, want empty", id)
+	}
+}
+
+func TestSetExtCandidateID_Overwrite(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := SetExtCandidateID(r.Context(), "first")
+	ctx = SetExtCandidateID(ctx, "second")
+	r = r.WithContext(ctx)
+	if id := GetExtCandidateID(r); id != "second" {
+		t.Errorf("overwritten ext candidate ID = %q, want second", id)
+	}
+}
+
 func TestContextChain_MultipleSetters(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := SetUserID(r.Context(), "uid-1")
 	ctx = SetUserRole(ctx, "admin")
 	ctx = SetUserEmail(ctx, "admin@test.com")
+	ctx = SetExtCandidateID(ctx, "cand-chain")
 	r = r.WithContext(ctx)
 
 	if id := GetUserID(r); id != "uid-1" {
@@ -167,6 +194,9 @@ func TestContextChain_MultipleSetters(t *testing.T) {
 	}
 	if email := GetUserEmail(r); email != "admin@test.com" {
 		t.Errorf("chained email = %q, want admin@test.com", email)
+	}
+	if cid := GetExtCandidateID(r); cid != "cand-chain" {
+		t.Errorf("chained ext candidate ID = %q, want cand-chain", cid)
 	}
 }
 
@@ -213,6 +243,14 @@ func BenchmarkSetUserID(b *testing.B) {
 	ctx := r.Context()
 	for b.Loop() {
 		SetUserID(ctx, "user-bench")
+	}
+}
+
+func BenchmarkSetExtCandidateID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := r.Context()
+	for b.Loop() {
+		SetExtCandidateID(ctx, "cand-bench")
 	}
 }
 

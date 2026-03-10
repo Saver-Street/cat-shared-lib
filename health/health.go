@@ -4,6 +4,7 @@ package health
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -79,6 +80,8 @@ func Handler(service, version string, checkers ...Checker) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(status)
+		if err := json.NewEncoder(w).Encode(status); err != nil {
+			slog.Error("health: failed to encode response", "error", err)
+		}
 	}
 }

@@ -1,3 +1,4 @@
+// Package entitlements provides subscription tier lookups and usage checks.
 package entitlements
 
 // TierLimits defines the feature caps for a subscription tier.

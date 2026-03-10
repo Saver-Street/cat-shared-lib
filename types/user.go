@@ -1,3 +1,4 @@
+// Package types provides shared domain types used across cat microservices.
 package types
 
 import "time"

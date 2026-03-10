@@ -1,3 +1,4 @@
+// Package flags provides feature flag lookups backed by a site_settings database table.
 package flags
 
 // Flag name constants — the key suffix used in site_settings (prefixed with "flag_").

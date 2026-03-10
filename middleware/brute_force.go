@@ -23,10 +23,11 @@ type bruteEntry struct {
 
 // BruteForceGuard tracks failed login attempts per IP and blocks repeat offenders.
 type BruteForceGuard struct {
-	cfg     BruteForceConfig
-	entries map[string]*bruteEntry
-	mu      sync.Mutex
-	stopCh  chan struct{}
+	cfg      BruteForceConfig
+	entries  map[string]*bruteEntry
+	mu       sync.Mutex
+	stopCh   chan struct{}
+	stopOnce sync.Once
 }
 
 // NewBruteForceGuard creates a guard with automatic stale-entry cleanup.
@@ -49,9 +50,9 @@ func NewBruteForceGuard(cfg BruteForceConfig) *BruteForceGuard {
 	return g
 }
 
-// Stop terminates the cleanup goroutine.
+// Stop terminates the cleanup goroutine. Safe to call multiple times.
 func (g *BruteForceGuard) Stop() {
-	close(g.stopCh)
+	g.stopOnce.Do(func() { close(g.stopCh) })
 }
 
 func (g *BruteForceGuard) cleanupLoop() {
@@ -106,9 +107,9 @@ func (g *BruteForceGuard) RecordFailure(ip string) bool {
 	if !ok || (e.blockedAt == nil && now.Sub(e.firstSeen) > g.cfg.Window) {
 		newEntry := &bruteEntry{failures: 1, firstSeen: now}
 		g.entries[ip] = newEntry
-		if 1 >= g.cfg.MaxFailures {
+		if newEntry.failures >= g.cfg.MaxFailures {
 			newEntry.blockedAt = &now
-			slog.Warn("brute: IP blocked", "ip", ip, "failures", 1)
+			slog.Warn("brute: IP blocked", "ip", ip, "failures", newEntry.failures)
 			return true
 		}
 		return false

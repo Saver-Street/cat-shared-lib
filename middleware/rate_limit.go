@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/response"
 )
 
 // RateLimiterConfig configures the sliding-window rate limiter.
@@ -140,7 +142,7 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 			rl.mu.Unlock()
 			slog.Warn("rate: limit exceeded", "ip", ip, "path", r.URL.Path, "count", v.count)
 			w.Header().Set("Retry-After", fmt.Sprintf("%.0f", remaining.Seconds()+1))
-			http.Error(w, `{"error":"Too many requests"}`, http.StatusTooManyRequests)
+			response.TooManyRequests(w, "Too many requests")
 			return
 		}
 		rl.mu.Unlock()

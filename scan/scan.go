@@ -30,7 +30,7 @@ func Rows[T any](rows RowScanner, scanFn func(*T) []any) ([]T, error) {
 	}
 	defer rows.Close()
 
-	results := make([]T, 0)
+	var results []T
 	for rows.Next() {
 		var item T
 		if err := rows.Scan(scanFn(&item)...); err != nil {
@@ -98,7 +98,11 @@ func RowsLimit[T any](rows RowScanner, scanFn func(*T) []any, limit int) ([]T, e
 	}
 	defer rows.Close()
 
-	results := make([]T, 0)
+	cap := limit
+	if cap <= 0 {
+		cap = 0
+	}
+	results := make([]T, 0, cap)
 	for rows.Next() {
 		if limit > 0 && len(results) >= limit {
 			break

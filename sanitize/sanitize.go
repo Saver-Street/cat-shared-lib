@@ -93,3 +93,27 @@ func SanitizeEmail(email string) string {
 func IsDatabaseError(err error, code string) bool {
 	return err != nil && strings.Contains(err.Error(), code)
 }
+
+// NullString returns the dereferenced value of p, or defaultVal if p is nil.
+func NullString(p *string, defaultVal string) string {
+	if p == nil {
+		return defaultVal
+	}
+	return *p
+}
+
+// NullInt64 returns the dereferenced value of p, or defaultVal if p is nil.
+func NullInt64(p *int64, defaultVal int64) int64 {
+	if p == nil {
+		return defaultVal
+	}
+	return *p
+}
+
+// NullBool returns the dereferenced value of p, or defaultVal if p is nil.
+func NullBool(p *bool, defaultVal bool) bool {
+	if p == nil {
+		return defaultVal
+	}
+	return *p
+}

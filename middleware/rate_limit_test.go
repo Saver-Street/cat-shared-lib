@@ -141,6 +141,83 @@ func TestIsExemptFromRateLimit(t *testing.T) {
 
 // --- Benchmarks ---
 
+func TestGetClientIP_XFFEmptyFirstPart(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("X-Forwarded-For", " , 10.0.0.1")
+	// Empty first part should fall through to RemoteAddr
+	r.RemoteAddr = "192.168.1.1:8080"
+	if ip := GetClientIP(r); ip != "192.168.1.1" {
+		t.Errorf("XFF empty first part = %q, want 192.168.1.1", ip)
+	}
+}
+
+func TestGetClientIP_NoPort(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.RemoteAddr = "10.0.0.5"
+	if ip := GetClientIP(r); ip != "10.0.0.5" {
+		t.Errorf("no-port RemoteAddr = %q, want 10.0.0.5", ip)
+	}
+}
+
+func TestRateLimiter_WindowReset(t *testing.T) {
+	rl := newTestRL(1)
+	defer rl.Stop()
+	// First request passes
+	if code := doRequest(rl, "reset-ip"); code != http.StatusOK {
+		t.Errorf("first request: %d", code)
+	}
+	// Second request blocked
+	if code := doRequest(rl, "reset-ip"); code != http.StatusTooManyRequests {
+		t.Errorf("second request: %d, want 429", code)
+	}
+	// Wait for window to expire
+	time.Sleep(150 * time.Millisecond)
+	// Third request should pass after window reset
+	if code := doRequest(rl, "reset-ip"); code != http.StatusOK {
+		t.Errorf("post-window request: %d, want 200", code)
+	}
+}
+
+func TestRateLimiter_RetryAfterHeader(t *testing.T) {
+	rl := newTestRL(1)
+	defer rl.Stop()
+	doRequest(rl, "header-ip")
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/api/test", nil)
+	r.RemoteAddr = "header-ip:0"
+	rl.Middleware(next).ServeHTTP(w, r)
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", w.Code)
+	}
+	if w.Header().Get("Retry-After") == "" {
+		t.Error("Retry-After header missing")
+	}
+}
+
+func TestRateLimiter_Cleanup(t *testing.T) {
+	rl := NewRateLimiter(RateLimiterConfig{
+		RequestsPerWindow: 5,
+		WindowDuration:    50 * time.Millisecond,
+		CleanupInterval:   50 * time.Millisecond,
+	})
+	defer rl.Stop()
+	doRequest(rl, "cleanup-ip")
+	// Wait for cleanup to remove stale entries
+	time.Sleep(200 * time.Millisecond)
+	rl.mu.RLock()
+	_, exists := rl.visitors["cleanup-ip"]
+	rl.mu.RUnlock()
+	if exists {
+		t.Error("stale visitor entry should have been cleaned up")
+	}
+}
+
+// --- Benchmarks ---
+
 func BenchmarkGetClientIP(b *testing.B) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Set("X-Forwarded-For", "203.0.113.5, 10.0.0.1")

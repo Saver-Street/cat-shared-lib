@@ -95,3 +95,12 @@ func BenchmarkGetExtCandidateID(b *testing.B) {
 		GetExtCandidateID(r)
 	}
 }
+
+func TestResolveCandidate_NilDB_WithUserID(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(middleware.SetUserID(r.Context(), "user-abc"))
+	_, err := ResolveCandidate(r, nil)
+	if err == nil {
+		t.Error("expected error when db is nil and user ID is set")
+	}
+}

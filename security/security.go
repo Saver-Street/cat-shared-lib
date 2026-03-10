@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// suspiciousPatterns is the list of compiled regexes used by ContainsSuspiciousInput
+// to detect SQL injection and HTML/JS injection attempts.
 var suspiciousPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)DROP\s+TABLE`),
 	regexp.MustCompile(`(?i)SELECT\s+\*\s+FROM`),
@@ -37,6 +39,8 @@ func ContainsSuspiciousInput(value string) bool {
 	return false
 }
 
+// piiFields is the set of JSON field names that RedactPII replaces with "[REDACTED]".
+// Matching is case-insensitive (both the literal key and its lowercased form are checked).
 var piiFields = map[string]bool{
 	"email": true, "phone": true, "address": true, "ssn": true,
 	"password": true, "resume": true, "socialSecurityNumber": true,
@@ -44,6 +48,8 @@ var piiFields = map[string]bool{
 	"zipCode": true, "postalCode": true, "dateOfBirth": true,
 }
 
+// emailRe, phoneRe, and ssnRe are used by redactString to replace PII patterns
+// found inside string values during RedactPII processing.
 var (
 	emailRe = regexp.MustCompile(`[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}`)
 	phoneRe = regexp.MustCompile(`(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}`)

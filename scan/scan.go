@@ -98,11 +98,11 @@ func RowsLimit[T any](rows RowScanner, scanFn func(*T) []any, limit int) ([]T, e
 	}
 	defer rows.Close()
 
-	cap := limit
-	if cap <= 0 {
-		cap = 0
+	initCap := limit
+	if initCap <= 0 {
+		initCap = 0
 	}
-	results := make([]T, 0, cap)
+	results := make([]T, 0, initCap)
 	for rows.Next() {
 		if limit > 0 && len(results) >= limit {
 			break

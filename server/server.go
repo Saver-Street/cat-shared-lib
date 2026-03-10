@@ -15,11 +15,21 @@ import (
 
 // Config controls server behavior.
 type Config struct {
-	Addr            string
-	Handler         http.Handler
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	IdleTimeout     time.Duration
+	// Addr is the TCP address to listen on (e.g. ":8080"). Passed directly to http.Server.
+	Addr string
+	// Handler is the root HTTP handler. Must not be nil.
+	Handler http.Handler
+	// ReadTimeout is the maximum duration for reading the entire request, including body.
+	// Defaults to 15 seconds.
+	ReadTimeout time.Duration
+	// WriteTimeout is the maximum duration before timing out writes of the response.
+	// Defaults to 30 seconds.
+	WriteTimeout time.Duration
+	// IdleTimeout is the maximum time to wait for the next request on a keep-alive connection.
+	// Defaults to 60 seconds.
+	IdleTimeout time.Duration
+	// ShutdownTimeout is the maximum duration to wait for in-flight requests to complete
+	// during graceful shutdown. Defaults to 10 seconds.
 	ShutdownTimeout time.Duration
 }
 

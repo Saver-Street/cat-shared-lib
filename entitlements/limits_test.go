@@ -160,3 +160,89 @@ func BenchmarkGetLimitsForTier_Unknown(b *testing.B) {
 		GetLimitsForTier("enterprise")
 	}
 }
+
+func TestCanApplyThisMonth_BelowLimit(t *testing.T) {
+if !CanApplyThisMonth("free", 9) {
+t.Error("9/10 apps: should still be allowed")
+}
+}
+
+func TestCanApplyThisMonth_AtLimit(t *testing.T) {
+if CanApplyThisMonth("free", 10) {
+t.Error("10/10 apps: should be blocked (at limit)")
+}
+}
+
+func TestCanApplyThisMonth_AboveLimit(t *testing.T) {
+if CanApplyThisMonth("free", 11) {
+t.Error("11/10 apps: should be blocked (over limit)")
+}
+}
+
+func TestCanApplyThisMonth_ZeroCount(t *testing.T) {
+if !CanApplyThisMonth("pro", 0) {
+t.Error("0 apps on pro: should be allowed")
+}
+}
+
+func TestCanApplyThisMonth_UnknownTierFallsToFree(t *testing.T) {
+if !CanApplyThisMonth("enterprise", 5) {
+t.Error("5/10 on unknown tier: should be allowed (free fallback)")
+}
+if CanApplyThisMonth("enterprise", 10) {
+t.Error("10/10 on unknown tier: should be blocked (free fallback)")
+}
+}
+
+func TestCanApplyThisMonth_AllTiers(t *testing.T) {
+for _, tier := range AllTierNames() {
+limits := GetLimitsForTier(tier)
+if !CanApplyThisMonth(tier, limits.MonthlyApplications-1) {
+t.Errorf("%s: one below limit should be allowed", tier)
+}
+if CanApplyThisMonth(tier, limits.MonthlyApplications) {
+t.Errorf("%s: at-limit should be blocked", tier)
+}
+}
+}
+
+func TestAllTierNames_ContainsExpected(t *testing.T) {
+names := AllTierNames()
+expected := map[string]bool{
+"free": true, "starter": true, "pro": true,
+"power": true, "concierge": true,
+}
+if len(names) != len(expected) {
+t.Errorf("AllTierNames() len = %d, want %d", len(names), len(expected))
+}
+for _, n := range names {
+if !expected[n] {
+t.Errorf("unexpected tier %q in AllTierNames()", n)
+}
+}
+}
+
+func TestAllTierNames_Order(t *testing.T) {
+names := AllTierNames()
+want := []string{"free", "starter", "pro", "power", "concierge"}
+for i, n := range names {
+if n != want[i] {
+t.Errorf("AllTierNames()[%d] = %q, want %q", i, n, want[i])
+}
+}
+}
+
+func TestAllTierNames_IsACopy(t *testing.T) {
+names := AllTierNames()
+names[0] = "mutated"
+fresh := AllTierNames()
+if fresh[0] != "free" {
+t.Errorf("AllTierNames returned mutable slice; first element = %q, want free", fresh[0])
+}
+}
+
+func BenchmarkCanApplyThisMonth(b *testing.B) {
+for b.Loop() {
+CanApplyThisMonth("pro", 75)
+}
+}

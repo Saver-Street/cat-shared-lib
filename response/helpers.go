@@ -85,6 +85,7 @@ func ServiceUnavailable(w http.ResponseWriter, msg string) {
 }
 
 // MethodNotAllowed sends a 405 JSON error response.
+// Use this when the HTTP method is not supported for the requested resource.
 func MethodNotAllowed(w http.ResponseWriter, msg string) {
 	Error(w, http.StatusMethodNotAllowed, msg)
 }
@@ -104,10 +105,15 @@ func GatewayTimeout(w http.ResponseWriter, msg string) {
 // PagedResult is a standard paginated JSON response envelope.
 // Data holds the current page of items; Total is the count across all pages.
 type PagedResult[T any] struct {
-	Data    []T  `json:"data"`
-	Total   int  `json:"total"`
-	Page    int  `json:"page"`
-	Limit   int  `json:"limit"`
+	// Data is the slice of items for the current page.
+	Data []T `json:"data"`
+	// Total is the count of all matching items across all pages.
+	Total int `json:"total"`
+	// Page is the 1-based page number of this result set.
+	Page int `json:"page"`
+	// Limit is the maximum number of items per page.
+	Limit int `json:"limit"`
+	// HasMore is true when at least one further page exists.
 	HasMore bool `json:"has_more"`
 }
 

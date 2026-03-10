@@ -288,3 +288,13 @@ func BenchmarkDefaults(b *testing.B) {
 		c.defaults()
 	}
 }
+
+func TestListenAndServe_NilHandler(t *testing.T) {
+	err := ListenAndServe(Config{Addr: ":0", Handler: nil})
+	if err == nil {
+		t.Fatal("expected error for nil Handler, got nil")
+	}
+	if err.Error() != "server: Handler must not be nil" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

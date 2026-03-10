@@ -26,6 +26,9 @@ func TestNew(t *testing.T) {
 func TestWrap(t *testing.T) {
 	cause := fmt.Errorf("db connection lost")
 	e := Wrap(http.StatusInternalServerError, CodeInternal, "failed to fetch user", cause)
+	if e.Err != cause {
+		t.Errorf("Err = %v, want %v", e.Err, cause)
+	}
 	if !errors.Is(e, cause) {
 		t.Error("errors.Is should find wrapped cause")
 	}
@@ -55,6 +58,9 @@ func TestError_Unwrap(t *testing.T) {
 	e := Wrap(500, CodeInternal, "wrapped", cause)
 	if !errors.Is(e, cause) {
 		t.Error("errors.Is should find cause")
+	}
+	if e.Unwrap() != cause {
+		t.Error("Unwrap should return cause")
 	}
 
 	e2 := New(400, CodeBadRequest, "no cause")

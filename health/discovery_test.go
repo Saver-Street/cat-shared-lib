@@ -164,6 +164,47 @@ func TestServiceDiscoveryChecker_CustomPath(t *testing.T) {
 	}
 }
 
+func TestServiceDiscoveryChecker_NonOKStatus(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "degraded"})
+	}))
+	defer srv.Close()
+
+	reg := discovery.NewRegistry()
+	_ = reg.Register(discovery.Instance{Service: "billing", ID: "b-1", Addr: srv.URL})
+
+	checker := ServiceDiscoveryChecker("billing", ServiceDiscoveryCheckerConfig{
+		Registry: reg,
+	})
+
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Error("Check() = nil, want error for non-ok status")
+	}
+}
+
+func TestServiceDiscoveryChecker_UnexpectedStatusCode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("error"))
+	}))
+	defer srv.Close()
+
+	reg := discovery.NewRegistry()
+	_ = reg.Register(discovery.Instance{Service: "billing", ID: "b-1", Addr: srv.URL})
+
+	checker := ServiceDiscoveryChecker("billing", ServiceDiscoveryCheckerConfig{
+		Registry: reg,
+	})
+
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Error("Check() = nil, want error for unexpected 500")
+	}
+}
+
 func TestServiceDiscoveryChecker_InHandler(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

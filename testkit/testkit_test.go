@@ -336,6 +336,113 @@ func TestIsNil_Variants(t *testing.T) {
 	}
 }
 
+// ---- ContextWithValue tests ----
+
+func TestContextWithValue(t *testing.T) {
+	type ctxKey string
+	ctx := ContextWithValue(t.Context(), ctxKey("role"), "admin")
+	if got := ctx.Value(ctxKey("role")); got != "admin" {
+		t.Errorf("ContextWithValue: got %v, want admin", got)
+	}
+}
+
+// ---- NewJSONRequest error path ----
+
+func TestNewJSONRequest_MarshalError(t *testing.T) {
+	mock := &mockT{}
+	_ = NewJSONRequest(mock, "POST", "/", make(chan int))
+	if !mock.fatal {
+		t.Error("expected Fatalf for un-marshalable body")
+	}
+}
+
+// ---- AssertJSONEqual error paths ----
+
+func TestAssertJSONEqual_MarshalGotError(t *testing.T) {
+	mock := &mockT{}
+	AssertJSONEqual(mock, make(chan int), map[string]int{"a": 1})
+	if !mock.fatal {
+		t.Error("expected Fatalf when got is un-marshalable")
+	}
+}
+
+func TestAssertJSONEqual_MarshalWantError(t *testing.T) {
+	mock := &mockT{}
+	AssertJSONEqual(mock, map[string]int{"a": 1}, make(chan int))
+	if !mock.fatal {
+		t.Error("expected Fatalf when want is un-marshalable")
+	}
+}
+
+// ---- AssertJSONContains error paths ----
+
+func TestAssertJSONContains_InvalidJSON(t *testing.T) {
+	mock := &mockT{}
+	AssertJSONContains(mock, []byte("not json"), map[string]any{"x": 1})
+	if !mock.fatal {
+		t.Error("expected Fatalf for invalid JSON body")
+	}
+}
+
+// ---- isNil additional type coverage ----
+
+func TestIsNil_NilSlice(t *testing.T) {
+	var s []int
+	if !isNil(s) {
+		t.Error("nil slice should be nil")
+	}
+	s = []int{1}
+	if isNil(s) {
+		t.Error("non-nil slice should not be nil")
+	}
+}
+
+func TestIsNil_NilMap(t *testing.T) {
+	var m map[string]int
+	if !isNil(m) {
+		t.Error("nil map should be nil")
+	}
+	m = map[string]int{"a": 1}
+	if isNil(m) {
+		t.Error("non-nil map should not be nil")
+	}
+}
+
+func TestIsNil_NilFunc(t *testing.T) {
+	var fn func()
+	if !isNil(fn) {
+		t.Error("nil func should be nil")
+	}
+	fn = func() {}
+	if isNil(fn) {
+		t.Error("non-nil func should not be nil")
+	}
+}
+
+func TestIsNil_NilChan(t *testing.T) {
+	var ch chan int
+	if !isNil(ch) {
+		t.Error("nil chan should be nil")
+	}
+	ch = make(chan int)
+	if isNil(ch) {
+		t.Error("non-nil chan should not be nil")
+	}
+}
+
+func TestIsNil_NonNilableTypes(t *testing.T) {
+	// int, string, struct should never be nil.
+	if isNil(0) {
+		t.Error("int should not be nil")
+	}
+	if isNil("") {
+		t.Error("empty string should not be nil")
+	}
+	if isNil(struct{}{}) {
+		t.Error("struct should not be nil")
+	}
+}
+
 // mockT is a test double for T.
 type mockT struct {
 	errored bool

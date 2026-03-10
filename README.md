@@ -29,6 +29,8 @@ Shared Go library for Catherine (Auto-Apps) microservices.
   - [httpclient — Resilient HTTP Client](#httpclient--resilient-http-client)
   - [apperror — Structured Errors](#apperror--structured-errors)
   - [Additional Packages](#additional-packages)
+  - [contracts — Service Interface Contracts](#contracts--service-interface-contracts)
+  - [servicetest — Integration Test Helpers](#servicetest--integration-test-helpers)
 - [Design Notes](#design-notes)
 
 ---
@@ -82,6 +84,8 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 | `shutdown` | OS signal-based graceful shutdown coordinator | 96% |
 | `testkit` | Mock server, call recorder, and other test helpers | 94% |
 | `types` | Shared domain types (User, CandidateProfile, Pagination) | 100% |
+| `contracts` | Shared service interfaces (Service, Handler, HealthCheck, StandardError) | 100% |
+| `servicetest` | Integration test helpers: HTTP test server, mock Querier, fixture loader | 100% |
 
 ---
 
@@ -674,6 +678,94 @@ ms.Handle(func(w http.ResponseWriter, r *http.Request) {
 })
 client.GetJSON(ctx, ms.URL+"/path", &result)
 assert.Equal(t, 1, ms.RequestCount())
+```
+
+---
+
+### contracts — Service Interface Contracts
+
+The `contracts` package defines the Go interfaces that every microservice in the
+platform must implement, providing compile-time enforcement of service contracts
+and a canonical JSON error body type.
+
+```go
+import "github.com/Saver-Street/cat-shared-lib/contracts"
+
+// Implement the full Service contract in your service type:
+//
+//   type BillingService struct { ... }
+//   func (s *BillingService) Name() string        { return "billing-service" }
+//   func (s *BillingService) Version() string     { return "1.0.0" }
+//   func (s *BillingService) Environment() string { return os.Getenv("ENV") }
+//   func (s *BillingService) RegisterRoutes(mux *http.ServeMux) { ... }
+//   func (s *BillingService) HealthCheck(ctx context.Context) (contracts.HealthStatus, error) { ... }
+//
+// var _ contracts.Service = (*BillingService)(nil) // compile-time check
+
+// Canonical JSON error body for all non-2xx responses:
+errBody := contracts.NewStandardError("NOT_FOUND", "user not found")
+errBody = contracts.NewStandardErrorWithDetails("VALIDATION_ERROR", "invalid input",
+    map[string]any{"field": "email", "reason": "invalid format"},
+)
+json.NewEncoder(w).Encode(errBody)
+
+// Health status:
+status := contracts.HealthStatus{
+    State:   contracts.HealthStateOK,
+    Service: "billing-service",
+    Version: "1.0.0",
+    Checks:  map[string]string{"db": "ok", "cache": "ok"},
+}
+```
+
+---
+
+### servicetest — Integration Test Helpers
+
+The `servicetest` package provides HTTP test server routing, request recording,
+a mock row/DB helper for database-free unit tests, and an in-memory fixture
+registry.
+
+```go
+import "github.com/Saver-Street/cat-shared-lib/servicetest"
+
+// --- HTTP test server with per-route stubs ---
+srv := servicetest.NewHTTPTestServer(t) // closes automatically via t.Cleanup
+
+srv.Handle(http.MethodGet, "/users", func(w http.ResponseWriter, r *http.Request) {
+    json.NewEncoder(w).Encode([]map[string]any{{"id": "1", "email": "a@example.com"}})
+})
+
+// Stub a JSON response directly:
+srv.HandleJSON(http.MethodPost, "/users", http.StatusCreated, map[string]any{"id": "2"})
+
+// Inspect recorded requests:
+reqs := srv.Requests()
+last := srv.LastRequest() // *RecordedRequest{Method, Path, Headers, Body, Query}
+
+srv.Reset() // clear recorded requests between sub-tests
+
+// --- Mock row / DB helper (no real DB required) ---
+row := &servicetest.MockRow{}
+row.Set([]any{"uuid-1", "alice@example.com"}) // values scanned in order
+
+db := &servicetest.DBTestHelper{}
+db.QueueRow(row)
+// Pass db wherever a database.Querier is expected
+
+// Inspect executed queries:
+fmt.Println(db.QueryCount())
+for _, q := range db.Queries() {
+    fmt.Println(q.SQL, q.Args)
+}
+
+// --- In-memory fixture registry ---
+fixtures := servicetest.NewFixtures()
+fixtures.RegisterJSON("user", map[string]any{"id": "1", "email": "a@example.com"})
+
+raw := fixtures.MustLoad("user")
+var u User
+fixtures.LoadInto("user", &u)
 ```
 
 ---

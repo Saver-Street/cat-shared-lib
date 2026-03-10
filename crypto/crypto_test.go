@@ -201,6 +201,16 @@ func TestNeedsRehash(t *testing.T) {
 	}
 }
 
+func TestHashPasswordWithCost_InvalidCost(t *testing.T) {
+	_, err := HashPasswordWithCost("password", 100) // cost too high
+	if err == nil {
+		t.Fatal("expected error for invalid bcrypt cost")
+	}
+	if !strings.Contains(err.Error(), "crypto: hash password") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
 func TestNeedsRehash_InvalidHash(t *testing.T) {
 	if !NeedsRehash("badhash", 10) {
 		t.Error("invalid hash should trigger rehash")

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -124,6 +125,46 @@ func TestAggregateChecker_NonOKStatus(t *testing.T) {
 	err := checker.Check(t.Context())
 	if err == nil {
 		t.Error("Check() = nil, want error for non-ok status field")
+	}
+}
+
+func TestAggregateChecker_InvalidJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`not valid json`))
+	}))
+	defer srv.Close()
+
+	checker := AggregateChecker("downstream", srv.URL)
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Error("Check() = nil, want error for invalid JSON response")
+	}
+}
+
+func TestAggregateChecker_ConnectionRefused(t *testing.T) {
+	checker := AggregateChecker("down", "http://127.0.0.1:1")
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Error("Check() = nil, want error for connection refused")
+	}
+}
+
+func TestAggregateChecker_UnexpectedStatusCode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("internal error"))
+	}))
+	defer srv.Close()
+
+	checker := AggregateChecker("downstream", srv.URL)
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Error("Check() = nil, want error for 500 status")
+	}
+	if !strings.Contains(err.Error(), "returned 500") {
+		t.Errorf("error = %v, want mention of 500", err)
 	}
 }
 

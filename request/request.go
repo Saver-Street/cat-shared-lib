@@ -16,7 +16,14 @@ type Pagination struct {
 }
 
 // ParsePagination extracts page and limit from URL query parameters with defaults and bounds.
+// Zero or negative defaultLimit defaults to 20; zero or negative maxLimit defaults to 100.
 func ParsePagination(q url.Values, defaultLimit, maxLimit int) Pagination {
+	if defaultLimit <= 0 {
+		defaultLimit = 20
+	}
+	if maxLimit <= 0 {
+		maxLimit = 100
+	}
 	page := 1
 	if p := q.Get("page"); p != "" {
 		if n, err := strconv.Atoi(p); err == nil && n > 0 {

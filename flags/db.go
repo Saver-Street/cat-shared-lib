@@ -54,3 +54,11 @@ func IsMaintenanceModeActive(ctx context.Context, db Querier) bool {
 func IsGlobalAutomationPaused(ctx context.Context, db Querier) bool {
 	return queryFlag(ctx, db, "flag_"+FlagGlobalAutoPause, false)
 }
+
+// IsCustomFlagEnabled looks up an arbitrary flag by its raw site_settings key
+// (without the "flag_" prefix added by IsFeatureEnabled). Use this when you need
+// to query a non-standard key or use a default value other than true.
+// Returns defaultValue when the row is absent, db is nil, or a query error occurs.
+func IsCustomFlagEnabled(ctx context.Context, db Querier, key string, defaultValue bool) bool {
+	return queryFlag(ctx, db, key, defaultValue)
+}

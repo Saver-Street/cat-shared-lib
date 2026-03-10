@@ -54,3 +54,15 @@ func TestFlagConstants_Unique(t *testing.T) {
 		seen[c] = true
 	}
 }
+
+func TestIsCustomFlagEnabled_NilDB_DefaultTrue(t *testing.T) {
+if !IsCustomFlagEnabled(context.TODO(), nil, "any_key", true) {
+t.Error("nil db with defaultValue=true should return true")
+}
+}
+
+func TestIsCustomFlagEnabled_NilDB_DefaultFalse(t *testing.T) {
+if IsCustomFlagEnabled(context.TODO(), nil, "any_key", false) {
+t.Error("nil db with defaultValue=false should return false")
+}
+}

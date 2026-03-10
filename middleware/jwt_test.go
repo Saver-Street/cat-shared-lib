@@ -461,3 +461,64 @@ func TestSubscriptionTier_AllValues(t *testing.T) {
 		}
 	}
 }
+
+func TestRequireSubscriptionTier_AllowsSufficientTier(t *testing.T) {
+handler := RequireSubscriptionTier("pro")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+w.WriteHeader(http.StatusOK)
+}))
+for _, tier := range []string{"pro", "power", "concierge"} {
+ctx := SetSubscriptionTier(context.Background(), tier)
+ctx = context.WithValue(ctx, UserIDKey, "user1")
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(ctx)
+w := httptest.NewRecorder()
+handler.ServeHTTP(w, r)
+if w.Code != http.StatusOK {
+t.Errorf("tier %q: expected 200, got %d", tier, w.Code)
+}
+}
+}
+
+func TestRequireSubscriptionTier_RejectsInsufficientTier(t *testing.T) {
+handler := RequireSubscriptionTier("pro")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+w.WriteHeader(http.StatusOK)
+}))
+for _, tier := range []string{"free", "starter"} {
+ctx := SetSubscriptionTier(context.Background(), tier)
+ctx = context.WithValue(ctx, UserIDKey, "user1")
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(ctx)
+w := httptest.NewRecorder()
+handler.ServeHTTP(w, r)
+if w.Code != http.StatusForbidden {
+t.Errorf("tier %q: expected 403, got %d", tier, w.Code)
+}
+}
+}
+
+func TestRequireSubscriptionTier_RejectsUnauthenticated(t *testing.T) {
+handler := RequireSubscriptionTier("free")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+w.WriteHeader(http.StatusOK)
+}))
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+w := httptest.NewRecorder()
+handler.ServeHTTP(w, r)
+if w.Code != http.StatusUnauthorized {
+t.Errorf("expected 401, got %d", w.Code)
+}
+}
+
+func TestRequireSubscriptionTier_RejectsUnknownTier(t *testing.T) {
+handler := RequireSubscriptionTier("pro")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+w.WriteHeader(http.StatusOK)
+}))
+ctx := SetSubscriptionTier(context.Background(), "enterprise")
+ctx = context.WithValue(ctx, UserIDKey, "user1")
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(ctx)
+w := httptest.NewRecorder()
+handler.ServeHTTP(w, r)
+if w.Code != http.StatusForbidden {
+t.Errorf("expected 403 for unknown tier, got %d", w.Code)
+}
+}

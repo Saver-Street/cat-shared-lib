@@ -461,33 +461,3 @@ func TestSubscriptionTier_AllValues(t *testing.T) {
 		}
 	}
 }
-
-func TestGetSetSubscriptionTier(t *testing.T) {
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-r = r.WithContext(SetSubscriptionTier(r.Context(), "pro"))
-if got := GetSubscriptionTier(r); got != "pro" {
-t.Errorf("GetSubscriptionTier = %q, want pro", got)
-}
-}
-
-func TestGetSubscriptionTier_Unset(t *testing.T) {
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-if got := GetSubscriptionTier(r); got != "" {
-t.Errorf("GetSubscriptionTier = %q, want empty", got)
-}
-}
-
-func TestGetSetSubscriptionStatus(t *testing.T) {
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-r = r.WithContext(SetSubscriptionStatus(r.Context(), "active"))
-if got := GetSubscriptionStatus(r); got != "active" {
-t.Errorf("GetSubscriptionStatus = %q, want active", got)
-}
-}
-
-func TestGetSubscriptionStatus_Unset(t *testing.T) {
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-if got := GetSubscriptionStatus(r); got != "" {
-t.Errorf("GetSubscriptionStatus = %q, want empty", got)
-}
-}

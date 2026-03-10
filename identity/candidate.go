@@ -40,7 +40,7 @@ func LookupCandidateID(ctx context.Context, db Querier, userID string) (string, 
 		"SELECT id FROM candidate_profiles WHERE user_id = $1", userID,
 	).Scan(&candidateID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", fmt.Errorf("candidate profile not found for user %s", userID)
+		return "", fmt.Errorf("identity: candidate profile not found for user %s", userID)
 	}
 	return candidateID, err
 }

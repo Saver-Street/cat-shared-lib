@@ -3,6 +3,7 @@ package email
 import (
 	"context"
 	"errors"
+	"mime/multipart"
 	"net/smtp"
 	"os"
 	"strings"
@@ -354,8 +355,9 @@ func TestEncodeBase64(t *testing.T) {
 	}
 	// Verify it's valid base64 by checking for expected chars.
 	for _, c := range got {
-		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-			(c >= '0' && c <= '9') || c == '+' || c == '/' || c == '=') {
+		isValid := (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+			(c >= '0' && c <= '9') || c == '+' || c == '/' || c == '='
+		if !isValid {
 			t.Errorf("unexpected char %q in base64 output", c)
 		}
 	}
@@ -451,5 +453,55 @@ func TestSend_MultipleRecipients(t *testing.T) {
 type failWriter struct{}
 
 func (f *failWriter) Write(_ []byte) (int, error) {
-return 0, errors.New("write: broken pipe")
+	return 0, errors.New("write: broken pipe")
+}
+
+func TestWriteQP_LongStringFailingWriter(t *testing.T) {
+	// A string longer than 76 chars forces quotedprintable to flush during Write.
+	longStr := strings.Repeat("a", 100)
+	err := writeQP(&failWriter{}, longStr)
+	if err == nil {
+		t.Fatal("expected error from failing writer on long string")
+	}
+}
+
+func TestWritePart_CreatePartError(t *testing.T) {
+	// A multipart.Writer on top of a failWriter will fail when creating a part.
+	mw := multipart.NewWriter(&failWriter{})
+	err := writePart(mw, "text/plain; charset=utf-8", "body text")
+	if err == nil {
+		t.Fatal("expected error when underlying writer fails")
+	}
+	if !strings.Contains(err.Error(), "create part") {
+		t.Errorf("error = %v, want to mention 'create part'", err)
+	}
+}
+
+func TestSend_WithAllRecipientTypes(t *testing.T) {
+	m, cap := newMailerWithCapture(defaultCfg(), nil)
+	err := m.Send(context.Background(), Message{
+		To:      []string{"to@example.com"},
+		CC:      []string{"cc@example.com"},
+		BCC:     []string{"bcc@example.com"},
+		Subject: "All Recipients",
+		HTML:    "<p>Hello</p>",
+		Text:    "Hello",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// All three should appear in the envelope recipients.
+	recipientSet := make(map[string]bool)
+	for _, r := range cap.to {
+		recipientSet[r] = true
+	}
+	if !recipientSet["to@example.com"] {
+		t.Error("expected To address in recipients")
+	}
+	if !recipientSet["cc@example.com"] {
+		t.Error("expected CC address in recipients")
+	}
+	if !recipientSet["bcc@example.com"] {
+		t.Error("expected BCC address in recipients")
+	}
 }

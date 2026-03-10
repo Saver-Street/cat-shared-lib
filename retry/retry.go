@@ -100,7 +100,7 @@ func calcDelay(cfg Config, attempt int) time.Duration {
 
 	if cfg.JitterFraction > 0 {
 		jitter := delay * cfg.JitterFraction
-		delay = delay - jitter + rand.Float64()*2*jitter
+		delay = delay - jitter + rand.Float64()*2*jitter //nolint:gosec
 	}
 
 	if delay < 0 {

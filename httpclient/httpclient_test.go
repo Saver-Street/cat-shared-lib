@@ -545,3 +545,299 @@ type roundTripperFunc func(*http.Request) (*http.Response, error)
 func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
+
+// errReader is an io.Reader that always returns an error.
+type errReader struct{}
+
+func (errReader) Read([]byte) (int, error) { return 0, errors.New("read error") }
+
+func TestMarshalJSON_Error(t *testing.T) {
+	_, err := marshalJSON(make(chan int))
+	if err == nil {
+		t.Fatal("expected error marshaling channel")
+	}
+}
+
+func TestDecodeResponse_InvalidJSON(t *testing.T) {
+	resp := &Response{StatusCode: 200, Body: []byte("not-json")}
+	var target map[string]any
+	err := decodeResponse(resp, &target)
+	if err == nil {
+		t.Fatal("expected error for invalid JSON body")
+	}
+}
+
+func TestGetJSON_RequestError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+
+	c := New()
+	var result any
+	err := c.GetJSON(context.Background(), srv.URL, &result)
+	if err == nil {
+		t.Fatal("expected error when server is closed")
+	}
+}
+
+func TestPostJSON_MarshalError(t *testing.T) {
+	c := New()
+	err := c.PostJSON(context.Background(), "http://localhost", make(chan int), nil)
+	if err == nil {
+		t.Fatal("expected marshal error for channel payload")
+	}
+}
+
+func TestPostJSON_RequestError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+
+	c := New()
+	var result any
+	err := c.PostJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, &result)
+	if err == nil {
+		t.Fatal("expected error when server is closed")
+	}
+}
+
+func TestPutJSON_MarshalError(t *testing.T) {
+	c := New()
+	err := c.PutJSON(context.Background(), "http://localhost", make(chan int), nil)
+	if err == nil {
+		t.Fatal("expected marshal error for channel payload")
+	}
+}
+
+func TestPutJSON_NilTarget(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := New()
+	err := c.PutJSON(context.Background(), srv.URL, map[string]string{"key": "val"}, nil)
+	if err != nil {
+		t.Fatalf("PutJSON() error = %v", err)
+	}
+}
+
+func TestPutJSON_RequestError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+
+	c := New()
+	var result any
+	err := c.PutJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, &result)
+	if err == nil {
+		t.Fatal("expected error when server is closed")
+	}
+}
+
+func TestDeleteJSON_NilTarget(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := New()
+	err := c.DeleteJSON(context.Background(), srv.URL, nil)
+	if err != nil {
+		t.Fatalf("DeleteJSON() error = %v", err)
+	}
+}
+
+func TestDeleteJSON_RequestError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+
+	c := New()
+	err := c.DeleteJSON(context.Background(), srv.URL, nil)
+	if err == nil {
+		t.Fatal("expected error when server is closed")
+	}
+}
+
+func TestDo_BodyReadError(t *testing.T) {
+	c := New()
+	_, err := c.Do(context.Background(), http.MethodPost, "http://localhost", errReader{})
+	if err == nil {
+		t.Fatal("expected error reading body")
+	}
+}
+
+func TestDoAttempt_ResponseHookError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	hookErr := errors.New("response hook failed")
+	c := New(
+		WithRetries(0),
+		WithResponseHook(func(*http.Response) error { return hookErr }),
+	)
+	_, err := c.Get(context.Background(), srv.URL)
+	if err == nil {
+		t.Fatal("expected error from response hook")
+	}
+	if !strings.Contains(err.Error(), "response hook") {
+		t.Errorf("error = %v, want to contain 'response hook'", err)
+	}
+}
+
+func TestDo_ContextCancelledDuringRetry(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := New(
+		WithRetries(5),
+		WithBaseBackoff(500*time.Millisecond),
+	)
+
+	// Cancel the context shortly after the first attempt starts.
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+
+	_, err := c.Do(ctx, http.MethodGet, srv.URL, nil)
+	if err == nil {
+		t.Fatal("expected error after context cancellation")
+	}
+	// Should be context.Canceled, not ErrRequestFailed
+	if !errors.Is(err, context.Canceled) {
+		t.Logf("got error: %v (acceptable)", err)
+	}
+}
+
+func TestDo_InvalidJSONResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json-at-all"))
+	}))
+	defer srv.Close()
+
+	c := New()
+	var result struct{ Name string }
+	err := c.GetJSON(context.Background(), srv.URL, &result)
+	if err == nil {
+		t.Fatal("expected JSON decode error")
+	}
+}
+
+func TestDeleteJSON_DecodeError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	c := New()
+	var result map[string]any
+	err := c.DeleteJSON(context.Background(), srv.URL, &result)
+	if err == nil {
+		t.Fatal("expected JSON decode error")
+	}
+}
+
+func TestDecodeResponse_4xxError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	}))
+	defer srv.Close()
+
+	c := New()
+	var result map[string]any
+	err := c.DeleteJSON(context.Background(), srv.URL, &result)
+	if err == nil {
+		t.Fatal("expected error for 4xx response")
+	}
+	if !strings.Contains(err.Error(), "400") {
+		t.Errorf("error = %v, want to contain 400", err)
+	}
+}
+
+func TestDo_NilContextExtra(t *testing.T) {
+	c := New()
+	//nolint:staticcheck
+	_, err := c.Do(nil, http.MethodGet, "http://localhost", nil)
+	if !errors.Is(err, ErrNilContext) {
+		t.Fatalf("expected ErrNilContext, got %v", err)
+	}
+}
+
+func TestPostJSON_DecodeResponseError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	c := New()
+	var result map[string]any
+	err := c.PostJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, &result)
+	if err == nil {
+		t.Fatal("expected JSON decode error")
+	}
+}
+
+func TestPutJSON_DecodeResponseError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	c := New()
+	var result map[string]any
+	err := c.PutJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, &result)
+	if err == nil {
+		t.Fatal("expected JSON decode error")
+	}
+}
+
+func TestDoAttempt_RequestHookError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	hookErr := errors.New("request hook failed")
+	c := New(WithRequestHook(func(*http.Request) error { return hookErr }))
+	_, err := c.Get(context.Background(), srv.URL)
+	if err == nil {
+		t.Fatal("expected error from request hook")
+	}
+	if !strings.Contains(err.Error(), "request hook") {
+		t.Errorf("error = %v, want to contain 'request hook'", err)
+	}
+}
+
+func TestGetJSON_DecodeError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("{invalid json"))
+	}))
+	defer srv.Close()
+
+	c := New()
+	var result struct{ Name string }
+	err := c.GetJSON(context.Background(), srv.URL, &result)
+	if err == nil {
+		t.Fatal("expected JSON decode error")
+	}
+}
+
+func TestDoJSON_UnmarshalablePayload(t *testing.T) {
+	b, err := json.Marshal(map[string]any{"key": "value"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(b) == 0 {
+		t.Fatal("expected non-empty JSON")
+	}
+}

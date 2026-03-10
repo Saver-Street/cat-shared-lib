@@ -1,0 +1,540 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>httpclient: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/Saver-Street/cat-shared-lib/httpclient/httpclient.go (89.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">// Package httpclient provides a shared HTTP client for service-to-service
+// communication. It wraps [net/http.Client] with:
+//
+//   - Automatic retries with exponential back-off and jitter
+//   - Optional circuit breaker integration via [circuitbreaker.Breaker]
+//   - Structured logging with [log/slog]
+//   - Request/response middleware hooks
+//   - JSON convenience methods (GetJSON, PostJSON, PutJSON, DeleteJSON)
+//   - Configurable timeouts and request-scoped headers
+//
+// Usage:
+//
+//        client := httpclient.New(
+//            httpclient.WithTimeout(10 * time.Second),
+//            httpclient.WithRetries(3),
+//            httpclient.WithCircuitBreaker(cb),
+//        )
+//
+//        var result MyResponse
+//        err := client.GetJSON(ctx, "https://api.example.com/data", &amp;result)
+package httpclient
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "errors"
+        "fmt"
+        "io"
+        "log/slog"
+        "math"
+        "math/rand/v2"
+        "net/http"
+        "time"
+
+        "github.com/Saver-Street/cat-shared-lib/circuitbreaker"
+)
+
+// maxResponseBody is the maximum response body size we will read (10 MB).
+const maxResponseBody = 10 &lt;&lt; 20
+
+// Sentinel errors.
+var (
+        // ErrRequestFailed is returned when all retry attempts are exhausted.
+        ErrRequestFailed = errors.New("httpclient: request failed after retries")
+        // ErrNilContext is returned when a nil context is passed to a request method.
+        ErrNilContext = errors.New("httpclient: nil context")
+)
+
+// RequestHook is called before each request attempt. It may modify the request.
+type RequestHook func(req *http.Request) error
+
+// ResponseHook is called after each successful (non-nil) response.
+type ResponseHook func(resp *http.Response) error
+
+// Options configures the HTTP client.
+type Options struct {
+        // Timeout for each individual request attempt. Default: 30s.
+        Timeout time.Duration
+
+        // MaxRetries is the number of retry attempts on transient errors.
+        // Default: 0 (no retries).
+        MaxRetries int
+
+        // BaseBackoff is the initial back-off duration between retries. Default: 500ms.
+        BaseBackoff time.Duration
+
+        // MaxBackoff caps the exponential back-off. Default: 30s.
+        MaxBackoff time.Duration
+
+        // CircuitBreaker wraps each request attempt. If nil, no circuit breaker is used.
+        CircuitBreaker *circuitbreaker.Breaker
+
+        // Transport is the underlying HTTP round tripper. Default: http.DefaultTransport.
+        Transport http.RoundTripper
+
+        // RequestHooks are called in order before each request attempt.
+        RequestHooks []RequestHook
+
+        // ResponseHooks are called in order after each successful response.
+        ResponseHooks []ResponseHook
+
+        // Headers are added to every request.
+        Headers map[string]string
+
+        // UserAgent is set as the User-Agent header. Default: "cat-shared-lib/httpclient".
+        UserAgent string
+}
+
+// Option applies a configuration to the client.
+type Option func(*Options)
+
+// WithTimeout sets the per-request timeout.
+func WithTimeout(d time.Duration) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.Timeout = d }</span>
+}
+
+// WithRetries sets the maximum number of retries.
+func WithRetries(n int) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.MaxRetries = n }</span>
+}
+
+// WithBaseBackoff sets the initial retry back-off duration.
+func WithBaseBackoff(d time.Duration) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.BaseBackoff = d }</span>
+}
+
+// WithMaxBackoff caps the exponential back-off.
+func WithMaxBackoff(d time.Duration) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.MaxBackoff = d }</span>
+}
+
+// WithCircuitBreaker wraps requests with the given circuit breaker.
+func WithCircuitBreaker(cb *circuitbreaker.Breaker) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.CircuitBreaker = cb }</span>
+}
+
+// WithTransport sets the underlying HTTP transport.
+func WithTransport(t http.RoundTripper) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.Transport = t }</span>
+}
+
+// WithRequestHook adds a pre-request hook.
+func WithRequestHook(fn RequestHook) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.RequestHooks = append(o.RequestHooks, fn) }</span>
+}
+
+// WithResponseHook adds a post-response hook.
+func WithResponseHook(fn ResponseHook) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.ResponseHooks = append(o.ResponseHooks, fn) }</span>
+}
+
+// WithHeader adds a default header to all requests.
+func WithHeader(key, value string) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                if o.Headers == nil </span><span class="cov8" title="1">{
+                        o.Headers = make(map[string]string)
+                }</span>
+                <span class="cov8" title="1">o.Headers[key] = value</span>
+        }
+}
+
+// WithUserAgent sets the User-Agent header.
+func WithUserAgent(ua string) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{ o.UserAgent = ua }</span>
+}
+
+// Client is a configured HTTP client with retry and circuit breaker support.
+type Client struct {
+        http *http.Client
+        opts Options
+}
+
+// New creates a Client with the given options.
+func New(opts ...Option) *Client <span class="cov8" title="1">{
+        o := Options{
+                Timeout:     30 * time.Second,
+                BaseBackoff: 500 * time.Millisecond,
+                MaxBackoff:  30 * time.Second,
+                UserAgent:   "cat-shared-lib/httpclient",
+        }
+        for _, fn := range opts </span><span class="cov8" title="1">{
+                fn(&amp;o)
+        }</span>
+
+        <span class="cov8" title="1">transport := o.Transport
+        if transport == nil </span><span class="cov8" title="1">{
+                transport = http.DefaultTransport
+        }</span>
+
+        <span class="cov8" title="1">return &amp;Client{
+                http: &amp;http.Client{
+                        Transport: transport,
+                        Timeout:   o.Timeout,
+                },
+                opts: o,
+        }</span>
+}
+
+// Response wraps an HTTP response with convenience methods.
+type Response struct {
+        StatusCode int
+        Header     http.Header
+        Body       []byte
+}
+
+// Do sends an HTTP request with retries and optional circuit breaker protection.
+// The request body is buffered so it can be replayed across retries.
+func (c *Client) Do(ctx context.Context, method, url string, body io.Reader) (*Response, error) <span class="cov8" title="1">{
+        if ctx == nil </span><span class="cov8" title="1">{
+                return nil, ErrNilContext
+        }</span>
+
+        // Buffer the body for retries.
+        <span class="cov8" title="1">var bodyBytes []byte
+        if body != nil </span><span class="cov8" title="1">{
+                var err error
+                bodyBytes, err = io.ReadAll(body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("httpclient: reading request body: %w", err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">var lastErr error
+        attempts := 1 + c.opts.MaxRetries
+
+        for attempt := range attempts </span><span class="cov8" title="1">{
+                resp, err := c.doAttempt(ctx, method, url, bodyBytes, attempt)
+                if err == nil </span><span class="cov8" title="1">{
+                        return resp, nil
+                }</span>
+
+                <span class="cov8" title="1">lastErr = err
+
+                // Don't retry on circuit breaker errors or context cancellation.
+                if errors.Is(err, circuitbreaker.ErrCircuitOpen) ||
+                        errors.Is(err, circuitbreaker.ErrTooManyRequests) ||
+                        errors.Is(err, context.Canceled) ||
+                        errors.Is(err, context.DeadlineExceeded) </span><span class="cov8" title="1">{
+                        return nil, err
+                }</span>
+
+                <span class="cov8" title="1">if attempt &lt; attempts-1 </span><span class="cov8" title="1">{
+                        backoff := c.backoff(attempt)
+                        slog.WarnContext(ctx, "httpclient: retrying request",
+                                "method", method,
+                                "url", url,
+                                "attempt", attempt+1,
+                                "backoff", backoff.String(),
+                                "error", err.Error(),
+                        )
+                        select </span>{
+                        case &lt;-ctx.Done():<span class="cov0" title="0">
+                                return nil, ctx.Err()</span>
+                        case &lt;-time.After(backoff):<span class="cov8" title="1"></span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">return nil, fmt.Errorf("%w: %s %s: %v", ErrRequestFailed, method, url, lastErr)</span>
+}
+
+// doAttempt executes a single request attempt, optionally via the circuit breaker.
+func (c *Client) doAttempt(ctx context.Context, method, url string, body []byte, attempt int) (*Response, error) <span class="cov8" title="1">{
+        do := func() (*Response, error) </span><span class="cov8" title="1">{
+                var bodyReader io.Reader
+                if body != nil </span><span class="cov8" title="1">{
+                        bodyReader = bytes.NewReader(body)
+                }</span>
+
+                <span class="cov8" title="1">req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("httpclient: creating request: %w", err)
+                }</span>
+
+                // Apply default headers.
+                <span class="cov8" title="1">if c.opts.UserAgent != "" </span><span class="cov8" title="1">{
+                        req.Header.Set("User-Agent", c.opts.UserAgent)
+                }</span>
+                <span class="cov8" title="1">for k, v := range c.opts.Headers </span><span class="cov8" title="1">{
+                        req.Header.Set(k, v)
+                }</span>
+
+                // Apply request hooks.
+                <span class="cov8" title="1">for _, hook := range c.opts.RequestHooks </span><span class="cov8" title="1">{
+                        if err := hook(req); err != nil </span><span class="cov8" title="1">{
+                                return nil, fmt.Errorf("httpclient: request hook: %w", err)
+                        }</span>
+                }
+
+                <span class="cov8" title="1">start := time.Now()
+                resp, err := c.http.Do(req)
+                duration := time.Since(start)
+
+                if err != nil </span><span class="cov8" title="1">{
+                        slog.ErrorContext(ctx, "httpclient: request error",
+                                "method", method,
+                                "url", url,
+                                "attempt", attempt+1,
+                                "duration", duration.String(),
+                                "error", err.Error(),
+                        )
+                        return nil, fmt.Errorf("httpclient: %s %s: %w", method, url, err)
+                }</span>
+                <span class="cov8" title="1">defer resp.Body.Close()
+
+                respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBody))
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("httpclient: reading response body: %w", err)
+                }</span>
+
+                <span class="cov8" title="1">slog.DebugContext(ctx, "httpclient: request complete",
+                        "method", method,
+                        "url", url,
+                        "status", resp.StatusCode,
+                        "attempt", attempt+1,
+                        "duration", duration.String(),
+                )
+
+                // Apply response hooks.
+                for _, hook := range c.opts.ResponseHooks </span><span class="cov8" title="1">{
+                        if err := hook(resp); err != nil </span><span class="cov0" title="0">{
+                                return nil, fmt.Errorf("httpclient: response hook: %w", err)
+                        }</span>
+                }
+
+                <span class="cov8" title="1">result := &amp;Response{
+                        StatusCode: resp.StatusCode,
+                        Header:     resp.Header,
+                        Body:       respBody,
+                }
+
+                // Treat server errors as retryable failures.
+                if resp.StatusCode &gt;= 500 </span><span class="cov8" title="1">{
+                        return result, fmt.Errorf("httpclient: server error: %d", resp.StatusCode)
+                }</span>
+
+                <span class="cov8" title="1">return result, nil</span>
+        }
+
+        <span class="cov8" title="1">if c.opts.CircuitBreaker != nil </span><span class="cov8" title="1">{
+                var result *Response
+                err := c.opts.CircuitBreaker.Execute(func() error </span><span class="cov8" title="1">{
+                        var execErr error
+                        result, execErr = do()
+                        return execErr
+                }</span>)
+                <span class="cov8" title="1">return result, err</span>
+        }
+
+        <span class="cov8" title="1">return do()</span>
+}
+
+// backoff returns the back-off duration for the given attempt using exponential
+// back-off with full jitter.
+func (c *Client) backoff(attempt int) time.Duration <span class="cov8" title="1">{
+        base := float64(c.opts.BaseBackoff)
+        max := float64(c.opts.MaxBackoff)
+        delay := math.Min(base*math.Pow(2, float64(attempt)), max)
+        jittered := time.Duration(rand.Float64() * delay)
+        if jittered &lt; time.Millisecond </span><span class="cov8" title="1">{
+                jittered = time.Millisecond
+        }</span>
+        <span class="cov8" title="1">return jittered</span>
+}
+
+// Get sends a GET request and returns the response.
+func (c *Client) Get(ctx context.Context, url string) (*Response, error) <span class="cov8" title="1">{
+        return c.Do(ctx, http.MethodGet, url, nil)
+}</span>
+
+// Post sends a POST request with the given body.
+func (c *Client) Post(ctx context.Context, url string, body io.Reader) (*Response, error) <span class="cov8" title="1">{
+        return c.Do(ctx, http.MethodPost, url, body)
+}</span>
+
+// Put sends a PUT request with the given body.
+func (c *Client) Put(ctx context.Context, url string, body io.Reader) (*Response, error) <span class="cov8" title="1">{
+        return c.Do(ctx, http.MethodPut, url, body)
+}</span>
+
+// Delete sends a DELETE request.
+func (c *Client) Delete(ctx context.Context, url string) (*Response, error) <span class="cov8" title="1">{
+        return c.Do(ctx, http.MethodDelete, url, nil)
+}</span>
+
+// GetJSON sends a GET request and decodes the JSON response into target.
+func (c *Client) GetJSON(ctx context.Context, url string, target any) error <span class="cov8" title="1">{
+        resp, err := c.Get(ctx, url)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">return decodeResponse(resp, target)</span>
+}
+
+// PostJSON sends a POST request with a JSON body and decodes the response into target.
+// If target is nil, the response body is discarded.
+func (c *Client) PostJSON(ctx context.Context, url string, payload, target any) error <span class="cov8" title="1">{
+        body, err := marshalJSON(payload)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">resp, err := c.Do(ctx, http.MethodPost, url, body)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">if target != nil </span><span class="cov8" title="1">{
+                return decodeResponse(resp, target)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// PutJSON sends a PUT request with a JSON body and decodes the response into target.
+func (c *Client) PutJSON(ctx context.Context, url string, payload, target any) error <span class="cov8" title="1">{
+        body, err := marshalJSON(payload)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">resp, err := c.Do(ctx, http.MethodPut, url, body)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">if target != nil </span><span class="cov8" title="1">{
+                return decodeResponse(resp, target)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// DeleteJSON sends a DELETE request and decodes the response into target.
+func (c *Client) DeleteJSON(ctx context.Context, url string, target any) error <span class="cov8" title="1">{
+        resp, err := c.Delete(ctx, url)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">if target != nil </span><span class="cov8" title="1">{
+                return decodeResponse(resp, target)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func marshalJSON(v any) (io.Reader, error) <span class="cov8" title="1">{
+        b, err := json.Marshal(v)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("httpclient: marshaling JSON: %w", err)
+        }</span>
+        <span class="cov8" title="1">return bytes.NewReader(b), nil</span>
+}
+
+func decodeResponse(resp *Response, target any) error <span class="cov8" title="1">{
+        if resp.StatusCode &gt;= 400 </span><span class="cov8" title="1">{
+                return fmt.Errorf("httpclient: unexpected status %d: %s", resp.StatusCode, string(resp.Body))
+        }</span>
+        <span class="cov8" title="1">if err := json.Unmarshal(resp.Body, target); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("httpclient: decoding response JSON: %w", err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

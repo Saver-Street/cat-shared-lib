@@ -237,7 +237,7 @@ func (c *Client) Do(ctx context.Context, method, url string, body io.Reader) (*R
 		}
 	}
 
-	return nil, fmt.Errorf("%w: %s %s: %v", ErrRequestFailed, method, url, lastErr)
+	return nil, fmt.Errorf("%w: %s %s: %w", ErrRequestFailed, method, url, lastErr)
 }
 
 // doAttempt executes a single request attempt, optionally via the circuit breaker.
@@ -282,7 +282,7 @@ func (c *Client) doAttempt(ctx context.Context, method, url string, body []byte,
 			)
 			return nil, fmt.Errorf("httpclient: %s %s: %w", method, url, err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBody))
 		if err != nil {
@@ -337,7 +337,7 @@ func (c *Client) backoff(attempt int) time.Duration {
 	base := float64(c.opts.BaseBackoff)
 	max := float64(c.opts.MaxBackoff)
 	delay := math.Min(base*math.Pow(2, float64(attempt)), max)
-	jittered := time.Duration(rand.Float64() * delay)
+	jittered := time.Duration(rand.Float64() * delay) //nolint:gosec
 	if jittered < time.Millisecond {
 		jittered = time.Millisecond
 	}

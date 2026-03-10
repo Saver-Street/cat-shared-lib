@@ -10,9 +10,13 @@ import (
 )
 
 // Pagination holds parsed page/limit/offset values from query parameters.
+// For domain-layer pagination, see types.PaginationParams and types.NormalizePage.
 type Pagination struct {
-	Page   int
-	Limit  int
+	// Page is the 1-based page number (minimum 1).
+	Page int
+	// Limit is the maximum number of rows to return per page.
+	Limit int
+	// Offset is the number of rows to skip, derived as (Page-1)*Limit.
 	Offset int
 }
 
@@ -62,7 +66,8 @@ func RequireURLParam(r *http.Request, key string, paramFn URLParamFunc) (string,
 }
 
 // RequireURLParamInt extracts a URL parameter as an int64.
-// Returns an error if the parameter is empty, missing, or not a valid integer.
+// Returns an error if the parameter is empty, missing, not a valid integer, or not positive (> 0).
+// Use RequireQueryParamInt for parameters that may be zero or negative.
 func RequireURLParamInt(r *http.Request, key string, paramFn URLParamFunc) (int64, error) {
 	val, err := RequireURLParam(r, key, paramFn)
 	if err != nil {
@@ -126,6 +131,7 @@ func OptionalQueryInt(q url.Values, key string, defaultValue int64) int64 {
 
 // RequireQueryParamInt returns the query parameter parsed as int64.
 // Returns an error if the parameter is absent, empty, or not a valid integer.
+// Unlike RequireURLParamInt, zero and negative values are accepted.
 func RequireQueryParamInt(q url.Values, key string) (int64, error) {
 	val, err := RequireQueryParam(q, key)
 	if err != nil {

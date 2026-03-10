@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -454,5 +455,15 @@ func TestNewPool_BadDSN(t *testing.T) {
 	_, err := NewPool(context.Background(), PoolConfig{DSN: "://invalid"})
 	if err == nil {
 		t.Fatal("expected error for bad DSN")
+	}
+}
+
+func TestNewPool_ConnectionRefused(t *testing.T) {
+	// Valid DSN but unreachable host - tests the Ping failure path
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_, err := NewPool(ctx, PoolConfig{DSN: "postgres://localhost:1/nonexistent?connect_timeout=1"})
+	if err == nil {
+		t.Fatal("expected error for unreachable host")
 	}
 }

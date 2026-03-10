@@ -1,9 +1,10 @@
 package identity
 
 import (
-	"context"
 	"net/http"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/middleware"
 )
 
 func TestGetUserID_Empty(t *testing.T) {
@@ -15,8 +16,7 @@ func TestGetUserID_Empty(t *testing.T) {
 
 func TestGetUserID_FromContext(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), userIDKey, "user-123")
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetUserID(r.Context(), "user-123"))
 	if id := GetUserID(r); id != "user-123" {
 		t.Errorf("GetUserID = %q, want user-123", id)
 	}
@@ -31,8 +31,7 @@ func TestGetExtCandidateID_Empty(t *testing.T) {
 
 func TestGetExtCandidateID_FromContext(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), extCandidateIDKey, "cand-456")
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetExtCandidateID(r.Context(), "cand-456"))
 	if id := GetExtCandidateID(r); id != "cand-456" {
 		t.Errorf("GetExtCandidateID = %q, want cand-456", id)
 	}
@@ -51,8 +50,8 @@ func TestResolveCandidate_NoContext(t *testing.T) {
 
 func TestResolveCandidate_ExtCandidateIDWins(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), extCandidateIDKey, "ext-cand-789")
-	ctx = context.WithValue(ctx, userIDKey, "user-111")
+	ctx := middleware.SetExtCandidateID(r.Context(), "ext-cand-789")
+	ctx = middleware.SetUserID(ctx, "user-111")
 	r = r.WithContext(ctx)
 
 	// ext candidate ID takes priority over user lookup
@@ -65,28 +64,25 @@ func TestResolveCandidate_ExtCandidateIDWins(t *testing.T) {
 	}
 }
 
-func TestGetUserID_WrongType(t *testing.T) {
+func TestGetUserID_EmptyValue(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), userIDKey, 12345)
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetUserID(r.Context(), ""))
 	if id := GetUserID(r); id != "" {
-		t.Errorf("non-string context value should return empty, got %q", id)
+		t.Errorf("empty user ID should return empty, got %q", id)
 	}
 }
 
-func TestGetExtCandidateID_WrongType(t *testing.T) {
+func TestGetExtCandidateID_EmptyValue(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), extCandidateIDKey, 99)
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetExtCandidateID(r.Context(), ""))
 	if id := GetExtCandidateID(r); id != "" {
-		t.Errorf("non-string context value should return empty, got %q", id)
+		t.Errorf("empty ext candidate ID should return empty, got %q", id)
 	}
 }
 
 func BenchmarkGetUserID(b *testing.B) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), userIDKey, "user-123")
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetUserID(r.Context(), "user-123"))
 	for b.Loop() {
 		GetUserID(r)
 	}
@@ -94,8 +90,7 @@ func BenchmarkGetUserID(b *testing.B) {
 
 func BenchmarkGetExtCandidateID(b *testing.B) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), extCandidateIDKey, "cand-456")
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetExtCandidateID(r.Context(), "cand-456"))
 	for b.Loop() {
 		GetExtCandidateID(r)
 	}

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/Saver-Street/cat-shared-lib/middleware"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -43,8 +44,7 @@ func TestResolveCandidate_ConcurrentLookups(t *testing.T) {
 				}}
 			}}
 			r, _ := http.NewRequest(http.MethodGet, "/", nil)
-			ctx := context.WithValue(r.Context(), userIDKey, "user-"+string(rune('A'+i%26)))
-			r = r.WithContext(ctx)
+			r = r.WithContext(middleware.SetUserID(r.Context(), "user-"+string(rune('A'+i%26))))
 
 			id, err := ResolveCandidate(r, db)
 			if err != nil {
@@ -84,8 +84,7 @@ func FuzzGetUserID(f *testing.F) {
 	f.Fuzz(func(t *testing.T, userID string) {
 		r, _ := http.NewRequest(http.MethodGet, "/", nil)
 		if userID != "" {
-			ctx := context.WithValue(r.Context(), userIDKey, userID)
-			r = r.WithContext(ctx)
+			r = r.WithContext(middleware.SetUserID(r.Context(), userID))
 		}
 		got := GetUserID(r)
 		if userID != "" && got != userID {

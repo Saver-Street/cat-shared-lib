@@ -65,6 +65,11 @@ func SetUserEmail(ctx context.Context, email string) context.Context {
 	return context.WithValue(ctx, UserEmailKey, email)
 }
 
+// SetExtCandidateID returns a new context with the extension candidate ID set.
+func SetExtCandidateID(ctx context.Context, candidateID string) context.Context {
+	return context.WithValue(ctx, ExtCandidateIDKey, candidateID)
+}
+
 // RequireAuth is a middleware that rejects unauthenticated requests.
 // It expects the user ID to have been set in context by an upstream auth middleware.
 func RequireAuth(next http.Handler) http.Handler {

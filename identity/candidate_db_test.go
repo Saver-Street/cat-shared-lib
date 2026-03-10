@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Saver-Street/cat-shared-lib/middleware"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -114,8 +115,7 @@ func TestResolveCandidate_UserID_LookupSuccess(t *testing.T) {
 	}}
 
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), userIDKey, "user-99")
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetUserID(r.Context(), "user-99"))
 
 	id, err := ResolveCandidate(r, db)
 	if err != nil {
@@ -132,8 +132,7 @@ func TestResolveCandidate_UserID_LookupNotFound(t *testing.T) {
 	}}
 
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), userIDKey, "user-no-profile")
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetUserID(r.Context(), "user-no-profile"))
 
 	id, err := ResolveCandidate(r, db)
 	if err == nil {
@@ -150,8 +149,7 @@ func TestResolveCandidate_UserID_DBError(t *testing.T) {
 	}}
 
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), userIDKey, "user-err")
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetUserID(r.Context(), "user-err"))
 
 	_, err := ResolveCandidate(r, db)
 	if err == nil {
@@ -168,8 +166,8 @@ func TestResolveCandidate_ExtCandidateIDTakesPriorityOverDB(t *testing.T) {
 	}}
 
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), extCandidateIDKey, "ext-cand-1")
-	ctx = context.WithValue(ctx, userIDKey, "user-1")
+	ctx := middleware.SetExtCandidateID(r.Context(), "ext-cand-1")
+	ctx = middleware.SetUserID(ctx, "user-1")
 	r = r.WithContext(ctx)
 
 	id, err := ResolveCandidate(r, db)
@@ -199,8 +197,7 @@ func BenchmarkLookupCandidateID(b *testing.B) {
 
 func BenchmarkResolveCandidate_ExtID(b *testing.B) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(r.Context(), extCandidateIDKey, "ext-cand-1")
-	r = r.WithContext(ctx)
+	r = r.WithContext(middleware.SetExtCandidateID(r.Context(), "ext-cand-1"))
 	for b.Loop() {
 		ResolveCandidate(r, nil)
 	}

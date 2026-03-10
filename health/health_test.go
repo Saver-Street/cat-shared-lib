@@ -251,3 +251,48 @@ func TestHandler_EncodingError(t *testing.T) {
 	// Must not panic when encoding fails.
 	h.ServeHTTP(w, req)
 }
+
+func TestHandler_PanicChecker(t *testing.T) {
+	panicking := NewChecker("panicker", func(ctx context.Context) error {
+		panic("something went terribly wrong")
+	})
+	healthy := NewChecker("db", func(ctx context.Context) error { return nil })
+
+	h := Handler("svc", "v1.0.0", panicking, healthy)
+	rr := httptest.NewRecorder()
+	// Must not propagate the panic — should return degraded.
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
+
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", rr.Code)
+	}
+	var s Status
+	json.NewDecoder(rr.Body).Decode(&s)
+	if s.Status != "degraded" {
+		t.Errorf("expected degraded, got %s", s.Status)
+	}
+	if s.Checks["db"] != "ok" {
+		t.Errorf("expected db ok, got %s", s.Checks["db"])
+	}
+	if s.Checks["panicker"] == "" {
+		t.Error("expected panicker to record an error, got empty string")
+	}
+}
+
+func TestStatus_IsHealthy(t *testing.T) {
+	if s := (Status{Status: "ok"}); !s.IsHealthy() {
+		t.Error("expected IsHealthy() true for status=ok")
+	}
+	if s := (Status{Status: "degraded"}); s.IsHealthy() {
+		t.Error("expected IsHealthy() false for status=degraded")
+	}
+}
+
+func TestStatus_HasErrors(t *testing.T) {
+	if s := (Status{Status: "ok"}); s.HasErrors() {
+		t.Error("expected HasErrors() false for status=ok")
+	}
+	if s := (Status{Status: "degraded"}); !s.HasErrors() {
+		t.Error("expected HasErrors() true for status=degraded")
+	}
+}

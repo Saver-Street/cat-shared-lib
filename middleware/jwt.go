@@ -122,17 +122,17 @@ func RequireAdmin(next http.Handler) http.Handler {
 // RequireRole returns a middleware that allows only users with the given role.
 // Returns 401 if the request has no authenticated user, 403 if the role does not match.
 func RequireRole(role string) func(http.Handler) http.Handler {
-return func(next http.Handler) http.Handler {
-return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if GetUserID(r) == "" {
-response.Error(w, http.StatusUnauthorized, "Authentication required")
-return
-}
-if GetUserRole(r) != role {
-response.Error(w, http.StatusForbidden, "Insufficient role")
-return
-}
-next.ServeHTTP(w, r)
-})
-}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if GetUserID(r) == "" {
+				response.Error(w, http.StatusUnauthorized, "Authentication required")
+				return
+			}
+			if GetUserRole(r) != role {
+				response.Error(w, http.StatusForbidden, "Insufficient role")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

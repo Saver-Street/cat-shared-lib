@@ -4,6 +4,7 @@ package health
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -12,11 +13,21 @@ import (
 
 // Status represents a health check response.
 type Status struct {
-	Status  string            `json:"status"`
-	Service string            `json:"service"`
-	Version string            `json:"version"`
-	Checks  map[string]string `json:"checks,omitempty"`
+	// Status is "ok" when all checks pass, or "degraded" when one or more fail.
+	Status string `json:"status"`
+	// Service is the name of the service reported by this health endpoint.
+	Service string `json:"service"`
+	// Version is the running binary version.
+	Version string `json:"version"`
+	// Checks contains per-checker results; omitted when no checkers are registered.
+	Checks map[string]string `json:"checks,omitempty"`
 }
+
+// IsHealthy reports whether all registered checks passed (status == "ok").
+func (s Status) IsHealthy() bool { return s.Status == "ok" }
+
+// HasErrors reports whether at least one registered check failed.
+func (s Status) HasErrors() bool { return s.Status != "ok" }
 
 // Checker performs a named health check and returns an error if unhealthy.
 type Checker interface {
@@ -59,11 +70,19 @@ func Handler(service, version string, checkers ...Checker) http.HandlerFunc {
 				wg.Add(1)
 				go func(c Checker) {
 					defer wg.Done()
-					err := c.Check(ctx)
+					var checkErr error
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								checkErr = fmt.Errorf("panic: %v", r)
+							}
+						}()
+						checkErr = c.Check(ctx)
+					}()
 					mu.Lock()
 					defer mu.Unlock()
-					if err != nil {
-						status.Checks[c.Name()] = err.Error()
+					if checkErr != nil {
+						status.Checks[c.Name()] = checkErr.Error()
 						status.Status = "degraded"
 					} else {
 						status.Checks[c.Name()] = "ok"

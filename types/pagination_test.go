@@ -79,3 +79,43 @@ func BenchmarkNormalizePage(b *testing.B) {
 		NormalizePage(5, 25)
 	}
 }
+
+func TestPaginationParams_HasNextPage(t *testing.T) {
+	p := NormalizePage(1, 10)
+	if !p.HasNextPage(25) {
+		t.Error("page 1 of 25 items at limit 10 should have next page")
+	}
+	if p.HasNextPage(10) {
+		t.Error("page 1 of 10 items at limit 10 should NOT have next page")
+	}
+	if p.HasNextPage(5) {
+		t.Error("page 1 of 5 items at limit 10 should NOT have next page (fewer than limit)")
+	}
+}
+
+func TestPaginationParams_HasNextPage_LastPage(t *testing.T) {
+	p := NormalizePage(3, 10) // offset=20
+	if p.HasNextPage(30) {
+		t.Error("page 3 of 30 items at limit 10 should NOT have next page (exact)")
+	}
+	if !p.HasNextPage(31) {
+		t.Error("page 3 of 31 items at limit 10 should have next page")
+	}
+}
+
+func TestPaginationParams_IsLastPage(t *testing.T) {
+	p := NormalizePage(2, 10) // offset=10
+	if !p.IsLastPage(15) {
+		t.Error("page 2 with 15 total should be last page")
+	}
+	if p.IsLastPage(25) {
+		t.Error("page 2 with 25 total should NOT be last page")
+	}
+}
+
+func TestPaginationParams_HasNextPage_ZeroTotal(t *testing.T) {
+	p := NormalizePage(1, 10)
+	if p.HasNextPage(0) {
+		t.Error("no items should not have next page")
+	}
+}

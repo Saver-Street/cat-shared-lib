@@ -387,32 +387,32 @@ func BenchmarkRedactPII_Mixed(b *testing.B) {
 }
 
 func TestRedactPII_DeepNesting_Truncated(t *testing.T) {
-// Build a map nested deeper than maxRedactDepth to exercise the truncation path.
-var build func(depth int) map[string]any
-build = func(depth int) map[string]any {
-if depth == 0 {
-return map[string]any{"leaf": "value"}
-}
-return map[string]any{"nested": build(depth - 1)}
-}
-deep := build(maxRedactDepth + 5)
-result := RedactPII(deep)
-// Traverse until we hit the truncation sentinel.
-var traverse func(v any, depth int) bool
-traverse = func(v any, depth int) bool {
-if s, ok := v.(string); ok && s == "[TRUNCATED]" {
-return true
-}
-if m, ok := v.(map[string]any); ok {
-for _, child := range m {
-if traverse(child, depth+1) {
-return true
-}
-}
-}
-return false
-}
-if !traverse(result, 0) {
-t.Error("expected [TRUNCATED] sentinel in deeply nested RedactPII output")
-}
+	// Build a map nested deeper than maxRedactDepth to exercise the truncation path.
+	var build func(depth int) map[string]any
+	build = func(depth int) map[string]any {
+		if depth == 0 {
+			return map[string]any{"leaf": "value"}
+		}
+		return map[string]any{"nested": build(depth - 1)}
+	}
+	deep := build(maxRedactDepth + 5)
+	result := RedactPII(deep)
+	// Traverse until we hit the truncation sentinel.
+	var traverse func(v any, depth int) bool
+	traverse = func(v any, depth int) bool {
+		if s, ok := v.(string); ok && s == "[TRUNCATED]" {
+			return true
+		}
+		if m, ok := v.(map[string]any); ok {
+			for _, child := range m {
+				if traverse(child, depth+1) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	if !traverse(result, 0) {
+		t.Error("expected [TRUNCATED] sentinel in deeply nested RedactPII output")
+	}
 }

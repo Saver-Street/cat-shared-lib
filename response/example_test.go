@@ -69,3 +69,29 @@ func ExampleDecodeOrFail() {
 	// true
 	// json
 }
+
+func ExampleNoContent() {
+	w := httptest.NewRecorder()
+	response.NoContent(w)
+	fmt.Println(w.Code)
+	// Output:
+	// 204
+}
+
+func ExampleNotFound() {
+	w := httptest.NewRecorder()
+	response.NotFound(w, "item not found")
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 404
+	// {"error":"item not found"}
+}
+
+func ExampleConflict() {
+	w := httptest.NewRecorder()
+	response.Conflict(w, "duplicate key")
+	fmt.Println(w.Code)
+	// Output:
+	// 409
+}

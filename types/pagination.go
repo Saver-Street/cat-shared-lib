@@ -39,3 +39,12 @@ func NormalizePage(page, limit int) PaginationParams {
 		Page:   page,
 	}
 }
+
+// TotalPages returns the total number of pages required to display all items at the
+// current limit. Returns 0 when total is zero or negative.
+func (p PaginationParams) TotalPages(total int) int {
+	if total <= 0 {
+		return 0
+	}
+	return (total + p.Limit - 1) / p.Limit
+}

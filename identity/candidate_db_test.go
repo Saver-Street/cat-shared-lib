@@ -60,7 +60,7 @@ func TestLookupCandidateID_NotFound(t *testing.T) {
 	}
 	if !errors.Is(err, nil) {
 		// The error wraps the message, not pgx.ErrNoRows
-		expected := "candidate profile not found for user user-missing"
+		expected := "identity: candidate profile not found for user user-missing"
 		if err.Error() != expected {
 			t.Errorf("error = %q, want %q", err.Error(), expected)
 		}

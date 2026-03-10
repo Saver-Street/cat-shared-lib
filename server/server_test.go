@@ -161,12 +161,15 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 	addr := ln.Addr().String()
 	ln.Close()
 
+	cleanupCalled := false
 	done := make(chan error, 1)
 	go func() {
 		done <- ListenAndServe(Config{
 			Addr:            addr,
 			Handler:         mux,
 			ShutdownTimeout: 1 * time.Millisecond,
+		}, func() {
+			cleanupCalled = true
 		})
 	}()
 
@@ -198,6 +201,10 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for shutdown")
+	}
+
+	if !cleanupCalled {
+		t.Error("cleanup should be called even on shutdown timeout")
 	}
 
 	// Release the blocked handler to avoid leaking goroutines

@@ -1,3 +1,4 @@
+// Package entitlements provides subscription tier lookups and usage checks.
 package entitlements
 
 // GetLimitsForTier returns the TierLimits for the given tier name.

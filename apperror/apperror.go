@@ -4,6 +4,7 @@
 package apperror
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -124,7 +125,8 @@ func HTTPStatus(err error) int {
 	if err == nil {
 		return http.StatusOK
 	}
-	if e, ok := err.(*Error); ok {
+	var e *Error
+	if errors.As(err, &e) {
 		return e.HTTPStatus
 	}
 	return http.StatusInternalServerError
@@ -132,7 +134,8 @@ func HTTPStatus(err error) int {
 
 // IsCode checks whether err is an *Error with the given code.
 func IsCode(err error, code Code) bool {
-	if e, ok := err.(*Error); ok {
+	var e *Error
+	if errors.As(err, &e) {
 		return e.Code == code
 	}
 	return false

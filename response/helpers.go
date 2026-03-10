@@ -84,6 +84,47 @@ func ServiceUnavailable(w http.ResponseWriter, msg string) {
 	Error(w, http.StatusServiceUnavailable, msg)
 }
 
+// MethodNotAllowed sends a 405 JSON error response.
+func MethodNotAllowed(w http.ResponseWriter, msg string) {
+	Error(w, http.StatusMethodNotAllowed, msg)
+}
+
+// Gone sends a 410 JSON error response.
+// Use this for permanently removed resources that will never return.
+func Gone(w http.ResponseWriter, msg string) {
+	Error(w, http.StatusGone, msg)
+}
+
+// GatewayTimeout sends a 504 JSON error response.
+// Use this when an upstream service takes too long to respond.
+func GatewayTimeout(w http.ResponseWriter, msg string) {
+	Error(w, http.StatusGatewayTimeout, msg)
+}
+
+// PagedResult is a standard paginated JSON response envelope.
+// Data holds the current page of items; Total is the count across all pages.
+type PagedResult[T any] struct {
+	Data    []T  `json:"data"`
+	Total   int  `json:"total"`
+	Page    int  `json:"page"`
+	Limit   int  `json:"limit"`
+	HasMore bool `json:"has_more"`
+}
+
+// Paginated sends a 200 JSON response wrapped in a PagedResult envelope.
+// total is the full count of matching items; page and limit reflect the current
+// pagination parameters. HasMore is true when further pages exist.
+func Paginated[T any](w http.ResponseWriter, data []T, total, page, limit int) {
+	hasMore := (page * limit) < total
+	JSON(w, http.StatusOK, PagedResult[T]{
+		Data:    data,
+		Total:   total,
+		Page:    page,
+		Limit:   limit,
+		HasMore: hasMore,
+	})
+}
+
 // InternalError logs the error and sends a 500 response.
 func InternalError(w http.ResponseWriter, msg string, err error) {
 	slog.Error(msg, "error", err)

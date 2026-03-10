@@ -17,7 +17,15 @@ type User struct {
 func (u User) IsAdmin() bool { return u.Role == "admin" }
 
 // IsActive reports whether the user has an active subscription.
+// Only "active" is considered active; use HasAccess to include trialing users.
 func (u User) IsActive() bool { return u.SubscriptionStatus == "active" }
+
+// IsTrialing reports whether the user is on a free trial.
+func (u User) IsTrialing() bool { return u.SubscriptionStatus == "trialing" }
+
+// HasAccess reports whether the user may use subscription features.
+// Both "active" and "trialing" statuses grant access.
+func (u User) HasAccess() bool { return u.IsActive() || u.IsTrialing() }
 
 // CandidateProfile represents the job-seeker profile linked to a User.
 type CandidateProfile struct {

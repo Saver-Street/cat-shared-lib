@@ -188,3 +188,40 @@ func TestCandidateProfile_FullName(t *testing.T) {
 		}
 	}
 }
+
+func TestUser_IsTrialing(t *testing.T) {
+	cases := []struct {
+		status string
+		want   bool
+	}{
+		{"trialing", true},
+		{"active", false},
+		{"past_due", false},
+		{"", false},
+	}
+	for _, tc := range cases {
+		u := User{SubscriptionStatus: tc.status}
+		if got := u.IsTrialing(); got != tc.want {
+			t.Errorf("IsTrialing(%q) = %v, want %v", tc.status, got, tc.want)
+		}
+	}
+}
+
+func TestUser_HasAccess(t *testing.T) {
+	cases := []struct {
+		status string
+		want   bool
+	}{
+		{"active", true},
+		{"trialing", true},
+		{"past_due", false},
+		{"canceled", false},
+		{"", false},
+	}
+	for _, tc := range cases {
+		u := User{SubscriptionStatus: tc.status}
+		if got := u.HasAccess(); got != tc.want {
+			t.Errorf("HasAccess(%q) = %v, want %v", tc.status, got, tc.want)
+		}
+	}
+}

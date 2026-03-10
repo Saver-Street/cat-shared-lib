@@ -278,6 +278,75 @@ func BenchmarkRequireAdmin(b *testing.B) {
 	}
 }
 
+func BenchmarkGetExtCandidateID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetExtCandidateID(r.Context(), "cand-bench"))
+	for b.Loop() {
+		GetExtCandidateID(r)
+	}
+}
+
+func BenchmarkGetExtTokenID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetExtTokenID(r.Context(), "tok-bench"))
+	for b.Loop() {
+		GetExtTokenID(r)
+	}
+}
+
+func BenchmarkGetExtUserID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetExtUserID(r.Context(), "ext-user-bench"))
+	for b.Loop() {
+		GetExtUserID(r)
+	}
+}
+
+func BenchmarkSetExtTokenID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := r.Context()
+	for b.Loop() {
+		SetExtTokenID(ctx, "tok-bench")
+	}
+}
+
+func BenchmarkSetExtUserID(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := r.Context()
+	for b.Loop() {
+		SetExtUserID(ctx, "ext-user-bench")
+	}
+}
+
+func BenchmarkSetUserEmail(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := r.Context()
+	for b.Loop() {
+		SetUserEmail(ctx, "bench@example.com")
+	}
+}
+
+func BenchmarkSetUserRole(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := r.Context()
+	for b.Loop() {
+		SetUserRole(ctx, "admin")
+	}
+}
+
+func BenchmarkRequireRole(b *testing.B) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	handler := RequireRole("editor")(next)
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := SetUserID(r.Context(), "u1")
+	ctx = SetUserRole(ctx, "editor")
+	r = r.WithContext(ctx)
+	w := httptest.NewRecorder()
+	for b.Loop() {
+		handler.ServeHTTP(w, r)
+	}
+}
+
 func TestSetExtUserID_RoundTrip(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetExtUserID(r.Context(), "ext-user-99"))

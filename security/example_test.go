@@ -29,3 +29,14 @@ func ExampleRedactPII() {
 	// [REDACTED]
 	// Jane Doe
 }
+
+func ExampleTruncateForLog() {
+	short := security.TruncateForLog("hello", 10)
+	fmt.Println(short)
+
+	long := security.TruncateForLog("a very long string", 10)
+	fmt.Println(long)
+	// Output:
+	// hello
+	// a very lon
+}

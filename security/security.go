@@ -98,3 +98,25 @@ func redactString(s string) string {
 	s = phoneRe.ReplaceAllString(s, "[PHONE_REDACTED]")
 	return s
 }
+
+// TruncateForLog shortens s to at most maxLen runes and strips ASCII control
+// characters (< 0x20 or 0x7f), making the result safe to write to structured
+// log fields. If maxLen is zero or negative, returns an empty string.
+func TruncateForLog(s string, maxLen int) string {
+	if maxLen <= 0 {
+		return ""
+	}
+	var b strings.Builder
+	count := 0
+	for _, r := range s {
+		if count >= maxLen {
+			break
+		}
+		if r < 0x20 || r == 0x7f {
+			continue
+		}
+		b.WriteRune(r)
+		count++
+	}
+	return b.String()
+}

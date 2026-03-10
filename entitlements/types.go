@@ -18,7 +18,7 @@ type TierLimits struct {
 	CoachingSessions    int    `json:"coachingSessions"`
 }
 
-// TierConfig maps each subscription tier to its limits.
+// TierConfig maps subscription tier names to their corresponding feature limits and entitlements.
 var TierConfig = map[string]TierLimits{
 	"free": {
 		Tier:                "free",

@@ -26,3 +26,21 @@ func ExampleNormalizePage_capLimit() {
 	// Output:
 	// Limit=100
 }
+
+func ExamplePaginationParams_HasNextPage() {
+	p := types.NormalizePage(1, 10)
+	fmt.Println(p.HasNextPage(25))
+	fmt.Println(p.HasNextPage(10))
+	// Output:
+	// true
+	// false
+}
+
+func ExamplePaginationParams_IsLastPage() {
+	p := types.NormalizePage(2, 10)
+	fmt.Println(p.IsLastPage(20))
+	fmt.Println(p.IsLastPage(25))
+	// Output:
+	// true
+	// false
+}

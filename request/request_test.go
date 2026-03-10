@@ -315,3 +315,17 @@ func TestParseBoolParam_DefaultOnUnknown(t *testing.T) {
 		t.Error("expected default true for unrecognised value")
 	}
 }
+
+func BenchmarkRequireQueryParam(b *testing.B) {
+	q := url.Values{"search": {"hello"}}
+	for b.Loop() {
+		_, _ = RequireQueryParam(q, "search")
+	}
+}
+
+func BenchmarkParseBoolParam(b *testing.B) {
+	q := url.Values{"active": {"true"}}
+	for b.Loop() {
+		ParseBoolParam(q, "active", false)
+	}
+}

@@ -416,3 +416,57 @@ func TestRedactPII_DeepNesting_Truncated(t *testing.T) {
 		t.Error("expected [TRUNCATED] sentinel in deeply nested RedactPII output")
 	}
 }
+
+func TestTruncateForLog_Basic(t *testing.T) {
+	got := TruncateForLog("hello world", 5)
+	if got != "hello" {
+		t.Errorf("got %q, want %q", got, "hello")
+	}
+}
+
+func TestTruncateForLog_UnderLimit(t *testing.T) {
+	got := TruncateForLog("hi", 100)
+	if got != "hi" {
+		t.Errorf("got %q, want %q", got, "hi")
+	}
+}
+
+func TestTruncateForLog_StripControlChars(t *testing.T) {
+	// \n, \r, \t are control characters and should be stripped
+	got := TruncateForLog("a\nb\rc", 10)
+	if got != "abc" {
+		t.Errorf("got %q, want %q", got, "abc")
+	}
+}
+
+func TestTruncateForLog_ZeroMaxLen(t *testing.T) {
+	if got := TruncateForLog("hello", 0); got != "" {
+		t.Errorf("got %q, want empty string", got)
+	}
+}
+
+func TestTruncateForLog_NegativeMaxLen(t *testing.T) {
+	if got := TruncateForLog("hello", -1); got != "" {
+		t.Errorf("got %q, want empty string", got)
+	}
+}
+
+func TestTruncateForLog_Empty(t *testing.T) {
+	if got := TruncateForLog("", 10); got != "" {
+		t.Errorf("got %q, want empty string", got)
+	}
+}
+
+func TestTruncateForLog_Unicode(t *testing.T) {
+	got := TruncateForLog("héllo", 3)
+	if got != "hél" {
+		t.Errorf("got %q, want %q", got, "hél")
+	}
+}
+
+func BenchmarkTruncateForLog(b *testing.B) {
+	s := "This is a long string that needs to be truncated for safe logging"
+	for b.Loop() {
+		TruncateForLog(s, 20)
+	}
+}

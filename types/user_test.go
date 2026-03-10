@@ -141,3 +141,50 @@ func BenchmarkCandidateProfileJSON(b *testing.B) {
 		json.Unmarshal(data, &out)
 	}
 }
+
+func TestUser_IsAdmin(t *testing.T) {
+	admin := User{Role: "admin"}
+	user := User{Role: "user"}
+	anon := User{}
+	if !admin.IsAdmin() {
+		t.Error("IsAdmin() should return true for role=admin")
+	}
+	if user.IsAdmin() {
+		t.Error("IsAdmin() should return false for role=user")
+	}
+	if anon.IsAdmin() {
+		t.Error("IsAdmin() should return false for empty role")
+	}
+}
+
+func TestUser_IsActive(t *testing.T) {
+	active := User{SubscriptionStatus: "active"}
+	inactive := User{SubscriptionStatus: "past_due"}
+	zero := User{}
+	if !active.IsActive() {
+		t.Error("IsActive() should return true for status=active")
+	}
+	if inactive.IsActive() {
+		t.Error("IsActive() should return false for status=past_due")
+	}
+	if zero.IsActive() {
+		t.Error("IsActive() should return false for empty status")
+	}
+}
+
+func TestCandidateProfile_FullName(t *testing.T) {
+	tests := []struct {
+		first, last, want string
+	}{
+		{"Alice", "Smith", "Alice Smith"},
+		{"Alice", "", "Alice"},
+		{"", "Smith", "Smith"},
+		{"", "", ""},
+	}
+	for _, tc := range tests {
+		cp := CandidateProfile{FirstName: tc.first, LastName: tc.last}
+		if got := cp.FullName(); got != tc.want {
+			t.Errorf("FullName(%q, %q) = %q, want %q", tc.first, tc.last, got, tc.want)
+		}
+	}
+}

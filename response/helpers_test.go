@@ -252,6 +252,22 @@ func TestUnprocessableEntity_Status422(t *testing.T) {
 	}
 }
 
+func TestTooManyRequests_Status429(t *testing.T) {
+	w := httptest.NewRecorder()
+	TooManyRequests(w, "rate limit exceeded")
+	if w.Code != http.StatusTooManyRequests {
+		t.Errorf("status = %d, want 429", w.Code)
+	}
+}
+
+func TestServiceUnavailable_Status503(t *testing.T) {
+	w := httptest.NewRecorder()
+	ServiceUnavailable(w, "service down")
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want 503", w.Code)
+	}
+}
+
 // --- Benchmarks ---
 
 func BenchmarkJSON(b *testing.B) {

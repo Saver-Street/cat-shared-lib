@@ -10,9 +10,15 @@ import (
 
 // BruteForceConfig configures the brute-force login protection.
 type BruteForceConfig struct {
-	MaxFailures   int
+	// MaxFailures is the number of consecutive failures before an IP is blocked.
+	// Defaults to 5 if zero.
+	MaxFailures int
+	// BlockDuration is how long a blocked IP remains locked out.
+	// Defaults to 15 minutes if zero.
 	BlockDuration time.Duration
-	Window        time.Duration
+	// Window is the sliding time window in which failures are counted.
+	// Defaults to 10 minutes if zero.
+	Window time.Duration
 }
 
 type bruteEntry struct {

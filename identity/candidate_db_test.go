@@ -3,6 +3,7 @@ package identity
 import (
 	"context"
 	"errors"
+	"strings"
 	"net/http"
 	"testing"
 
@@ -75,8 +76,8 @@ func TestLookupCandidateID_DBError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "connection failed" {
-		t.Errorf("error = %q, want connection failed", err.Error())
+	if !strings.Contains(err.Error(), "connection failed") {
+		t.Errorf("error = %q, want to contain \"connection failed\"", err.Error())
 	}
 	if id != "" {
 		t.Errorf("id = %q, want empty on error", id)

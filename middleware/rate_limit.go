@@ -12,9 +12,15 @@ import (
 
 // RateLimiterConfig configures the sliding-window rate limiter.
 type RateLimiterConfig struct {
+	// RequestsPerWindow is the maximum number of requests allowed per IP per window.
+	// Defaults to 100 if zero or negative.
 	RequestsPerWindow int
-	WindowDuration    time.Duration
-	CleanupInterval   time.Duration // defaults to WindowDuration * 2
+	// WindowDuration is the sliding time window over which requests are counted.
+	// Defaults to 1 minute if zero or negative.
+	WindowDuration time.Duration
+	// CleanupInterval controls how often stale visitor entries are removed.
+	// Defaults to WindowDuration * 2 if zero.
+	CleanupInterval time.Duration
 }
 
 type visitor struct {

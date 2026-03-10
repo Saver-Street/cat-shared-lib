@@ -14,7 +14,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
 
       - name: Vet
         run: go vet ./...
@@ -32,3 +32,6 @@ jobs:
 
       - name: Coverage summary
         run: go tool cover -func=coverage.out | tail -20
+
+      - name: Check coverage threshold
+        run: make check-coverage

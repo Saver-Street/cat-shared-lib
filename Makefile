@@ -22,9 +22,9 @@ cover: ## Generate coverage report
 	go test ./... -count=1 -coverprofile=coverage.out
 	go tool cover -func=coverage.out | tail -1
 
-check-coverage: cover ## Fail if total coverage < 90%
+check-coverage: cover ## Fail if total coverage < 95%
 	@coverage=$$(go tool cover -func=coverage.out | tail -1 | awk '{print $$3}' | sed 's/%//'); \
-	threshold=90; \
+	threshold=95; \
 	if [ "$${coverage%.*}" -lt "$$threshold" ]; then \
 		echo "FAIL: coverage $${coverage}% is below $${threshold}%"; \
 		exit 1; \

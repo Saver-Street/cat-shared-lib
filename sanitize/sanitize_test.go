@@ -348,3 +348,61 @@ func BenchmarkTrimAndNilIfEmpty(b *testing.B) {
 		TrimAndNilIfEmpty("  hello  ")
 	}
 }
+
+func strPtr(s string) *string { return &s }
+func int64Ptr(n int64) *int64 { return &n }
+func boolPtr(b bool) *bool    { return &b }
+
+func TestNullString_Nil(t *testing.T) {
+	if got := NullString(nil, "default"); got != "default" {
+		t.Errorf("NullString(nil) = %q, want default", got)
+	}
+}
+
+func TestNullString_Value(t *testing.T) {
+	if got := NullString(strPtr("hello"), "default"); got != "hello" {
+		t.Errorf("NullString(ptr) = %q, want hello", got)
+	}
+}
+
+func TestNullString_Empty(t *testing.T) {
+	if got := NullString(strPtr(""), "default"); got != "" {
+		t.Errorf("NullString(empty ptr) = %q, want empty", got)
+	}
+}
+
+func TestNullInt64_Nil(t *testing.T) {
+	if got := NullInt64(nil, 42); got != 42 {
+		t.Errorf("NullInt64(nil) = %d, want 42", got)
+	}
+}
+
+func TestNullInt64_Value(t *testing.T) {
+	if got := NullInt64(int64Ptr(99), 0); got != 99 {
+		t.Errorf("NullInt64(ptr) = %d, want 99", got)
+	}
+}
+
+func TestNullInt64_Zero(t *testing.T) {
+	if got := NullInt64(int64Ptr(0), 42); got != 0 {
+		t.Errorf("NullInt64(zero ptr) = %d, want 0", got)
+	}
+}
+
+func TestNullBool_Nil(t *testing.T) {
+	if got := NullBool(nil, true); !got {
+		t.Error("NullBool(nil) should return default true")
+	}
+}
+
+func TestNullBool_False(t *testing.T) {
+	if got := NullBool(boolPtr(false), true); got {
+		t.Error("NullBool(false ptr) should return false")
+	}
+}
+
+func TestNullBool_True(t *testing.T) {
+	if got := NullBool(boolPtr(true), false); !got {
+		t.Error("NullBool(true ptr) should return true")
+	}
+}

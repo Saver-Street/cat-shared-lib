@@ -2,6 +2,8 @@ package sanitize_test
 
 import (
 	"errors"
+
+	"github.com/jackc/pgx/v5/pgconn"
 	"fmt"
 
 	"github.com/Saver-Street/cat-shared-lib/sanitize"
@@ -26,8 +28,9 @@ func ExampleNilIfEmpty() {
 }
 
 func ExampleIsDuplicateKey() {
-	err := errors.New("ERROR: duplicate key value violates unique constraint (SQLSTATE 23505)")
-	fmt.Println(sanitize.IsDuplicateKey(err))
+	pgDup := &pgconn.PgError{Code: "23505"}
+	fmt.Println(sanitize.IsDuplicateKey(pgDup))
+	_ = errors.New("unused") // keep errors import
 	fmt.Println(sanitize.IsDuplicateKey(errors.New("other error")))
 	fmt.Println(sanitize.IsDuplicateKey(nil))
 	// Output:

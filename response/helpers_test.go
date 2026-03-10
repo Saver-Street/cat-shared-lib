@@ -286,3 +286,57 @@ func BenchmarkDecodeJSON(b *testing.B) {
 		DecodeJSON(r, &v)
 	}
 }
+
+func BenchmarkOK(b *testing.B) {
+	data := map[string]any{"id": "abc-123", "status": "ok"}
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		OK(w, data)
+	}
+}
+
+func BenchmarkCreated(b *testing.B) {
+	data := map[string]string{"id": "new-123"}
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		Created(w, data)
+	}
+}
+
+func BenchmarkError(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		Error(w, http.StatusBadRequest, "bad input")
+	}
+}
+
+func BenchmarkNoContent(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		NoContent(w)
+	}
+}
+
+func BenchmarkBadRequest(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		BadRequest(w, "invalid input")
+	}
+}
+
+func BenchmarkInternalError(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		InternalError(w, "db fail", nil)
+	}
+}
+
+func BenchmarkDecodeOrFail(b *testing.B) {
+	body := `{"name":"test","value":123}`
+	for b.Loop() {
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		var v map[string]any
+		DecodeOrFail(w, r, &v)
+	}
+}

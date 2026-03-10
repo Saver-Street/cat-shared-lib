@@ -25,6 +25,38 @@ func DocFilename(name string) string {
 	return result
 }
 
+// TruncateFilename shortens a filename to at most maxLen runes while preserving
+// the file extension. If maxLen is zero or negative, returns an empty string.
+func TruncateFilename(name string, maxLen int) string {
+	runes := []rune(name)
+	if maxLen <= 0 || len(runes) == 0 {
+		return ""
+	}
+	if len(runes) <= maxLen {
+		return name
+	}
+	ext := filepath.Ext(name)
+	extRunes := []rune(ext)
+	if len(extRunes) >= maxLen {
+		return ext
+	}
+	base := runes[:maxLen-len(extRunes)]
+	return string(base) + ext
+}
+
+// MaxLength returns s truncated to at most maxLen runes.
+// If maxLen is zero or negative, returns an empty string.
+func MaxLength(s string, maxLen int) string {
+	runes := []rune(s)
+	if maxLen <= 0 {
+		return ""
+	}
+	if len(runes) <= maxLen {
+		return s
+	}
+	return string(runes[:maxLen])
+}
+
 // NilIfEmpty returns nil for empty strings, otherwise a pointer to s.
 func NilIfEmpty(s string) *string {
 	if s == "" {
@@ -33,7 +65,30 @@ func NilIfEmpty(s string) *string {
 	return &s
 }
 
-// IsDuplicateKey checks if a database error is a unique constraint violation (PostgreSQL 23505).
+// TrimAndNilIfEmpty trims whitespace from s and returns nil if the result is empty.
+// Use this when whitespace-only strings should be treated the same as missing values.
+func TrimAndNilIfEmpty(s string) *string {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
+// IsDuplicateKey reports whether err is a PostgreSQL unique-constraint violation (SQLSTATE 23505).
 func IsDuplicateKey(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "23505")
+}
+
+// SanitizeEmail trims whitespace and lowercases an email address.
+// It does not validate whether the address is well-formed.
+func SanitizeEmail(email string) string {
+return strings.ToLower(strings.TrimSpace(email))
+}
+
+// IsDatabaseError checks whether err contains the given PostgreSQL error code.
+// Use standard 5-character SQLSTATE codes, e.g. "23505" (unique violation),
+// "23503" (foreign key violation), "23502" (not null violation).
+func IsDatabaseError(err error, code string) bool {
+return err != nil && strings.Contains(err.Error(), code)
 }

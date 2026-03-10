@@ -307,3 +307,44 @@ if id := GetExtTokenID(r); id != "" {
 t.Errorf("GetExtTokenID without value = %q, want empty", id)
 }
 }
+
+func TestRequireRole_AllowsMatchingRole(t *testing.T) {
+next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+w.WriteHeader(http.StatusOK)
+})
+handler := RequireRole("moderator")(next)
+w := httptest.NewRecorder()
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(SetUserID(SetUserRole(r.Context(), "moderator"), "user-1"))
+handler.ServeHTTP(w, r)
+if w.Code != http.StatusOK {
+t.Errorf("matching role: status = %d, want 200", w.Code)
+}
+}
+
+func TestRequireRole_RejectsWrongRole(t *testing.T) {
+next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+t.Error("should not reach handler with wrong role")
+})
+handler := RequireRole("moderator")(next)
+w := httptest.NewRecorder()
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(SetUserID(SetUserRole(r.Context(), "user"), "user-1"))
+handler.ServeHTTP(w, r)
+if w.Code != http.StatusForbidden {
+t.Errorf("wrong role: status = %d, want 403", w.Code)
+}
+}
+
+func TestRequireRole_RejectsUnauthenticated(t *testing.T) {
+next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+t.Error("should not reach handler without auth")
+})
+handler := RequireRole("admin")(next)
+w := httptest.NewRecorder()
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+handler.ServeHTTP(w, r)
+if w.Code != http.StatusUnauthorized {
+t.Errorf("unauthenticated: status = %d, want 401", w.Code)
+}
+}

@@ -70,12 +70,52 @@ func ExampleDecodeOrFail() {
 	// json
 }
 
+func ExampleAccepted() {
+	w := httptest.NewRecorder()
+	response.Accepted(w, map[string]string{"status": "queued"})
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 202
+	// {"status":"queued"}
+}
+
 func ExampleNoContent() {
 	w := httptest.NewRecorder()
 	response.NoContent(w)
 	fmt.Println(w.Code)
 	// Output:
 	// 204
+}
+
+func ExampleBadRequest() {
+	w := httptest.NewRecorder()
+	response.BadRequest(w, "invalid input")
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 400
+	// {"error":"invalid input"}
+}
+
+func ExampleUnauthorized() {
+	w := httptest.NewRecorder()
+	response.Unauthorized(w, "token expired")
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 401
+	// {"error":"token expired"}
+}
+
+func ExampleForbidden() {
+	w := httptest.NewRecorder()
+	response.Forbidden(w, "access denied")
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 403
+	// {"error":"access denied"}
 }
 
 func ExampleNotFound() {
@@ -88,12 +128,42 @@ func ExampleNotFound() {
 	// {"error":"item not found"}
 }
 
+func ExampleConflict() {
+	w := httptest.NewRecorder()
+	response.Conflict(w, "already exists")
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 409
+	// {"error":"already exists"}
+}
+
+func ExampleUnprocessableEntity() {
+	w := httptest.NewRecorder()
+	response.UnprocessableEntity(w, "validation failed")
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 422
+	// {"error":"validation failed"}
+}
+
 func ExampleTooManyRequests() {
 	w := httptest.NewRecorder()
 	response.TooManyRequests(w, "slow down")
 	fmt.Println(w.Code)
 	// Output:
 	// 429
+}
+
+func ExampleInternalError() {
+	w := httptest.NewRecorder()
+	response.InternalError(w, "db connection lost", nil)
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 500
+	// {"error":"Internal server error"}
 }
 
 func ExampleServiceUnavailable() {

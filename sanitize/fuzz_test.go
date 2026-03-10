@@ -1,6 +1,10 @@
 package sanitize
 
-import "testing"
+import (
+	"errors"
+	"strings"
+	"testing"
+)
 
 func FuzzDocFilename(f *testing.F) {
 	f.Add("report.pdf")
@@ -48,6 +52,24 @@ func FuzzNilIfEmpty(f *testing.F) {
 			if *result != s {
 				t.Errorf("NilIfEmpty(%q) = %q, want %q", s, *result, s)
 			}
+		}
+	})
+}
+
+func FuzzIsDuplicateKey(f *testing.F) {
+	f.Add("duplicate key value violates unique constraint (SQLSTATE 23505)")
+	f.Add("ERROR: 23505")
+	f.Add("some other error")
+	f.Add("")
+	f.Add("2350")
+	f.Add("23505")
+
+	f.Fuzz(func(t *testing.T, s string) {
+		err := errors.New(s)
+		result := IsDuplicateKey(err)
+		expected := strings.Contains(s, "23505")
+		if result != expected {
+			t.Errorf("IsDuplicateKey(errors.New(%q)) = %v, want %v", s, result, expected)
 		}
 	})
 }

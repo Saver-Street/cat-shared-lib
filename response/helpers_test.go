@@ -180,6 +180,78 @@ func TestDecodeOrFail_TruncatedJSON(t *testing.T) {
 	}
 }
 
+func TestAccepted_Status202(t *testing.T) {
+	w := httptest.NewRecorder()
+	Accepted(w, map[string]string{"status": "queued"})
+	if w.Code != http.StatusAccepted {
+		t.Errorf("status = %d, want 202", w.Code)
+	}
+}
+
+func TestNoContent_Status204(t *testing.T) {
+	w := httptest.NewRecorder()
+	NoContent(w)
+	if w.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want 204", w.Code)
+	}
+	if w.Body.Len() != 0 {
+		t.Errorf("body should be empty, got %q", w.Body.String())
+	}
+}
+
+func TestBadRequest_Status400(t *testing.T) {
+	w := httptest.NewRecorder()
+	BadRequest(w, "invalid input")
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", w.Code)
+	}
+	var body map[string]string
+	json.Unmarshal(w.Body.Bytes(), &body)
+	if body["error"] != "invalid input" {
+		t.Errorf("error = %q, want invalid input", body["error"])
+	}
+}
+
+func TestUnauthorized_Status401(t *testing.T) {
+	w := httptest.NewRecorder()
+	Unauthorized(w, "token expired")
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want 401", w.Code)
+	}
+}
+
+func TestForbidden_Status403(t *testing.T) {
+	w := httptest.NewRecorder()
+	Forbidden(w, "access denied")
+	if w.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want 403", w.Code)
+	}
+}
+
+func TestNotFound_Status404(t *testing.T) {
+	w := httptest.NewRecorder()
+	NotFound(w, "resource not found")
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", w.Code)
+	}
+}
+
+func TestConflict_Status409(t *testing.T) {
+	w := httptest.NewRecorder()
+	Conflict(w, "already exists")
+	if w.Code != http.StatusConflict {
+		t.Errorf("status = %d, want 409", w.Code)
+	}
+}
+
+func TestUnprocessableEntity_Status422(t *testing.T) {
+	w := httptest.NewRecorder()
+	UnprocessableEntity(w, "validation failed")
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("status = %d, want 422", w.Code)
+	}
+}
+
 // --- Benchmarks ---
 
 func BenchmarkJSON(b *testing.B) {

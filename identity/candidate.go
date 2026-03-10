@@ -1,10 +1,14 @@
+// Package identity provides candidate identity resolution for HTTP handlers.
+// It bridges the JWT-authenticated user ID (set by the middleware package) to
+// the application's candidate profile concept.
 package identity
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/Saver-Street/cat-shared-lib/middleware"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -14,26 +18,17 @@ type Querier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// contextKey is the package-private type for context keys to avoid collisions.
-type contextKey string
-
-const (
-	userIDKey         contextKey = "userId"
-	extCandidateIDKey contextKey = "extCandidateId"
-)
-
 // GetUserID extracts the authenticated user ID from the request context.
-// Returns empty string if not set.
+// Returns empty string if not set. Reads the value set by middleware.SetUserID.
 func GetUserID(r *http.Request) string {
-	v, _ := r.Context().Value(userIDKey).(string)
-	return v
+	return middleware.GetUserID(r)
 }
 
 // GetExtCandidateID extracts the extension-provided candidate ID from context.
 // Returns empty string if not set (only present for extension token requests).
+// Reads the value set by extension token middleware via middleware.ExtCandidateIDKey.
 func GetExtCandidateID(r *http.Request) string {
-	v, _ := r.Context().Value(extCandidateIDKey).(string)
-	return v
+	return middleware.GetExtCandidateID(r)
 }
 
 // LookupCandidateID queries candidate_profiles for the candidate ID of the given user.
@@ -43,8 +38,8 @@ func LookupCandidateID(ctx context.Context, db Querier, userID string) (string, 
 	err := db.QueryRow(ctx,
 		"SELECT id FROM candidate_profiles WHERE user_id = $1", userID,
 	).Scan(&candidateID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return "", errors.New("candidate profile not found for user " + userID)
+	if err == pgx.ErrNoRows {
+		return "", fmt.Errorf("candidate profile not found for user %s", userID)
 	}
 	return candidateID, err
 }

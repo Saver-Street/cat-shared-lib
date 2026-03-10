@@ -277,3 +277,123 @@ func TestRow_NilScanFn(t *testing.T) {
 		t.Errorf("got err %v, want nil scanFn error", err)
 	}
 }
+
+func TestFirst_Success(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"first", "val"}, {"second", "val2"}}}
+	result, err := First[item](rows, scanItem)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Name != "first" {
+		t.Errorf("got %q, want first", result.Name)
+	}
+	if !rows.closed {
+		t.Error("rows should be closed after First")
+	}
+}
+
+func TestFirst_Empty(t *testing.T) {
+	rows := &mockRows{data: [][]any{}}
+	_, err := First[item](rows, scanItem)
+	if err == nil {
+		t.Fatal("expected error for empty rows")
+	}
+	if err.Error() != "scan.First: no rows in result set" {
+		t.Errorf("got %q, want 'no rows in result set'", err.Error())
+	}
+}
+
+func TestFirst_NilRows(t *testing.T) {
+	_, err := First[item](nil, scanItem)
+	if err == nil || err.Error() != "scan.First: rows must not be nil" {
+		t.Errorf("got err %v, want nil rows error", err)
+	}
+}
+
+func TestFirst_NilScanFn(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "b"}}}
+	_, err := First[item](rows, nil)
+	if err == nil || err.Error() != "scan.First: scanFn must not be nil" {
+		t.Errorf("got err %v, want nil scanFn error", err)
+	}
+}
+
+func TestFirst_ScanError(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "1"}}, scanErr: errors.New("scan fail")}
+	_, err := First[item](rows, scanItem)
+	if err == nil || err.Error() != "scan fail" {
+		t.Errorf("got err %v, want scan fail", err)
+	}
+}
+
+func TestFirst_IterError(t *testing.T) {
+	rows := &mockRows{data: [][]any{}, iterErr: errors.New("iter fail")}
+	_, err := First[item](rows, scanItem)
+	if err == nil || err.Error() != "iter fail" {
+		t.Errorf("got err %v, want iter fail", err)
+	}
+}
+
+func TestRowsLimit_Basic(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "1"}, {"b", "2"}, {"c", "3"}}}
+	got, err := RowsLimit[item](rows, scanItem, 2)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Errorf("len = %d, want 2", len(got))
+	}
+}
+
+func TestRowsLimit_ZeroLimit_ReturnsAll(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "1"}, {"b", "2"}, {"c", "3"}}}
+	got, err := RowsLimit[item](rows, scanItem, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 3 {
+		t.Errorf("len = %d, want 3", len(got))
+	}
+}
+
+func TestRowsLimit_NegativeLimit_ReturnsAll(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"x", "9"}}}
+	got, err := RowsLimit[item](rows, scanItem, -1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d, want 1", len(got))
+	}
+}
+
+func TestRowsLimit_NilRows(t *testing.T) {
+	_, err := RowsLimit[item](nil, scanItem, 5)
+	if err == nil {
+		t.Fatal("expected error for nil rows")
+	}
+}
+
+func TestRowsLimit_NilScanFn(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "1"}}}
+	_, err := RowsLimit[item](rows, nil, 5)
+	if err == nil {
+		t.Fatal("expected error for nil scanFn")
+	}
+}
+
+func TestRowsLimit_IterError(t *testing.T) {
+	rows := &mockRows{data: [][]any{}, iterErr: errors.New("iter fail")}
+	_, err := RowsLimit[item](rows, scanItem, 5)
+	if err == nil || err.Error() != "iter fail" {
+		t.Errorf("got err %v, want 'iter fail'", err)
+	}
+}
+
+func TestRowsLimit_ScanError(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "1"}}, scanErr: errors.New("scan fail")}
+	_, err := RowsLimit[item](rows, scanItem, 5)
+	if err == nil {
+		t.Fatal("expected scan error from RowsLimit")
+	}
+}

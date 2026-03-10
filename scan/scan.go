@@ -3,7 +3,8 @@ package scan
 
 import "errors"
 
-// RowScanner is satisfied by both *sql.Rows and pgx.Rows.
+// RowScanner is the interface for iterating and scanning multiple query rows.
+// It is satisfied by both *sql.Rows and pgx.Rows.
 type RowScanner interface {
 	Next() bool
 	Scan(dest ...any) error
@@ -11,7 +12,8 @@ type RowScanner interface {
 	Err() error
 }
 
-// SingleRowScanner is satisfied by *sql.Row and pgx.Row.
+// SingleRowScanner is the interface for scanning a single query row.
+// It is satisfied by both *sql.Row and pgx.Row.
 type SingleRowScanner interface {
 	Scan(dest ...any) error
 }
@@ -56,4 +58,59 @@ func Row[T any](row SingleRowScanner, scanFn func(*T) []any) (T, error) {
 		return item, err
 	}
 	return item, nil
+}
+
+// First returns the first row from rows as a value of type T.
+// It returns an error if rows or scanFn is nil, or if the result set is empty.
+// The remaining rows, if any, are discarded.
+func First[T any](rows RowScanner, scanFn func(*T) []any) (T, error) {
+	var item T
+	if rows == nil {
+		return item, errors.New("scan.First: rows must not be nil")
+	}
+	if scanFn == nil {
+		return item, errors.New("scan.First: scanFn must not be nil")
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return item, err
+		}
+		return item, errors.New("scan.First: no rows in result set")
+	}
+	if err := rows.Scan(scanFn(&item)...); err != nil {
+		return item, err
+	}
+	return item, nil
+}
+
+// RowsLimit is like Rows but stops scanning after at most limit rows.
+// This prevents accidental large allocations when the caller knows the
+// maximum useful result count (e.g., auto-complete, preview lists).
+// If limit is zero or negative, all rows are returned.
+func RowsLimit[T any](rows RowScanner, scanFn func(*T) []any, limit int) ([]T, error) {
+	if rows == nil {
+		return nil, errors.New("scan.RowsLimit: rows must not be nil")
+	}
+	if scanFn == nil {
+		return nil, errors.New("scan.RowsLimit: scanFn must not be nil")
+	}
+	defer rows.Close()
+
+	results := make([]T, 0)
+	for rows.Next() {
+		if limit > 0 && len(results) >= limit {
+			break
+		}
+		var item T
+		if err := rows.Scan(scanFn(&item)...); err != nil {
+			return nil, err
+		}
+		results = append(results, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }

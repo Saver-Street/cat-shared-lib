@@ -5,6 +5,7 @@ package identity
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -38,7 +39,7 @@ func LookupCandidateID(ctx context.Context, db Querier, userID string) (string, 
 	err := db.QueryRow(ctx,
 		"SELECT id FROM candidate_profiles WHERE user_id = $1", userID,
 	).Scan(&candidateID)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return "", fmt.Errorf("candidate profile not found for user %s", userID)
 	}
 	return candidateID, err

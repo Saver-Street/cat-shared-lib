@@ -277,3 +277,33 @@ func BenchmarkRequireAdmin(b *testing.B) {
 		handler.ServeHTTP(w, r)
 	}
 }
+
+func TestSetExtUserID_RoundTrip(t *testing.T) {
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(SetExtUserID(r.Context(), "ext-user-99"))
+if id := GetExtUserID(r); id != "ext-user-99" {
+t.Errorf("SetExtUserID/GetExtUserID = %q, want ext-user-99", id)
+}
+}
+
+func TestGetExtUserID_Empty(t *testing.T) {
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+if id := GetExtUserID(r); id != "" {
+t.Errorf("GetExtUserID without value = %q, want empty", id)
+}
+}
+
+func TestSetExtTokenID_RoundTrip(t *testing.T) {
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+r = r.WithContext(SetExtTokenID(r.Context(), "tok-abc"))
+if id := GetExtTokenID(r); id != "tok-abc" {
+t.Errorf("SetExtTokenID/GetExtTokenID = %q, want tok-abc", id)
+}
+}
+
+func TestGetExtTokenID_Empty(t *testing.T) {
+r, _ := http.NewRequest(http.MethodGet, "/", nil)
+if id := GetExtTokenID(r); id != "" {
+t.Errorf("GetExtTokenID without value = %q, want empty", id)
+}
+}

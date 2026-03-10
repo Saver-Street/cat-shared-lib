@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // Pagination holds parsed page/limit/offset values from query parameters.
@@ -75,4 +76,29 @@ func RequireURLParamInt(r *http.Request, key string, paramFn URLParamFunc) (int6
 		return 0, fmt.Errorf("URL parameter %q must be positive, got %d", key, n)
 	}
 	return n, nil
+}
+
+// RequireQueryParam returns the query parameter value for key.
+// Returns an error if the parameter is absent or empty.
+func RequireQueryParam(q url.Values, key string) (string, error) {
+val := q.Get(key)
+if val == "" {
+return "", fmt.Errorf("missing required query parameter: %s", key)
+}
+return val, nil
+}
+
+// ParseBoolParam returns the boolean value of a query parameter.
+// Accepts "true"/"1"/"yes" as true; "false"/"0"/"no" as false (case-insensitive).
+// Returns defaultValue if the parameter is absent, empty, or unrecognised.
+func ParseBoolParam(q url.Values, key string, defaultValue bool) bool {
+raw := strings.TrimSpace(strings.ToLower(q.Get(key)))
+switch raw {
+case "true", "1", "yes":
+return true
+case "false", "0", "no":
+return false
+default:
+return defaultValue
+}
 }

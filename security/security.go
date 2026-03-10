@@ -50,29 +50,41 @@ var (
 	ssnRe   = regexp.MustCompile(`\d{3}-\d{2}-\d{4}`)
 )
 
+// maxRedactDepth is the maximum nesting depth for RedactPII to prevent stack overflow
+// from pathologically nested payloads.
+const maxRedactDepth = 20
+
 // RedactPII performs server-side PII scrubbing on audit payloads.
+// Nested maps are processed recursively up to maxRedactDepth levels.
 func RedactPII(data map[string]any) map[string]any {
+	return redactMap(data, 0)
+}
+
+func redactMap(data map[string]any, depth int) map[string]any {
 	result := make(map[string]any, len(data))
 	for k, v := range data {
 		if piiFields[k] || piiFields[strings.ToLower(k)] {
 			result[k] = "[REDACTED]"
 			continue
 		}
-		result[k] = redactValue(v)
+		result[k] = redactValue(v, depth)
 	}
 	return result
 }
 
-func redactValue(v any) any {
+func redactValue(v any, depth int) any {
+	if depth >= maxRedactDepth {
+		return "[TRUNCATED]"
+	}
 	switch val := v.(type) {
 	case string:
 		return redactString(val)
 	case map[string]any:
-		return RedactPII(val)
+		return redactMap(val, depth+1)
 	case []any:
 		out := make([]any, len(val))
 		for i, item := range val {
-			out[i] = redactValue(item)
+			out[i] = redactValue(item, depth)
 		}
 		return out
 	default:

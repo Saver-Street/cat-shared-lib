@@ -176,3 +176,74 @@ func BenchmarkRow(b *testing.B) {
 		Row[item](row, scanItem)
 	}
 }
+
+// intItem verifies generics work with different types.
+type intItem struct {
+	ID   int
+	Name string
+}
+
+// mockIntRows implements RowScanner for int-based items.
+type mockIntRows struct {
+	data [][]any
+	idx  int
+}
+
+func (m *mockIntRows) Next() bool {
+	if m.idx < len(m.data) {
+		m.idx++
+		return true
+	}
+	return false
+}
+
+func (m *mockIntRows) Scan(dest ...any) error {
+	row := m.data[m.idx-1]
+	*dest[0].(*int) = row[0].(int)
+	*dest[1].(*string) = row[1].(string)
+	return nil
+}
+
+func (m *mockIntRows) Close()     {}
+func (m *mockIntRows) Err() error { return nil }
+
+func TestRows_DifferentGenericType(t *testing.T) {
+	rows := &mockIntRows{data: [][]any{{1, "first"}, {2, "second"}}}
+	items, err := Rows[intItem](rows, func(it *intItem) []any {
+		return []any{&it.ID, &it.Name}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("got %d items, want 2", len(items))
+	}
+	if items[0].ID != 1 || items[1].ID != 2 {
+		t.Errorf("got IDs %d,%d, want 1,2", items[0].ID, items[1].ID)
+	}
+}
+
+func TestRow_DifferentGenericType(t *testing.T) {
+	row := &mockRow{data: []any{"hello", "world"}}
+	// Reuse item type but verify zero-value on error
+	_, err := Row[item](&mockRow{err: errors.New("fail")}, scanItem)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	// Success with mockRow
+	result, err := Row[item](row, scanItem)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Name != "hello" {
+		t.Errorf("got %q, want hello", result.Name)
+	}
+}
+
+func TestRows_CloseCalledOnScanError(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "1"}}, scanErr: errors.New("scan fail")}
+	Rows[item](rows, scanItem)
+	if !rows.closed {
+		t.Error("rows should be closed even after scan error")
+	}
+}

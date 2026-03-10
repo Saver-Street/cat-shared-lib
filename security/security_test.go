@@ -140,6 +140,119 @@ func TestRedactPII_CaseInsensitiveField(t *testing.T) {
 	}
 }
 
+func TestContainsSuspiciousInput_MixedCase(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"DrOp TaBlE users", true},
+		{"SeLeCt * FrOm users", true},
+		{"<ScRiPt>alert(1)</ScRiPt>", true},
+		{"JaVaScRiPt: alert(1)", true},
+		{"OnClIcK=doEvil()", true},
+	}
+	for _, tt := range tests {
+		if got := ContainsSuspiciousInput(tt.input); got != tt.want {
+			t.Errorf("ContainsSuspiciousInput(%q) = %v, want %v", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestRedactPII_DeeplyNested(t *testing.T) {
+	data := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
+				"level3": map[string]any{
+					"email": "deep@test.com",
+					"safe":  "visible",
+				},
+			},
+		},
+	}
+	result := RedactPII(data)
+	l1 := result["level1"].(map[string]any)
+	l2 := l1["level2"].(map[string]any)
+	l3 := l2["level3"].(map[string]any)
+	if l3["email"] != "[REDACTED]" {
+		t.Errorf("deeply nested email not redacted: %v", l3["email"])
+	}
+	if l3["safe"] != "visible" {
+		t.Errorf("safe field changed: %v", l3["safe"])
+	}
+}
+
+func TestRedactPII_PhoneFormats(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"dash", "Call 555-123-4567"},
+		{"dot", "Call 555.123.4567"},
+		{"parens", "Call (555) 123-4567"},
+		{"plus1", "Call +1-555-123-4567"},
+		{"space", "Call 555 123 4567"},
+	}
+	for _, tt := range tests {
+		data := map[string]any{"msg": tt.input}
+		result := RedactPII(data)
+		got := result["msg"].(string)
+		if got == tt.input {
+			t.Errorf("%s: phone not redacted in %q", tt.name, tt.input)
+		}
+	}
+}
+
+func TestRedactPII_BoolAndNilValues(t *testing.T) {
+	data := map[string]any{
+		"active": true,
+		"score":  3.14,
+		"empty":  nil,
+	}
+	result := RedactPII(data)
+	if result["active"] != true {
+		t.Errorf("bool changed: %v", result["active"])
+	}
+	if result["score"] != 3.14 {
+		t.Errorf("float changed: %v", result["score"])
+	}
+	if result["empty"] != nil {
+		t.Errorf("nil changed: %v", result["empty"])
+	}
+}
+
+func TestRedactPII_ArrayOfMaps(t *testing.T) {
+	data := map[string]any{
+		"users": []any{
+			map[string]any{"email": "a@test.com", "name": "A"},
+			map[string]any{"email": "b@test.com", "name": "B"},
+		},
+	}
+	result := RedactPII(data)
+	users := result["users"].([]any)
+	for i, u := range users {
+		m := u.(map[string]any)
+		if m["email"] != "[REDACTED]" {
+			t.Errorf("users[%d].email not redacted: %v", i, m["email"])
+		}
+	}
+}
+
+func TestContainsSuspiciousInput_SafeInputs(t *testing.T) {
+	safe := []string{
+		"Hello World",
+		"This is a normal comment with <b>HTML</b>",
+		"SELECT your favorite",
+		"Drop your resume here",
+		"Update your profile",
+		"Delete this draft",
+	}
+	for _, s := range safe {
+		if ContainsSuspiciousInput(s) {
+			t.Errorf("safe input flagged: %q", s)
+		}
+	}
+}
+
 // --- Benchmarks ---
 
 func BenchmarkContainsSuspiciousInput_Clean(b *testing.B) {

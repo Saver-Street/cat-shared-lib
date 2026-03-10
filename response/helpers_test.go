@@ -2,6 +2,7 @@ package response
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -76,6 +77,106 @@ func TestJSON_EncodingError(t *testing.T) {
 	JSON(w, http.StatusOK, make(chan int))
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want 200 (set before encode)", w.Code)
+	}
+}
+
+func TestDecodeJSON_BodySizeLimit(t *testing.T) {
+	// Generate a body larger than 1MB limit
+	big := strings.Repeat("a", 1<<20+100)
+	body := `{"data":"` + big + `"}`
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	var v map[string]string
+	err := DecodeJSON(r, &v)
+	if err == nil {
+		t.Error("expected error for body exceeding 1MB limit")
+	}
+}
+
+func TestDecodeJSON_EmptyBody(t *testing.T) {
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(""))
+	var v map[string]string
+	err := DecodeJSON(r, &v)
+	if err == nil {
+		t.Error("expected error for empty body")
+	}
+}
+
+func TestDecodeJSON_ValidJSON(t *testing.T) {
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name":"test"}`))
+	var v map[string]string
+	if err := DecodeJSON(r, &v); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v["name"] != "test" {
+		t.Errorf("name = %q, want test", v["name"])
+	}
+}
+
+func TestJSON_NilData(t *testing.T) {
+	w := httptest.NewRecorder()
+	JSON(w, http.StatusOK, nil)
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", w.Code)
+	}
+	body := strings.TrimSpace(w.Body.String())
+	if body != "null" {
+		t.Errorf("body = %q, want null", body)
+	}
+}
+
+func TestOK_WithComplexData(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]any{"items": []string{"a", "b"}, "count": 2}
+	OK(w, data)
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", w.Code)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got["count"].(float64) != 2 {
+		t.Errorf("count = %v, want 2", got["count"])
+	}
+}
+
+func TestError_VariousStatusCodes(t *testing.T) {
+	codes := []int{
+		http.StatusBadRequest,
+		http.StatusNotFound,
+		http.StatusConflict,
+		http.StatusUnprocessableEntity,
+	}
+	for _, code := range codes {
+		w := httptest.NewRecorder()
+		Error(w, code, "msg")
+		if w.Code != code {
+			t.Errorf("Error(%d): got %d", code, w.Code)
+		}
+	}
+}
+
+func TestInternalError_WithRealError(t *testing.T) {
+	w := httptest.NewRecorder()
+	InternalError(w, "operation failed", fmt.Errorf("connection refused"))
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", w.Code)
+	}
+	var body map[string]string
+	json.Unmarshal(w.Body.Bytes(), &body)
+	if body["error"] != "Internal server error" {
+		t.Errorf("error = %q, want Internal server error", body["error"])
+	}
+}
+
+func TestDecodeOrFail_TruncatedJSON(t *testing.T) {
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name":"trun`))
+	w := httptest.NewRecorder()
+	if DecodeOrFail(w, r, &struct{ Name string }{}) {
+		t.Error("expected false for truncated JSON")
+	}
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 

@@ -291,6 +291,70 @@ func TestBruteForce_IsBlocked_EntryExistsButNotBlocked(t *testing.T) {
 	}
 }
 
+func TestBruteForce_ConcurrentRecordFailure(t *testing.T) {
+	g := newTestBF(100)
+	defer g.Stop()
+	ip := "10.0.0.1"
+
+	done := make(chan bool, 50)
+	for i := 0; i < 50; i++ {
+		go func() {
+			g.RecordFailure(ip)
+			done <- true
+		}()
+	}
+	for i := 0; i < 50; i++ {
+		<-done
+	}
+	// Should not panic or race — verified by -race flag
+	if g.IsBlocked(ip) {
+		t.Error("50 failures of max 100 should not block")
+	}
+}
+
+func TestBruteForce_ConcurrentIsBlocked(t *testing.T) {
+	g := newTestBF(1)
+	defer g.Stop()
+	ip := "10.0.0.2"
+	g.RecordFailure(ip) // blocks immediately
+
+	done := make(chan bool, 20)
+	for i := 0; i < 20; i++ {
+		go func() {
+			g.IsBlocked(ip)
+			done <- true
+		}()
+	}
+	for i := 0; i < 20; i++ {
+		<-done
+	}
+}
+
+func BenchmarkBruteForce_RecordFailure(b *testing.B) {
+	g := NewBruteForceGuard(BruteForceConfig{
+		MaxFailures:   1000000,
+		BlockDuration: time.Hour,
+		Window:        time.Hour,
+	})
+	defer g.Stop()
+	for b.Loop() {
+		g.RecordFailure("bench-ip")
+	}
+}
+
+func BenchmarkBruteForce_IsBlocked(b *testing.B) {
+	g := NewBruteForceGuard(BruteForceConfig{
+		MaxFailures:   1000000,
+		BlockDuration: time.Hour,
+		Window:        time.Hour,
+	})
+	defer g.Stop()
+	g.RecordFailure("bench-ip")
+	for b.Loop() {
+		g.IsBlocked("bench-ip")
+	}
+}
+
 func TestRateLimiter_CleanupLoop_FiresOnTicker(t *testing.T) {
 	rl := NewRateLimiter(RateLimiterConfig{
 		RequestsPerWindow: 100,

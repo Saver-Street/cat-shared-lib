@@ -2,6 +2,8 @@ package sanitize
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -80,6 +82,60 @@ func TestIsDuplicateKey_Nil(t *testing.T) {
 	}
 }
 
+func TestDocFilename_Unicode(t *testing.T) {
+	got := DocFilename("résumé_日本語.pdf")
+	if got != "résumé_日本語.pdf" {
+		t.Errorf("got %q, want résumé_日本語.pdf", got)
+	}
+}
+
+func TestDocFilename_LongFilename(t *testing.T) {
+	long := strings.Repeat("a", 300) + ".pdf"
+	got := DocFilename(long)
+	if len(got) != len(long) {
+		t.Errorf("long filename length = %d, want %d (no truncation)", len(got), len(long))
+	}
+}
+
+func TestDocFilename_OnlySpaces(t *testing.T) {
+	got := DocFilename("   ")
+	if got != "   " {
+		t.Errorf("got %q, want spaces preserved", got)
+	}
+}
+
+func TestDocFilename_DotFile(t *testing.T) {
+	got := DocFilename(".gitignore")
+	if got != ".gitignore" {
+		t.Errorf("got %q, want .gitignore", got)
+	}
+}
+
+func TestDocFilename_Emoji(t *testing.T) {
+	got := DocFilename("📄document.pdf")
+	if got != "📄document.pdf" {
+		t.Errorf("got %q, want 📄document.pdf", got)
+	}
+}
+
+func TestIsDuplicateKey_WrappedError(t *testing.T) {
+	inner := errors.New("SQLSTATE 23505")
+	wrapped := fmt.Errorf("insert failed: %w", inner)
+	if !IsDuplicateKey(wrapped) {
+		t.Error("expected true for wrapped 23505 error")
+	}
+}
+
+func TestNilIfEmpty_Whitespace(t *testing.T) {
+	got := NilIfEmpty(" ")
+	if got == nil {
+		t.Error("whitespace-only string should not be nil")
+	}
+	if *got != " " {
+		t.Errorf("got %q, want single space", *got)
+	}
+}
+
 // --- Benchmarks ---
 
 func BenchmarkDocFilename(b *testing.B) {
@@ -92,5 +148,12 @@ func BenchmarkNilIfEmpty(b *testing.B) {
 	for b.Loop() {
 		NilIfEmpty("")
 		NilIfEmpty("hello")
+	}
+}
+
+func BenchmarkIsDuplicateKey(b *testing.B) {
+	err := errors.New("ERROR: duplicate key value violates unique constraint (SQLSTATE 23505)")
+	for b.Loop() {
+		IsDuplicateKey(err)
 	}
 }

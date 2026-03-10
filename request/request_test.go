@@ -174,11 +174,55 @@ func TestRequireURLParamInt_Missing(t *testing.T) {
 	}
 }
 
+func TestRequireURLParamInt_MaxInt(t *testing.T) {
+	r := httptest.NewRequest("GET", "/test", nil)
+	n, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "9223372036854775807"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if n != 9223372036854775807 {
+		t.Errorf("got %d, want max int64", n)
+	}
+}
+
+func TestRequireURLParamInt_Overflow(t *testing.T) {
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "99999999999999999999"}))
+	if err == nil {
+		t.Fatal("expected error for overflow value")
+	}
+}
+
+func TestParsePagination_LargePageOffset(t *testing.T) {
+	q := url.Values{"page": {"10000"}, "limit": {"100"}}
+	p := ParsePagination(q, 20, 100)
+	expectedOffset := 9999 * 100
+	if p.Offset != expectedOffset {
+		t.Errorf("offset = %d, want %d", p.Offset, expectedOffset)
+	}
+}
+
 // --- Benchmarks ---
 
 func BenchmarkParsePagination(b *testing.B) {
 	q := url.Values{"page": {"3"}, "limit": {"25"}}
 	for b.Loop() {
 		ParsePagination(q, 20, 100)
+	}
+}
+
+func BenchmarkRequireURLParam(b *testing.B) {
+	r := httptest.NewRequest("GET", "/test", nil)
+	fn := mockParamFn(map[string]string{"id": "42"})
+	for b.Loop() {
+		RequireURLParam(r, "id", fn)
+	}
+}
+
+func BenchmarkRequireURLParamInt(b *testing.B) {
+	r := httptest.NewRequest("GET", "/test", nil)
+	fn := mockParamFn(map[string]string{"id": "123"})
+	for b.Loop() {
+		RequireURLParamInt(r, "id", fn)
 	}
 }

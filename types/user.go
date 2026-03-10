@@ -21,11 +21,17 @@ func (u User) IsActive() bool { return u.SubscriptionStatus == "active" }
 
 // CandidateProfile represents the job-seeker profile linked to a User.
 type CandidateProfile struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"userId"`
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
-	Email     string    `json:"email"`
+	// ID is the UUID primary key of the candidate profile.
+	ID string `json:"id"`
+	// UserID is the foreign key referencing the owning User.
+	UserID string `json:"userId"`
+	// FirstName is the candidate's given name.
+	FirstName string `json:"firstName"`
+	// LastName is the candidate's family name.
+	LastName string `json:"lastName"`
+	// Email is the candidate's contact email (may differ from the login email).
+	Email string `json:"email"`
+	// CreatedAt is the UTC timestamp when the profile was created.
 	CreatedAt time.Time `json:"createdAt"`
 }
 

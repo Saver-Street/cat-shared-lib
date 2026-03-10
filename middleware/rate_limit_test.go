@@ -235,29 +235,29 @@ func BenchmarkIsExemptFromRateLimit(b *testing.B) {
 }
 
 func TestNewRateLimiter_ZeroConfigDefaults(t *testing.T) {
-// Zero RequestsPerWindow and WindowDuration should apply sane defaults.
-rl := NewRateLimiter(RateLimiterConfig{})
-defer rl.Stop()
+	// Zero RequestsPerWindow and WindowDuration should apply sane defaults.
+	rl := NewRateLimiter(RateLimiterConfig{})
+	defer rl.Stop()
 
-if rl.config.RequestsPerWindow != 100 {
-t.Errorf("expected RequestsPerWindow=100, got %d", rl.config.RequestsPerWindow)
-}
-if rl.config.WindowDuration != time.Minute {
-t.Errorf("expected WindowDuration=1m, got %v", rl.config.WindowDuration)
-}
-if rl.config.CleanupInterval != 2*time.Minute {
-t.Errorf("expected CleanupInterval=2m, got %v", rl.config.CleanupInterval)
-}
+	if rl.config.RequestsPerWindow != 100 {
+		t.Errorf("expected RequestsPerWindow=100, got %d", rl.config.RequestsPerWindow)
+	}
+	if rl.config.WindowDuration != time.Minute {
+		t.Errorf("expected WindowDuration=1m, got %v", rl.config.WindowDuration)
+	}
+	if rl.config.CleanupInterval != 2*time.Minute {
+		t.Errorf("expected CleanupInterval=2m, got %v", rl.config.CleanupInterval)
+	}
 }
 
 func TestNewRateLimiter_NegativeConfigDefaults(t *testing.T) {
-rl := NewRateLimiter(RateLimiterConfig{RequestsPerWindow: -5, WindowDuration: -1})
-defer rl.Stop()
+	rl := NewRateLimiter(RateLimiterConfig{RequestsPerWindow: -5, WindowDuration: -1})
+	defer rl.Stop()
 
-if rl.config.RequestsPerWindow != 100 {
-t.Errorf("expected RequestsPerWindow=100, got %d", rl.config.RequestsPerWindow)
-}
-if rl.config.WindowDuration != time.Minute {
-t.Errorf("expected WindowDuration=1m, got %v", rl.config.WindowDuration)
-}
+	if rl.config.RequestsPerWindow != 100 {
+		t.Errorf("expected RequestsPerWindow=100, got %d", rl.config.RequestsPerWindow)
+	}
+	if rl.config.WindowDuration != time.Minute {
+		t.Errorf("expected WindowDuration=1m, got %v", rl.config.WindowDuration)
+	}
 }

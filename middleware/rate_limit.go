@@ -91,6 +91,9 @@ func (rl *RateLimiter) cleanup() {
 }
 
 // GetClientIP extracts the client IP from the request, preferring X-Forwarded-For.
+// WARNING: X-Forwarded-For can be spoofed by clients. Only rely on this for
+// best-effort rate limiting or logging. For security-critical access control,
+// deploy behind a trusted reverse proxy that sets this header authoritatively.
 func GetClientIP(r *http.Request) string {
 	return clientIP(r)
 }

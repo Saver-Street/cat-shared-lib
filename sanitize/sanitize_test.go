@@ -407,3 +407,28 @@ func TestNullBool_True(t *testing.T) {
 		t.Error("NullBool(true ptr) should return true")
 	}
 }
+
+func TestDeref_Nil(t *testing.T) {
+	var p *string
+	if got := Deref(p, "default"); got != "default" { t.Errorf("got %q", got) }
+}
+func TestDeref_NonNil(t *testing.T) {
+	s := "hello"
+	if got := Deref(&s, "default"); got != "hello" { t.Errorf("got %q", got) }
+}
+func TestDeref_NilInt(t *testing.T) {
+	var p *int
+	if got := Deref(p, 42); got != 42 { t.Errorf("got %d", got) }
+}
+func TestDeref_NonNilInt(t *testing.T) {
+	n := 7
+	if got := Deref(&n, 42); got != 7 { t.Errorf("got %d", got) }
+}
+func TestDeref_NilBool(t *testing.T) {
+	var p *bool
+	if got := Deref(p, true); !got { t.Error("got false") }
+}
+func TestDeref_NonNilBool(t *testing.T) {
+	b := false
+	if got := Deref(&b, true); got { t.Error("got true") }
+}

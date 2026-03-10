@@ -405,3 +405,55 @@ func TestRequireQueryParamInt_NotAnInt(t *testing.T) {
 		t.Fatal("expected error for non-integer value")
 	}
 }
+
+func TestParseCommaSeparated_Values(t *testing.T) {
+	q := url.Values{"tags": {"go, python, rust"}}
+	got := ParseCommaSeparated(q, "tags")
+	if len(got) != 3 || got[0] != "go" || got[1] != "python" || got[2] != "rust" {
+		t.Errorf("got %v, want [go python rust]", got)
+	}
+}
+func TestParseCommaSeparated_Absent(t *testing.T) {
+	if got := ParseCommaSeparated(url.Values{}, "tags"); got != nil {
+		t.Errorf("got %v, want nil", got)
+	}
+}
+func TestParseCommaSeparated_EmptyString(t *testing.T) {
+	if got := ParseCommaSeparated(url.Values{"tags": {""}}, "tags"); got != nil {
+		t.Errorf("got %v, want nil", got)
+	}
+}
+func TestParseCommaSeparated_WhitespaceOnly(t *testing.T) {
+	if got := ParseCommaSeparated(url.Values{"tags": {"  , ,  "}}, "tags"); got != nil {
+		t.Errorf("got %v, want nil", got)
+	}
+}
+func TestParseCommaSeparated_Single(t *testing.T) {
+	got := ParseCommaSeparated(url.Values{"tags": {"go"}}, "tags")
+	if len(got) != 1 || got[0] != "go" {
+		t.Errorf("got %v, want [go]", got)
+	}
+}
+func TestParseCommaSeparatedInts_Valid(t *testing.T) {
+	got, err := ParseCommaSeparatedInts(url.Values{"ids": {"1,2,3"}}, "ids")
+	if err != nil { t.Fatalf("unexpected error: %v", err) }
+	if len(got) != 3 || got[0] != 1 || got[1] != 2 || got[2] != 3 {
+		t.Errorf("got %v, want [1 2 3]", got)
+	}
+}
+func TestParseCommaSeparatedInts_Absent(t *testing.T) {
+	got, err := ParseCommaSeparatedInts(url.Values{}, "ids")
+	if err != nil { t.Fatalf("unexpected error: %v", err) }
+	if got != nil { t.Errorf("got %v, want nil", got) }
+}
+func TestParseCommaSeparatedInts_Invalid(t *testing.T) {
+	_, err := ParseCommaSeparatedInts(url.Values{"ids": {"1,abc,3"}}, "ids")
+	if err == nil { t.Fatal("expected error") }
+}
+func TestParseCommaSeparatedInts_Negative(t *testing.T) {
+	got, err := ParseCommaSeparatedInts(url.Values{"ids": {"-1,0,2"}}, "ids")
+	if err != nil { t.Fatalf("unexpected error: %v", err) }
+	if got[0] != -1 || got[1] != 0 || got[2] != 2 {
+		t.Errorf("got %v, want [-1 0 2]", got)
+	}
+}

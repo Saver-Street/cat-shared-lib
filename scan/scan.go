@@ -1,7 +1,14 @@
 // Package scan provides generic database row scanning helpers.
 package scan
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+// ErrNoRows is returned by First when the result set contains no rows.
+// Callers can check for this condition with errors.Is(err, scan.ErrNoRows).
+var ErrNoRows = errors.New("scan: no rows in result set")
 
 // RowScanner is the interface for iterating and scanning multiple query rows.
 // It is satisfied by both *sql.Rows and pgx.Rows.
@@ -77,7 +84,7 @@ func First[T any](rows RowScanner, scanFn func(*T) []any) (T, error) {
 		if err := rows.Err(); err != nil {
 			return item, err
 		}
-		return item, errors.New("scan.First: no rows in result set")
+		return item, fmt.Errorf("scan.First: %w", ErrNoRows)
 	}
 	if err := rows.Scan(scanFn(&item)...); err != nil {
 		return item, err

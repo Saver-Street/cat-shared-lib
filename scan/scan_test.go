@@ -317,8 +317,8 @@ func TestFirst_Empty(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty rows")
 	}
-	if err.Error() != "scan.First: no rows in result set" {
-		t.Errorf("got %q, want 'no rows in result set'", err.Error())
+	if !errors.Is(err, ErrNoRows) {
+		t.Errorf("got %v, want errors.Is(err, ErrNoRows) == true", err)
 	}
 }
 

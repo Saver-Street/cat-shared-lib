@@ -88,7 +88,7 @@ func checkInstance(ctx context.Context, client *http.Client, inst discovery.Inst
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 

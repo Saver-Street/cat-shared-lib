@@ -246,7 +246,10 @@ func TestMockServer_LastRequest(t *testing.T) {
 	if ms.LastRequest() != nil {
 		t.Error("expected nil before any requests")
 	}
-	http.Get(ms.URL + "/ping")
+	resp, err := http.Get(ms.URL + "/ping") //nolint:noctx
+	if err == nil {
+		_ = resp.Body.Close()
+	}
 	if ms.LastRequest() == nil {
 		t.Fatal("expected non-nil request")
 	}
@@ -257,7 +260,10 @@ func TestMockServer_LastBody(t *testing.T) {
 	if ms.LastBody() != nil {
 		t.Error("expected nil before any requests")
 	}
-	http.Post(ms.URL, "application/json", bytes.NewBufferString(`{"x":1}`))
+	resp, err := http.Post(ms.URL, "application/json", bytes.NewBufferString(`{"x":1}`)) //nolint:noctx
+	if err == nil {
+		_ = resp.Body.Close()
+	}
 	if string(ms.LastBody()) != `{"x":1}` {
 		t.Errorf("unexpected body: %s", ms.LastBody())
 	}

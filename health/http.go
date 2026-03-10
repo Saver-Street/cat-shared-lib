@@ -55,7 +55,7 @@ func HTTPChecker(cfg HTTPCheckerConfig) Checker {
 		if err != nil {
 			return fmt.Errorf("request to %s failed: %w", cfg.URL, err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode != cfg.ExpectedStatus {
 			body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
@@ -86,7 +86,7 @@ func AggregateChecker(name, url string) Checker {
 		if err != nil {
 			return fmt.Errorf("request to %s failed: %w", url, err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		if err != nil {

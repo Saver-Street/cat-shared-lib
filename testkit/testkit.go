@@ -198,7 +198,7 @@ func NewMockServer(t *testing.T) *MockServer {
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
-	t.Cleanup(ms.Server.Close)
+	t.Cleanup(ms.Close)
 	return ms
 }
 

@@ -3,7 +3,6 @@ package migration
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -43,10 +42,9 @@ func (m *mockDB) Begin(ctx context.Context) (pgx.Tx, error) {
 
 // mockTx implements pgx.Tx for testing.
 type mockTx struct {
-	execFn     func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
-	commitErr  error
-	rollbackFn func() error
-	execCalls  []string
+	execFn    func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+	commitErr error
+	execCalls []string
 }
 
 func (t *mockTx) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
@@ -615,7 +613,7 @@ func TestMigrate_PartiallyApplied(t *testing.T) {
 
 // helper
 func containsStr(s, substr string) bool {
-	return fmt.Sprintf("%s", s) != "" && len(s) >= len(substr) &&
+	return s != "" && len(s) >= len(substr) &&
 		func() bool {
 			for i := 0; i <= len(s)-len(substr); i++ {
 				if s[i:i+len(substr)] == substr {

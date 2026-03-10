@@ -231,7 +231,7 @@ func (sw *statusWriter) WriteHeader(code int) {
 
 // ---- internal helpers ----
 
-func newExporter(ctx context.Context, t ExporterType) (sdktrace.SpanExporter, error) {
+func newExporter(_ context.Context, t ExporterType) (sdktrace.SpanExporter, error) {
 	switch t {
 	case ExporterStdout:
 		return stdouttrace.New(stdouttrace.WithPrettyPrint())

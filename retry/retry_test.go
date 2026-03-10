@@ -71,7 +71,7 @@ func TestDo_Defaults(t *testing.T) {
 		t.Errorf("expected 2.0 multiplier, got %f", cfg.Multiplier)
 	}
 	if cfg.JitterFraction != 0 {
-		// JitterFraction 0 is valid; defaults only applies when out of range.
+		t.Errorf("expected JitterFraction = 0 after defaults(), got %f", cfg.JitterFraction)
 	}
 }
 

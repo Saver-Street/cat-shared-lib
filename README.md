@@ -6,55 +6,101 @@ Shared Go library for Catherine (Auto-Apps) microservices.
 
 **Wave 0 — required by all service extractions.**
 
+---
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Packages](#packages)
+- [Usage Examples](#usage-examples)
+  - [middleware — JWT Auth, Authorization, Request Handling](#middleware--jwt-auth-authorization-request-handling)
+  - [config — Environment Variables](#config--environment-variables)
+  - [database — PostgreSQL Pool & Transactions](#database--postgresql-pool--transactions)
+  - [validation — Input Validation](#validation--input-validation)
+  - [cache — In-Memory LRU Cache with TTL](#cache--in-memory-lru-cache-with-ttl)
+  - [retry — Exponential Backoff](#retry--exponential-backoff)
+  - [crypto — Password Hashing & Token Generation](#crypto--password-hashing--token-generation)
+  - [email — SMTP Mailer with Templates](#email--smtp-mailer-with-templates)
+  - [tracing — OpenTelemetry Distributed Tracing](#tracing--opentelemetry-distributed-tracing)
+  - [migration — Database Migration Runner](#migration--database-migration-runner)
+  - [response — JSON Response Helpers](#response--json-response-helpers)
+  - [request — HTTP Request Parsing](#request--http-request-parsing)
+  - [health — Health Check Handlers](#health--health-check-handlers)
+  - [httpclient — Resilient HTTP Client](#httpclient--resilient-http-client)
+  - [apperror — Structured Errors](#apperror--structured-errors)
+  - [Additional Packages](#additional-packages)
+- [Design Notes](#design-notes)
+
+---
+
+## Installation
+
+```sh
+go get github.com/Saver-Street/cat-shared-lib@v1.0.0
+```
+
+```go
+// go.mod
+require github.com/Saver-Street/cat-shared-lib v1.0.0
+```
+
+---
+
 ## Packages
 
 | Package | Description | Coverage |
 |---|---|---|
 | `middleware` | JWT auth (HS256), request ID, logging, recovery, rate limiting, brute-force | 99% |
+| `config` | Env var parsing with defaults, validation, required checks | 100% |
+| `database` | PostgreSQL connection pool, transaction helpers | 97% |
+| `validation` | Email, UUID, phone, URL validators with clear error messages | 98% |
+| `cache` | Generic in-memory LRU cache with per-entry TTL | 99% |
+| `retry` | Exponential backoff with jitter and context cancellation | 95% |
+| `crypto` | bcrypt password hashing, secure token generation, HMAC-SHA256 | 93% |
+| `email` | SMTP mailer with HTML/text template support | 92% |
+| `tracing` | OpenTelemetry distributed tracing setup and helpers | 96% |
+| `migration` | Database migration runner with rollback support | 97% |
 | `response` | JSON response helpers, pagination headers | 100% |
 | `request` | HTTP request parsing, URL param extraction, pagination | 100% |
-| `health` | Standardized health check handlers with concurrent checkers | 100% |
-| `server` | HTTP server with graceful shutdown (SIGINT/SIGTERM) | 100% |
-| `validation` | Email, UUID, phone, URL validators with clear error messages | 98% |
+| `health` | Standardized health check handlers with concurrent checkers | 92% |
+| `httpclient` | Resilient HTTP client with retries and circuit breaker | 99% |
 | `apperror` | Standardized error types with HTTP status codes | 100% |
-| `config` | Env var parsing with defaults, validation, required checks | 100% |
-| `database` | Connection pool setup, migration runner, transaction helpers | 81% |
+| `circuitbreaker` | Circuit breaker pattern for resilient service calls | 99% |
+| `ratelimit` | Per-key sliding-window + token-bucket rate limiter | 98% |
+| `cors` | CORS middleware with configurable origins | 100% |
+| `discovery` | Service registry and instance-based health checking | 97% |
 | `entitlements` | Subscription tier limits + DirectDB queries | 100% |
-| `flags` | Feature flag DirectDB reads (boolean flags, plain-text) | 100% |
+| `featureflags` | Environment-variable-based feature flags | 100% |
+| `flags` | Feature flag DirectDB reads (boolean/plain-text) | 100% |
 | `identity` | Candidate resolution + context getters | 100% |
-| `types` | Shared domain types (User, CandidateProfile, Pagination) | 100% |
-| `scan` | Generic database row scanning (Rows, Row, First) | 100% |
+| `metrics` | Prometheus metrics helpers | 99% |
+| `openapi` | OpenAPI/Swagger spec serving | 96% |
 | `sanitize` | Filename sanitization, NilIfEmpty, IsDuplicateKey, Deref | 100% |
+| `scan` | Generic database row scanning (Rows, Row, First) | 100% |
 | `security` | Suspicious input detection, PII redaction | 100% |
+| `server` | HTTP server with graceful shutdown (SIGINT/SIGTERM) | 100% |
+| `shutdown` | OS signal-based graceful shutdown coordinator | 96% |
+| `testkit` | Mock server, call recorder, and other test helpers | 94% |
+| `types` | Shared domain types (User, CandidateProfile, Pagination) | 100% |
 
-## Usage
+---
+
+## Usage Examples
+
+### middleware — JWT Auth, Authorization, Request Handling
+
+The `middleware` package provides cross-cutting HTTP middleware: JWT validation,
+authorization checks, request ID injection, structured logging, panic recovery,
+rate limiting, and brute-force protection.
 
 ```go
 import (
     "github.com/Saver-Street/cat-shared-lib/middleware"
-    "github.com/Saver-Street/cat-shared-lib/response"
-    "github.com/Saver-Street/cat-shared-lib/request"
-    "github.com/Saver-Street/cat-shared-lib/health"
-    "github.com/Saver-Street/cat-shared-lib/server"
-    "github.com/Saver-Street/cat-shared-lib/validation"
-    "github.com/Saver-Street/cat-shared-lib/apperror"
-    "github.com/Saver-Street/cat-shared-lib/config"
-    "github.com/Saver-Street/cat-shared-lib/database"
-    "github.com/Saver-Street/cat-shared-lib/entitlements"
-    "github.com/Saver-Street/cat-shared-lib/flags"
-    "github.com/Saver-Street/cat-shared-lib/identity"
-    "github.com/Saver-Street/cat-shared-lib/scan"
-    "github.com/Saver-Street/cat-shared-lib/sanitize"
-    "github.com/Saver-Street/cat-shared-lib/security"
+    "os"
+    "time"
 )
-```
 
-## Package Examples
-
-### middleware — JWT Auth (HS256)
-
-```go
-// Create JWT auth middleware
+// --- JWT Auth middleware ---
 authMW := middleware.JWTAuth(middleware.JWTAuthConfig{
     Secret:    []byte(os.Getenv("JWT_SECRET")),
     Issuer:    "cat-service",
@@ -64,218 +110,595 @@ authMW := middleware.JWTAuth(middleware.JWTAuthConfig{
 mux := http.NewServeMux()
 mux.Handle("/api/", authMW(apiHandler))
 
-// In handlers, read authenticated user info:
-userID := middleware.GetUserID(r)
-email := middleware.GetUserEmail(r)
-role := middleware.GetUserRole(r)
+// Read authenticated user info inside any handler:
+userID   := middleware.GetUserID(r)
+email    := middleware.GetUserEmail(r)
+role     := middleware.GetUserRole(r)
+tier     := middleware.GetSubscriptionTier(r)
 
-// Issue a token:
-token, _ := middleware.SignHS256(middleware.JWTClaims{
+// Issue a signed JWT:
+token, err := middleware.SignHS256(middleware.JWTClaims{
     Subject:   userID,
     Email:     email,
     Role:      "admin",
     ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
     Issuer:    "cat-service",
-}, secret)
-```
+}, []byte(os.Getenv("JWT_SECRET")))
 
-### middleware — Request ID, Logging, Recovery
+// --- Authorization middleware ---
+mux.Handle("/api/",    middleware.RequireAuth(handler))
+mux.Handle("/admin/",  middleware.RequireAdmin(handler))
+mux.Handle("/editor/", middleware.RequireRole("editor")(handler))
+mux.Handle("/premium/",middleware.RequireSubscriptionTier("pro")(handler))
 
-```go
-// Stack middleware (outermost first):
+// --- Stack middleware (outermost first) ---
 handler := middleware.Recovery(
     middleware.RequestID(
         middleware.Logging(logger)(
-            middleware.RequireAuth(
-                myHandler,
+            middleware.RateLimit(middleware.RateLimitConfig{
+                RequestsPerSecond: 100,
+                Burst:             20,
+            })(
+                middleware.RequireAuth(apiHandler),
             ),
         ),
     ),
 )
-
-// Access request ID anywhere in the chain:
-reqID := middleware.GetRequestID(r)
 ```
 
-### middleware — Authorization
+---
+
+### config — Environment Variables
+
+The `config` package reads configuration from environment variables with support
+for defaults, type coercion, required checks, and bulk validation.
 
 ```go
-// Require authentication
-mux.Handle("/api/", middleware.RequireAuth(handler))
+import "github.com/Saver-Street/cat-shared-lib/config"
 
-// Require specific role
-mux.Handle("/admin/", middleware.RequireRole("admin")(handler))
-
-// Require minimum subscription tier
-mux.Handle("/premium/", middleware.RequireSubscriptionTier("pro")(handler))
-```
-
-### response — JSON Responses
-
-```go
-response.OK(w, user)                           // 200
-response.Created(w, newRecord)                  // 201
-response.NoContent(w)                           // 204
-response.BadRequest(w, "invalid email")         // 400
-response.NotFound(w, "user not found")          // 404
-response.InternalError(w, "fetch failed", err)  // 500 (logs error)
-
-// Paginated with headers
-response.PaginatedWithHeaders(w, users, total, page, limit)
-// Sets X-Total-Count, X-Limit, X-Offset headers + JSON body
-
-// Decode request body
-var req CreateUserRequest
-if !response.DecodeOrFail(w, r, &req) {
-    return // 400 already sent
+// Validate required vars at startup — fail fast
+if err := config.Validate("DATABASE_URL", "JWT_SECRET"); err != nil {
+    log.Fatal(err) // "config: missing required env vars: JWT_SECRET"
 }
+
+port    := config.Int("PORT", 8080)
+dbURL   := config.MustString("DATABASE_URL")    // panics if unset
+debug   := config.Bool("DEBUG", false)
+timeout := config.Duration("TIMEOUT", 30*time.Second)
+origins := config.StringSlice("CORS_ORIGINS", []string{"http://localhost:3000"})
+
+// Panic-free required string (returns error instead)
+secret, err := config.StringRequired("JWT_SECRET")
 ```
 
-### request — Parsing
+---
+
+### database — PostgreSQL Pool & Transactions
+
+The `database` package wraps `pgx/v5` to provide connection pooling and
+transaction helpers. DB-querying functions accept a `Querier` interface so they
+work identically with a pool, connection, or open transaction.
 
 ```go
-// Parse pagination from query params
-p := request.ParsePagination(r.URL.Query(), 20, 100)
-// p.Page, p.Limit, p.Offset
-
-// Required URL params
-id, err := request.RequireURLParamInt(r, "id", chi.URLParam)
-
-// Optional query params
-status := request.OptionalQueryParam(r.URL.Query(), "status", "active")
-```
-
-### health — Health Checks
-
-```go
-healthHandler := health.Handler("billing-service", "1.2.0",
-    health.DBChecker(pool),
-    health.NewChecker("redis", func(ctx context.Context) error {
-        return redisClient.Ping(ctx).Err()
-    }),
+import (
+    "github.com/Saver-Street/cat-shared-lib/database"
+    "github.com/jackc/pgx/v5"
 )
-mux.Handle("/health", healthHandler)
-// Returns: {"status":"ok","service":"billing-service","version":"1.2.0","uptime":"5m30s","checks":{"db":"ok","redis":"ok"}}
+
+// Open a connection pool
+pool, err := database.NewPool(ctx, database.PoolConfig{
+    DSN:             config.MustString("DATABASE_URL"),
+    MaxConns:        20,
+    MinConns:        5,
+    MaxConnLifetime: time.Hour,
+    MaxConnIdleTime: 30 * time.Minute,
+})
+defer pool.Close()
+
+// Run a transaction — automatically rolled back on error or panic
+err = database.WithTx(ctx, pool, func(tx pgx.Tx) error {
+    _, err := tx.Exec(ctx,
+        "INSERT INTO users (id, email) VALUES ($1, $2)", id, email)
+    if err != nil {
+        return err // triggers rollback
+    }
+    _, err = tx.Exec(ctx,
+        "INSERT INTO profiles (user_id) VALUES ($1)", id)
+    return err // nil → committed
+})
 ```
+
+---
 
 ### validation — Input Validation
 
+The `validation` package provides field-level validators that return structured
+`ValidationError` values with the field name and a human-readable message.
+
 ```go
+import "github.com/Saver-Street/cat-shared-lib/validation"
+
 errs := validation.Collect(
-    validation.Email("email", req.Email),
-    validation.UUID("userId", req.UserID),
-    validation.Phone("phone", req.Phone),
-    validation.URL("website", req.Website),
-    validation.Required("name", req.Name),
-    validation.MinLength("password", req.Password, 8),
-    validation.OneOf("role", req.Role, []string{"admin", "user", "guest"}),
+    validation.Required("name",     req.Name),
+    validation.Email("email",       req.Email),
+    validation.UUID("userId",       req.UserID),
+    validation.Phone("phone",       req.Phone),
+    validation.URL("website",       req.Website),
+    validation.MinLength("password",req.Password, 8),
+    validation.MaxLength("bio",     req.Bio, 500),
+    validation.OneOf("role",        req.Role, []string{"admin","user","guest"}),
 )
-if errs != nil {
-    // errs is []error, each is *validation.ValidationError with Field and Message
+if len(errs) > 0 {
+    // Each error is a *validation.ValidationError with .Field and .Message
     response.BadRequest(w, errs[0].Error())
     return
 }
 ```
 
+---
+
+### cache — In-Memory LRU Cache with TTL
+
+The `cache` package provides a generic, thread-safe LRU cache with per-entry TTL
+and a background cleanup goroutine to evict expired entries.
+
+```go
+import (
+    "github.com/Saver-Street/cat-shared-lib/cache"
+    "time"
+)
+
+// Create a cache of up to 1 000 string→User entries
+c := cache.New[string, User](cache.Config{
+    MaxEntries:      1000,
+    DefaultTTL:      5 * time.Minute,
+    CleanupInterval: time.Minute,
+})
+defer c.Stop() // stops the background cleanup goroutine
+
+// Store
+c.Set("user:42", user)
+c.SetWithTTL("session:abc", session, 30*time.Minute)
+
+// Retrieve
+u, ok := c.Get("user:42")
+if !ok {
+    // cache miss — load from DB
+}
+
+// Invalidate
+c.Delete("user:42")
+c.Clear() // remove all entries
+
+fmt.Println(c.Len()) // current entry count
+```
+
+---
+
+### retry — Exponential Backoff
+
+The `retry` package retries operations with exponential backoff and optional
+full jitter. It respects `context.Context` cancellation and supports custom
+retry predicates.
+
+```go
+import (
+    "github.com/Saver-Street/cat-shared-lib/retry"
+    "time"
+)
+
+err := retry.Do(ctx, retry.Config{
+    MaxAttempts:   5,
+    InitialDelay:  100 * time.Millisecond,
+    MaxDelay:      10 * time.Second,
+    Multiplier:    2.0,
+    JitterFraction: 0.25,
+    // Only retry on network errors, not on business logic errors:
+    RetryIf: func(err error) bool {
+        return !errors.Is(err, ErrNotFound)
+    },
+}, func(ctx context.Context) error {
+    return callExternalService(ctx)
+})
+if err != nil {
+    // all attempts exhausted or context cancelled
+}
+```
+
+---
+
+### crypto — Password Hashing & Token Generation
+
+The `crypto` package provides bcrypt password hashing, secure random token
+generation, and HMAC-SHA256 signing with constant-time comparison.
+
+```go
+import "github.com/Saver-Street/cat-shared-lib/crypto"
+
+// --- Password hashing ---
+hash, err := crypto.HashPassword("super-secret")  // default bcrypt cost
+if err != nil { ... }
+
+err = crypto.CheckPassword("super-secret", hash)
+if errors.Is(err, crypto.ErrInvalidToken) {
+    // wrong password
+}
+
+// Rehash if stored with an old/weak cost
+if crypto.NeedsRehash(hash) {
+    newHash, _ := crypto.HashPassword(plaintextPassword)
+    // update DB record
+}
+
+// --- Secure random tokens ---
+token, err := crypto.GenerateToken(32)     // 32 random bytes → base64 string
+hexToken, err := crypto.GenerateHexToken(16) // 16 random bytes → hex string
+
+// --- HMAC-SHA256 signing ---
+mac := crypto.HMACSHA256([]byte("my-secret-key"), []byte("payload"))
+ok  := crypto.VerifyHMACSHA256([]byte("my-secret-key"), []byte("payload"), mac)
+```
+
+---
+
+### email — SMTP Mailer with Templates
+
+The `email` package sends emails over SMTP with full MIME multipart support
+(HTML + plain-text alternatives), quoted-printable encoding, and Go template
+rendering for both HTML and text bodies.
+
+```go
+import (
+    "github.com/Saver-Street/cat-shared-lib/email"
+    "context"
+)
+
+// Create a mailer
+mailer := email.NewMailer(email.Config{
+    Host:     "smtp.sendgrid.net",
+    Port:     587,
+    Username: os.Getenv("SMTP_USER"),
+    Password: os.Getenv("SMTP_PASS"),
+    From:     "no-reply@example.com",
+    Timeout:  30 * time.Second,
+})
+
+// Send a plain email
+err := mailer.Send(ctx, email.Message{
+    To:      []string{"user@example.com"},
+    CC:      []string{"manager@example.com"},
+    Subject: "Welcome to Catherine",
+    HTML:    "<h1>Hello!</h1><p>Your account is ready.</p>",
+    Text:    "Hello!\n\nYour account is ready.",
+    Headers: map[string]string{"X-Priority": "1"},
+})
+
+// Send with Go templates
+htmlTmpl, _ := email.ParseHTMLString("welcome",
+    `<h1>Hello, {{.Name}}!</h1><p>Your code is {{.Code}}.</p>`)
+textTmpl, _ := email.ParseTextString("welcome",
+    `Hello, {{.Name}}! Your code is {{.Code}}.`)
+
+data := map[string]string{"Name": "Jordan", "Code": "ABC-123"}
+
+htmlBody, _ := email.RenderHTML(htmlTmpl, "welcome", data)
+textBody, _ := email.RenderText(textTmpl, "welcome", data)
+
+err = mailer.Send(ctx, email.Message{
+    To:      []string{"jordan@example.com"},
+    Subject: "Your verification code",
+    HTML:    htmlBody,
+    Text:    textBody,
+})
+```
+
+---
+
+### tracing — OpenTelemetry Distributed Tracing
+
+The `tracing` package wraps the OTel SDK to make trace setup, span creation,
+HTTP propagation, and context management simple and consistent across services.
+
+```go
+import "github.com/Saver-Street/cat-shared-lib/tracing"
+
+// --- Initialise once at service startup ---
+tp, err := tracing.NewProvider(ctx, tracing.Config{
+    ServiceName:    "billing-service",
+    ServiceVersion: "1.2.0",
+    Environment:    "production",
+    Exporter:       tracing.ExporterStdout, // or ExporterNoop
+    SampleRate:     1.0,
+})
+if err != nil { log.Fatal(err) }
+defer tp.Shutdown(ctx)
+
+// --- Create and use spans ---
+tracer := tracing.Tracer("billing-service")
+
+ctx, span := tracing.Start(ctx, "process-payment",
+    trace.WithAttributes(attribute.String("payment.id", paymentID)),
+)
+defer span.End()
+
+if err := processPayment(ctx, payment); err != nil {
+    tracing.RecordError(span, err)
+    return err
+}
+
+// --- HTTP middleware for automatic trace propagation ---
+mux.Handle("/", tracing.Middleware("billing-service")(handler))
+
+// --- Propagate to outbound HTTP calls ---
+req, _ := http.NewRequestWithContext(ctx, "POST", url, body)
+tracing.InjectHTTP(ctx, req.Header) // injects W3C traceparent header
+
+// --- Access IDs for logging correlation ---
+traceID := tracing.TraceID(ctx)
+spanID  := tracing.SpanID(ctx)
+```
+
+---
+
+### migration — Database Migration Runner
+
+The `migration` package runs ordered SQL migrations tracked in a
+`schema_migrations` table. It supports forward migrations, optional rollbacks,
+and transaction-safe execution.
+
+```go
+import "github.com/Saver-Street/cat-shared-lib/migration"
+
+// Create a migrator (uses "schema_migrations" table by default)
+m := migration.New(pool,
+    migration.Migration{
+        ID:   "001_create_users",
+        Up:   "CREATE TABLE users (id UUID PRIMARY KEY, email TEXT NOT NULL UNIQUE, created_at TIMESTAMPTZ DEFAULT now())",
+        Down: "DROP TABLE users",
+    },
+    migration.Migration{
+        ID:   "002_add_role",
+        Up:   "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'",
+        Down: "ALTER TABLE users DROP COLUMN role",
+    },
+    migration.Migration{
+        ID:   "003_create_sessions",
+        Up:   `CREATE TABLE sessions (id UUID PRIMARY KEY, user_id UUID REFERENCES users(id), expires_at TIMESTAMPTZ)`,
+        Down: "DROP TABLE sessions",
+    },
+)
+
+// Initialise the tracking table and run all pending migrations
+if err := m.Init(ctx); err != nil { log.Fatal(err) }
+if err := m.Migrate(ctx); err != nil { log.Fatal(err) }
+
+// Check status
+records, _ := m.Status(ctx)
+for _, r := range records {
+    fmt.Printf("%s: applied=%v at=%v\n", r.ID, r.Applied, r.AppliedAt)
+}
+
+// Rollback the last applied migration
+if err := m.Rollback(ctx); err != nil { log.Fatal(err) }
+
+// Use a custom tracking table
+m = migration.NewWithTable(pool, "my_schema.migrations", migrations...)
+```
+
+---
+
+### response — JSON Response Helpers
+
+The `response` package provides uniform JSON response construction with standard
+HTTP status codes and pagination support.
+
+```go
+import "github.com/Saver-Street/cat-shared-lib/response"
+
+response.OK(w, user)                               // 200 JSON
+response.Created(w, newRecord)                      // 201 JSON
+response.NoContent(w)                               // 204
+response.BadRequest(w, "invalid email")             // 400 JSON error
+response.Unauthorized(w, "token expired")           // 401 JSON error
+response.Forbidden(w, "insufficient permissions")   // 403 JSON error
+response.NotFound(w, "user not found")              // 404 JSON error
+response.InternalError(w, "query failed", err)      // 500 (logs error, returns generic message)
+
+// Paginated list with X-Total-Count / X-Limit / X-Offset headers
+response.PaginatedWithHeaders(w, users, total, page, limit)
+
+// Decode request body or send 400 automatically
+var req CreateUserRequest
+if !response.DecodeOrFail(w, r, &req) {
+    return // 400 already written
+}
+```
+
+---
+
+### request — HTTP Request Parsing
+
+```go
+import "github.com/Saver-Street/cat-shared-lib/request"
+
+// Pagination from query params (default limit, max limit)
+p := request.ParsePagination(r.URL.Query(), 20, 100)
+// p.Page, p.Limit, p.Offset
+
+// Required URL path parameter (works with any router)
+id, err := request.RequireURLParamInt(r, "id", chi.URLParam)
+
+// Optional query param with default
+status := request.OptionalQueryParam(r.URL.Query(), "status", "active")
+```
+
+---
+
+### health — Health Check Handlers
+
+```go
+import "github.com/Saver-Street/cat-shared-lib/health"
+
+h := health.Handler("billing-service", "1.2.0",
+    health.DBChecker(pool),
+    health.NewChecker("redis", func(ctx context.Context) error {
+        return redisClient.Ping(ctx).Err()
+    }),
+    health.NewChecker("stripe", func(ctx context.Context) error {
+        return stripeClient.Ping(ctx)
+    }),
+)
+mux.Handle("/health", h)
+// GET /health → {"status":"ok","service":"billing-service","checks":{"db":"ok","redis":"ok","stripe":"ok"}}
+// Returns 503 if any checker fails.
+```
+
+---
+
+### httpclient — Resilient HTTP Client
+
+The `httpclient` package wraps `net/http` with automatic retries, exponential
+backoff with jitter, optional circuit breaker integration, and JSON convenience
+methods.
+
+```go
+import (
+    "github.com/Saver-Street/cat-shared-lib/httpclient"
+    "github.com/Saver-Street/cat-shared-lib/circuitbreaker"
+)
+
+cb := circuitbreaker.New("payments-api",
+    circuitbreaker.WithFailureThreshold(5),
+    circuitbreaker.WithSuccessThreshold(2),
+    circuitbreaker.WithOpenTimeout(30*time.Second),
+)
+
+client := httpclient.New(
+    httpclient.WithTimeout(10 * time.Second),
+    httpclient.WithRetries(3),
+    httpclient.WithBaseBackoff(200 * time.Millisecond),
+    httpclient.WithMaxBackoff(5 * time.Second),
+    httpclient.WithCircuitBreaker(cb),
+    httpclient.WithHeader("X-Service", "billing"),
+    httpclient.WithUserAgent("billing-service/1.0"),
+    httpclient.WithRequestHook(func(req *http.Request) error {
+        req.Header.Set("Authorization", "Bearer "+getToken())
+        return nil
+    }),
+)
+
+// Typed JSON helpers
+var result PaymentResponse
+err := client.GetJSON(ctx, "https://api.payments.io/v1/payment/123", &result)
+err  = client.PostJSON(ctx, "https://api.payments.io/v1/payments", &payload, &result)
+err  = client.PutJSON(ctx, "https://api.payments.io/v1/payment/123", &update, &result)
+err  = client.DeleteJSON(ctx, "https://api.payments.io/v1/payment/123", nil)
+
+// Raw request
+resp, err := client.Do(ctx, http.MethodGet, url, nil)
+fmt.Println(resp.StatusCode, string(resp.Body))
+```
+
+---
+
 ### apperror — Structured Errors
 
 ```go
-// Create typed errors
-err := apperror.NotFound("user not found")
-err := apperror.BadRequest("invalid email format")
-err := apperror.InternalWrap("query failed", dbErr)
+import "github.com/Saver-Street/cat-shared-lib/apperror"
 
-// Check error type
-if apperror.IsCode(err, apperror.CodeNotFound) {
-    response.NotFound(w, err.Error())
+// Construct typed errors
+err := apperror.NotFound("user not found")
+err  = apperror.BadRequest("invalid email format")
+err  = apperror.Unauthorized("token expired")
+err  = apperror.Forbidden("not an admin")
+err  = apperror.InternalWrap("query failed", dbErr) // wraps original
+
+// In handlers: get HTTP status from any error
+if appErr, ok := err.(*apperror.Error); ok {
+    http.Error(w, appErr.Message, appErr.Status)
     return
 }
-
-// Get HTTP status from any error
-status := apperror.HTTPStatus(err) // 404, 400, 500, etc.
+// Or use the helper:
+status := apperror.HTTPStatus(err) // 404, 400, 401, 403, 500, …
 ```
 
-### config — Environment Variables
+---
+
+### Additional Packages
+
+**`circuitbreaker`** — Protects downstream calls from cascading failures.
 
 ```go
-port := config.Int("PORT", 8080)
-dbURL := config.MustString("DATABASE_URL")  // panics if unset
-debug := config.Bool("DEBUG", false)
-timeout := config.Duration("TIMEOUT", 30*time.Second)
-origins := config.StringSlice("CORS_ORIGINS", []string{"http://localhost:3000"})
+cb := circuitbreaker.New("user-service",
+    circuitbreaker.WithFailureThreshold(5),
+    circuitbreaker.WithOpenTimeout(30*time.Second),
+)
+err := cb.Execute(func() error { return callUserService(ctx) })
+if errors.Is(err, circuitbreaker.ErrCircuitOpen) { /* fast-fail */ }
+```
 
-// Validate all required vars at startup
-if err := config.Validate("DATABASE_URL", "JWT_SECRET", "REDIS_URL"); err != nil {
-    log.Fatal(err) // "config: missing required environment variables: JWT_SECRET, REDIS_URL"
+**`ratelimit`** — Per-key sliding-window + token-bucket limiter.
+
+```go
+rl := ratelimit.New(ratelimit.Config{RequestsPerSecond: 10, Burst: 20})
+if !rl.Allow(r.RemoteAddr) {
+    response.TooManyRequests(w)
+    return
 }
 ```
 
-### database — Pool, Transactions, Migrations
+**`cors`** — CORS middleware.
 
 ```go
-// Create connection pool
-pool, err := database.NewPool(ctx, database.PoolConfig{
-    DSN:      config.MustString("DATABASE_URL"),
-    MaxConns: 20,
-    MinConns: 5,
-})
-defer pool.Close()
-
-// Run migrations
-err = database.Migrate(ctx, pool, []database.Migration{
-    {Version: 1, Name: "create_users", SQL: "CREATE TABLE users (id UUID PRIMARY KEY, email TEXT NOT NULL)"},
-    {Version: 2, Name: "add_role", SQL: "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'"},
-})
-
-// Transaction helper
-err = database.WithTx(ctx, pool, func(tx pgx.Tx) error {
-    _, err := tx.Exec(ctx, "INSERT INTO users (id, email) VALUES ($1, $2)", id, email)
-    if err != nil {
-        return err // automatically rolled back
-    }
-    _, err = tx.Exec(ctx, "INSERT INTO profiles (user_id) VALUES ($1)", id)
-    return err // committed if nil
-})
+mux.Handle("/", cors.Middleware(cors.Config{
+    AllowedOrigins: []string{"https://app.example.com"},
+    AllowedMethods: []string{"GET","POST","PUT","DELETE"},
+})(handler))
 ```
 
-### scan — Generic Row Scanning
+**`featureflags`** — Toggle features with environment variables.
 
 ```go
-type User struct { ID string; Email string }
-
-users, err := scan.Rows[User](rows, func(u *User) []any {
-    return []any{&u.ID, &u.Email}
-})
-
-user, err := scan.Row[User](pool.QueryRow(ctx, sql, id), func(u *User) []any {
-    return []any{&u.ID, &u.Email}
-})
+if featureflags.Enabled("NEW_BILLING_FLOW") {
+    return newBillingHandler(w, r)
+}
 ```
+
+**`testkit`** — Lightweight test helpers.
+
+```go
+ms := testkit.NewMockServer(t)
+ms.Handle(func(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]any{"ok": true})
+})
+client.GetJSON(ctx, ms.URL+"/path", &result)
+assert.Equal(t, 1, ms.RequestCount())
+```
+
+---
 
 ## Querier Interface
 
-DB-querying functions accept a `Querier` interface instead of concrete `*pgxpool.Pool`:
+DB-querying functions accept a `Querier` interface rather than a concrete pool,
+making them work identically with `*pgxpool.Pool`, `*pgx.Conn`, and `pgx.Tx`:
 
 ```go
 type Querier interface {
     QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+    Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+    Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 ```
 
-Both `*pgxpool.Pool`, `*pgx.Conn`, and `pgx.Tx` satisfy this interface, making the
-library flexible and fully testable without a real database.
+---
 
 ## Design Notes
 
-- **DirectDB only** in Phase C — no HTTP service-to-service calls
+- **DirectDB only** in Phase C — no HTTP service-to-service calls via service packages
 - **Boolean flags are plain-text** (`"true"` / `"false"`) — no encryption
 - **Rate limiter** is per-IP sliding window + token bucket, safe for concurrent use
-- **98%+ test coverage** across all packages
-- **Querier interface** for DB functions — accepts pool, conn, or tx
+- **90%+ test coverage** across all packages (race-condition tested)
+- **Zero-config defaults** — all packages work out of the box with sensible defaults
+- **Context-aware** — every long-running operation accepts `context.Context`
 
-## Import in services
-
-```go
-// go.mod
-require github.com/Saver-Street/cat-shared-lib v1.5.0
-```

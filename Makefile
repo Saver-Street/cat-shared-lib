@@ -1,4 +1,4 @@
-.PHONY: test test-v test-race lint cover clean help
+.PHONY: test test-v test-race lint cover check-coverage clean help
 
 .DEFAULT_GOAL := help
 
@@ -21,6 +21,16 @@ lint: ## Run linters (vet + staticcheck)
 cover: ## Generate coverage report
 	go test ./... -count=1 -coverprofile=coverage.out
 	go tool cover -func=coverage.out | tail -1
+
+check-coverage: cover ## Fail if total coverage < 90%
+	@coverage=$$(go tool cover -func=coverage.out | tail -1 | awk '{print $$3}' | sed 's/%//'); \
+	threshold=90; \
+	if [ "$${coverage%.*}" -lt "$$threshold" ]; then \
+		echo "FAIL: coverage $${coverage}% is below $${threshold}%"; \
+		exit 1; \
+	else \
+		echo "OK: coverage $${coverage}% meets $${threshold}% threshold"; \
+	fi
 
 clean: ## Remove build artifacts
 	rm -f coverage.out

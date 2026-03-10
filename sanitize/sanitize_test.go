@@ -316,3 +316,35 @@ func TestIsDatabaseError(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkTruncateFilename(b *testing.B) {
+	for b.Loop() {
+		TruncateFilename("long_document_name.pdf", 15)
+	}
+}
+
+func BenchmarkMaxLength(b *testing.B) {
+	s := "a string that is fairly long for benchmarking purposes"
+	for b.Loop() {
+		MaxLength(s, 20)
+	}
+}
+
+func BenchmarkSanitizeEmail(b *testing.B) {
+	for b.Loop() {
+		SanitizeEmail("  User@Example.COM  ")
+	}
+}
+
+func BenchmarkIsDatabaseError(b *testing.B) {
+	err := errors.New("ERROR: duplicate key (SQLSTATE 23505)")
+	for b.Loop() {
+		IsDatabaseError(err, "23505")
+	}
+}
+
+func BenchmarkTrimAndNilIfEmpty(b *testing.B) {
+	for b.Loop() {
+		TrimAndNilIfEmpty("  hello  ")
+	}
+}

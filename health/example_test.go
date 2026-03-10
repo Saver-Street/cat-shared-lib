@@ -27,3 +27,23 @@ func ExampleNewChecker() {
 	// db
 	// <nil>
 }
+
+func ExampleStatus_IsHealthy() {
+	s := health.Status{Status: "ok"}
+	fmt.Println(s.IsHealthy())
+	s.Status = "degraded"
+	fmt.Println(s.IsHealthy())
+	// Output:
+	// true
+	// false
+}
+
+func ExampleStatus_HasErrors() {
+	s := health.Status{Status: "ok"}
+	fmt.Println(s.HasErrors())
+	s.Status = "degraded"
+	fmt.Println(s.HasErrors())
+	// Output:
+	// false
+	// true
+}

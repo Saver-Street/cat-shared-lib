@@ -66,3 +66,141 @@ func ExampleGetUserID() {
 	// Output:
 	// user-123
 }
+
+func ExampleSetExtCandidateID() {
+	ctx := middleware.SetExtCandidateID(context.Background(), "cand-42")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetExtCandidateID(r))
+	// Output: cand-42
+}
+
+func ExampleGetExtCandidateID() {
+	ctx := middleware.SetExtCandidateID(context.Background(), "cand-99")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetExtCandidateID(r))
+	// Output: cand-99
+}
+
+func ExampleSetExtTokenID() {
+	ctx := middleware.SetExtTokenID(context.Background(), "tok-abc")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetExtTokenID(r))
+	// Output: tok-abc
+}
+
+func ExampleGetExtTokenID() {
+	ctx := middleware.SetExtTokenID(context.Background(), "tok-xyz")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetExtTokenID(r))
+	// Output: tok-xyz
+}
+
+func ExampleSetExtUserID() {
+	ctx := middleware.SetExtUserID(context.Background(), "ext-user-1")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetExtUserID(r))
+	// Output: ext-user-1
+}
+
+func ExampleGetExtUserID() {
+	ctx := middleware.SetExtUserID(context.Background(), "ext-user-2")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetExtUserID(r))
+	// Output: ext-user-2
+}
+
+func ExampleSetUserEmail() {
+	ctx := middleware.SetUserEmail(context.Background(), "user@example.com")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetUserEmail(r))
+	// Output: user@example.com
+}
+
+func ExampleGetUserEmail() {
+	ctx := middleware.SetUserEmail(context.Background(), "admin@test.com")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetUserEmail(r))
+	// Output: admin@test.com
+}
+
+func ExampleSetUserRole() {
+	ctx := middleware.SetUserRole(context.Background(), "admin")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetUserRole(r))
+	// Output: admin
+}
+
+func ExampleGetUserRole() {
+	ctx := middleware.SetUserRole(context.Background(), "moderator")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetUserRole(r))
+	// Output: moderator
+}
+
+func ExampleRequireAdmin() {
+	handler := middleware.RequireAdmin(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// No auth → 401
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/admin", nil)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+
+	// Non-admin → 403
+	w = httptest.NewRecorder()
+	r = httptest.NewRequest("GET", "/admin", nil)
+	ctx := middleware.SetUserID(r.Context(), "user-1")
+	ctx = middleware.SetUserRole(ctx, "user")
+	r = r.WithContext(ctx)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+
+	// Admin → 200
+	w = httptest.NewRecorder()
+	r = httptest.NewRequest("GET", "/admin", nil)
+	ctx = middleware.SetUserID(r.Context(), "admin-1")
+	ctx = middleware.SetUserRole(ctx, "admin")
+	r = r.WithContext(ctx)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+	// Output:
+	// 401
+	// 403
+	// 200
+}
+
+func ExampleRequireRole() {
+	handler := middleware.RequireRole("editor")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// No auth → 401
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/edit", nil)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+
+	// Wrong role → 403
+	w = httptest.NewRecorder()
+	r = httptest.NewRequest("GET", "/edit", nil)
+	ctx := middleware.SetUserID(r.Context(), "u1")
+	ctx = middleware.SetUserRole(ctx, "viewer")
+	r = r.WithContext(ctx)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+
+	// Correct role → 200
+	w = httptest.NewRecorder()
+	r = httptest.NewRequest("GET", "/edit", nil)
+	ctx = middleware.SetUserID(r.Context(), "u2")
+	ctx = middleware.SetUserRole(ctx, "editor")
+	r = r.WithContext(ctx)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+	// Output:
+	// 401
+	// 403
+	// 200
+}

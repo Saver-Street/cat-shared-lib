@@ -27,3 +27,9 @@ func AllTierNames() []string {
 func CanApplyThisMonth(tier string, count int) bool {
 	return count < GetLimitsForTier(tier).MonthlyApplications
 }
+
+// IsTierValid reports whether tier is a known subscription tier.
+func IsTierValid(tier string) bool {
+	_, ok := TierConfig[tier]
+	return ok
+}

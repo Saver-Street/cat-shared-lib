@@ -241,8 +241,30 @@ func TestAllTierNames_IsACopy(t *testing.T) {
 	}
 }
 
+func BenchmarkAllTierNames(b *testing.B) {
+	for b.Loop() {
+		AllTierNames()
+	}
+}
+
 func BenchmarkCanApplyThisMonth(b *testing.B) {
 	for b.Loop() {
 		CanApplyThisMonth("pro", 75)
+	}
+}
+
+func TestIsTierValid_KnownTiers(t *testing.T) {
+	for _, tier := range AllTierNames() {
+		if !IsTierValid(tier) {
+			t.Errorf("IsTierValid(%q) = false, want true", tier)
+		}
+	}
+}
+
+func TestIsTierValid_UnknownTier(t *testing.T) {
+	for _, tier := range []string{"", "enterprise", "gold", "ADMIN", "Free"} {
+		if IsTierValid(tier) {
+			t.Errorf("IsTierValid(%q) = true, want false", tier)
+		}
 	}
 }

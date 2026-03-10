@@ -19,3 +19,18 @@ func ExampleGetLimitsForTier_unknown() {
 	// Output:
 	// free
 }
+
+func ExampleAllTierNames() {
+	names := entitlements.AllTierNames()
+	fmt.Println(names)
+	// Output:
+	// [free starter pro power concierge]
+}
+
+func ExampleCanApplyThisMonth() {
+	fmt.Println(entitlements.CanApplyThisMonth("free", 9))
+	fmt.Println(entitlements.CanApplyThisMonth("free", 10))
+	// Output:
+	// true
+	// false
+}

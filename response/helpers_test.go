@@ -331,6 +331,63 @@ func BenchmarkInternalError(b *testing.B) {
 	}
 }
 
+func BenchmarkAccepted(b *testing.B) {
+	data := map[string]string{"status": "queued"}
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		Accepted(w, data)
+	}
+}
+
+func BenchmarkNotFound(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		NotFound(w, "resource not found")
+	}
+}
+
+func BenchmarkConflict(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		Conflict(w, "already exists")
+	}
+}
+
+func BenchmarkForbidden(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		Forbidden(w, "access denied")
+	}
+}
+
+func BenchmarkUnauthorized(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		Unauthorized(w, "token expired")
+	}
+}
+
+func BenchmarkUnprocessableEntity(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		UnprocessableEntity(w, "validation failed")
+	}
+}
+
+func BenchmarkTooManyRequests(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		TooManyRequests(w, "rate limit exceeded")
+	}
+}
+
+func BenchmarkServiceUnavailable(b *testing.B) {
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		ServiceUnavailable(w, "service down")
+	}
+}
+
 func BenchmarkDecodeOrFail(b *testing.B) {
 	body := `{"name":"test","value":123}`
 	for b.Loop() {

@@ -2,6 +2,7 @@ package sanitize
 
 import (
 	"errors"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -70,6 +71,70 @@ func FuzzIsDuplicateKey(f *testing.F) {
 		expected := strings.Contains(s, "23505")
 		if result != expected {
 			t.Errorf("IsDuplicateKey(errors.New(%q)) = %v, want %v", s, result, expected)
+		}
+	})
+}
+
+func FuzzTruncateFilename(f *testing.F) {
+	f.Add("report.pdf", 20)
+	f.Add("averylongfilename.txt", 10)
+	f.Add("", 10)
+	f.Add("file.txt", 0)
+	f.Add("file.txt", -1)
+	f.Add("x.verylongext", 3)
+	f.Add("résumé.pdf", 7)
+	f.Add("日本語.txt", 5)
+	f.Add("noext", 3)
+	f.Add(".gitignore", 5)
+
+	f.Fuzz(func(t *testing.T, name string, maxLen int) {
+		result := TruncateFilename(name, maxLen)
+		runes := []rune(result)
+		if maxLen <= 0 || name == "" {
+			if result != "" {
+				t.Errorf("TruncateFilename(%q, %d) = %q, want empty", name, maxLen, result)
+			}
+			return
+		}
+		nameRunes := []rune(name)
+		if len(nameRunes) <= maxLen {
+			if result != name {
+				t.Errorf("TruncateFilename(%q, %d) = %q, want unchanged", name, maxLen, result)
+			}
+			return
+		}
+		// When truncated, length should be at most maxLen (unless ext is longer)
+		ext := []rune(filepath.Ext(name))
+		if len(ext) < maxLen && len(runes) > maxLen {
+			t.Errorf("TruncateFilename(%q, %d) = %q (len %d), exceeds maxLen", name, maxLen, result, len(runes))
+		}
+	})
+}
+
+func FuzzMaxLength(f *testing.F) {
+	f.Add("hello world", 5)
+	f.Add("hello", 10)
+	f.Add("", 5)
+	f.Add("hello", 0)
+	f.Add("hello", -1)
+	f.Add("héllo", 3)
+	f.Add("日本語テスト", 3)
+
+	f.Fuzz(func(t *testing.T, s string, maxLen int) {
+		result := MaxLength(s, maxLen)
+		runes := []rune(result)
+		if maxLen <= 0 {
+			if result != "" {
+				t.Errorf("MaxLength(%q, %d) = %q, want empty", s, maxLen, result)
+			}
+			return
+		}
+		if len(runes) > maxLen {
+			t.Errorf("MaxLength(%q, %d) = %q (len %d), exceeds maxLen", s, maxLen, result, len(runes))
+		}
+		sRunes := []rune(s)
+		if len(sRunes) <= maxLen && result != s {
+			t.Errorf("MaxLength(%q, %d) = %q, want unchanged", s, maxLen, result)
 		}
 	})
 }

@@ -3,8 +3,8 @@ package identity
 import (
 	"context"
 	"errors"
-	"strings"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/Saver-Street/cat-shared-lib/middleware"

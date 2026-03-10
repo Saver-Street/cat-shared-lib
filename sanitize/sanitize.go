@@ -27,6 +27,7 @@ func DocFilename(name string) string {
 
 // TruncateFilename shortens a filename to at most maxLen runes while preserving
 // the file extension. If maxLen is zero or negative, returns an empty string.
+// Dotfiles (e.g. ".gitignore") have no distinct extension and are returned unchanged.
 func TruncateFilename(name string, maxLen int) string {
 	runes := []rune(name)
 	if maxLen <= 0 || len(runes) == 0 {
@@ -83,12 +84,12 @@ func IsDuplicateKey(err error) bool {
 // SanitizeEmail trims whitespace and lowercases an email address.
 // It does not validate whether the address is well-formed.
 func SanitizeEmail(email string) string {
-return strings.ToLower(strings.TrimSpace(email))
+	return strings.ToLower(strings.TrimSpace(email))
 }
 
 // IsDatabaseError checks whether err contains the given PostgreSQL error code.
 // Use standard 5-character SQLSTATE codes, e.g. "23505" (unique violation),
 // "23503" (foreign key violation), "23502" (not null violation).
 func IsDatabaseError(err error, code string) bool {
-return err != nil && strings.Contains(err.Error(), code)
+	return err != nil && strings.Contains(err.Error(), code)
 }

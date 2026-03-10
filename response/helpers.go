@@ -72,7 +72,6 @@ func UnprocessableEntity(w http.ResponseWriter, msg string) {
 	Error(w, http.StatusUnprocessableEntity, msg)
 }
 
-
 // TooManyRequests sends a 429 JSON error response.
 // Use this when a client exceeds a rate limit or brute-force threshold.
 func TooManyRequests(w http.ResponseWriter, msg string) {

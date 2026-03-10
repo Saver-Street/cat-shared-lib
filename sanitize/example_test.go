@@ -2,9 +2,9 @@ package sanitize_test
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"fmt"
 
 	"github.com/Saver-Street/cat-shared-lib/sanitize"
 )
@@ -30,11 +30,63 @@ func ExampleNilIfEmpty() {
 func ExampleIsDuplicateKey() {
 	pgDup := &pgconn.PgError{Code: "23505"}
 	fmt.Println(sanitize.IsDuplicateKey(pgDup))
-	_ = errors.New("unused") // keep errors import
 	fmt.Println(sanitize.IsDuplicateKey(errors.New("other error")))
 	fmt.Println(sanitize.IsDuplicateKey(nil))
 	// Output:
 	// true
 	// false
 	// false
+}
+
+func ExampleTruncateFilename() {
+	fmt.Println(sanitize.TruncateFilename("report.pdf", 20))
+	fmt.Println(sanitize.TruncateFilename("averylongfilename.txt", 10))
+	fmt.Println(sanitize.TruncateFilename("", 10))
+	fmt.Println(sanitize.TruncateFilename("file.txt", 0))
+	// Output:
+	// report.pdf
+	// averyl.txt
+	//
+	//
+}
+
+func ExampleMaxLength() {
+	fmt.Println(sanitize.MaxLength("hello world", 5))
+	fmt.Println(sanitize.MaxLength("hi", 10))
+	fmt.Println(sanitize.MaxLength("hello", 0))
+	// Output:
+	// hello
+	// hi
+	//
+}
+
+func ExampleSanitizeEmail() {
+	fmt.Println(sanitize.SanitizeEmail("  User@Example.COM  "))
+	fmt.Println(sanitize.SanitizeEmail("alice@example.com"))
+	fmt.Println(sanitize.SanitizeEmail(""))
+	// Output:
+	// user@example.com
+	// alice@example.com
+	//
+}
+
+func ExampleIsDatabaseError() {
+	pgErr := &pgconn.PgError{Code: "23503"}
+	fmt.Println(sanitize.IsDatabaseError(pgErr, "23503"))
+	fmt.Println(sanitize.IsDatabaseError(pgErr, "23505"))
+	fmt.Println(sanitize.IsDatabaseError(nil, "23505"))
+	// Output:
+	// true
+	// false
+	// false
+}
+
+func ExampleTrimAndNilIfEmpty() {
+	fmt.Println(sanitize.TrimAndNilIfEmpty(""))
+	fmt.Println(sanitize.TrimAndNilIfEmpty("   "))
+	fmt.Println(*sanitize.TrimAndNilIfEmpty("  hello  "))
+	// Output:
+	// <nil>
+	// <nil>
+	// hello
 }

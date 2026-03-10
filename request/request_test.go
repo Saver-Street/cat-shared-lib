@@ -255,63 +255,63 @@ func TestParsePagination_ZeroMaxLimitCapsCorrectly(t *testing.T) {
 }
 
 func TestRequireQueryParam_Present(t *testing.T) {
-q := url.Values{"filter": {"active"}}
-got, err := RequireQueryParam(q, "filter")
-if err != nil {
-t.Fatalf("unexpected error: %v", err)
-}
-if got != "active" {
-t.Errorf("got %q, want %q", got, "active")
-}
+	q := url.Values{"filter": {"active"}}
+	got, err := RequireQueryParam(q, "filter")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "active" {
+		t.Errorf("got %q, want %q", got, "active")
+	}
 }
 
 func TestRequireQueryParam_Missing(t *testing.T) {
-q := url.Values{}
-_, err := RequireQueryParam(q, "filter")
-if err == nil {
-t.Fatal("expected error for missing param")
-}
+	q := url.Values{}
+	_, err := RequireQueryParam(q, "filter")
+	if err == nil {
+		t.Fatal("expected error for missing param")
+	}
 }
 
 func TestRequireQueryParam_Empty(t *testing.T) {
-q := url.Values{"filter": {""}}
-_, err := RequireQueryParam(q, "filter")
-if err == nil {
-t.Fatal("expected error for empty param")
-}
+	q := url.Values{"filter": {""}}
+	_, err := RequireQueryParam(q, "filter")
+	if err == nil {
+		t.Fatal("expected error for empty param")
+	}
 }
 
 func TestParseBoolParam_TrueValues(t *testing.T) {
-for _, v := range []string{"true", "1", "yes", "True", "YES"} {
-q := url.Values{"active": {v}}
-if !ParseBoolParam(q, "active", false) {
-t.Errorf("expected true for %q", v)
-}
-}
+	for _, v := range []string{"true", "1", "yes", "True", "YES"} {
+		q := url.Values{"active": {v}}
+		if !ParseBoolParam(q, "active", false) {
+			t.Errorf("expected true for %q", v)
+		}
+	}
 }
 
 func TestParseBoolParam_FalseValues(t *testing.T) {
-for _, v := range []string{"false", "0", "no", "False", "NO"} {
-q := url.Values{"active": {v}}
-if ParseBoolParam(q, "active", true) {
-t.Errorf("expected false for %q", v)
-}
-}
+	for _, v := range []string{"false", "0", "no", "False", "NO"} {
+		q := url.Values{"active": {v}}
+		if ParseBoolParam(q, "active", true) {
+			t.Errorf("expected false for %q", v)
+		}
+	}
 }
 
 func TestParseBoolParam_DefaultOnMissing(t *testing.T) {
-q := url.Values{}
-if !ParseBoolParam(q, "active", true) {
-t.Error("expected default true when param missing")
-}
-if ParseBoolParam(q, "active", false) {
-t.Error("expected default false when param missing")
-}
+	q := url.Values{}
+	if !ParseBoolParam(q, "active", true) {
+		t.Error("expected default true when param missing")
+	}
+	if ParseBoolParam(q, "active", false) {
+		t.Error("expected default false when param missing")
+	}
 }
 
 func TestParseBoolParam_DefaultOnUnknown(t *testing.T) {
-q := url.Values{"active": {"maybe"}}
-if !ParseBoolParam(q, "active", true) {
-t.Error("expected default true for unrecognised value")
-}
+	q := url.Values{"active": {"maybe"}}
+	if !ParseBoolParam(q, "active", true) {
+		t.Error("expected default true for unrecognised value")
+	}
 }

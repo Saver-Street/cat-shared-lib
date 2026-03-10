@@ -279,72 +279,72 @@ func BenchmarkRequireAdmin(b *testing.B) {
 }
 
 func TestSetExtUserID_RoundTrip(t *testing.T) {
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-r = r.WithContext(SetExtUserID(r.Context(), "ext-user-99"))
-if id := GetExtUserID(r); id != "ext-user-99" {
-t.Errorf("SetExtUserID/GetExtUserID = %q, want ext-user-99", id)
-}
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetExtUserID(r.Context(), "ext-user-99"))
+	if id := GetExtUserID(r); id != "ext-user-99" {
+		t.Errorf("SetExtUserID/GetExtUserID = %q, want ext-user-99", id)
+	}
 }
 
 func TestGetExtUserID_Empty(t *testing.T) {
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-if id := GetExtUserID(r); id != "" {
-t.Errorf("GetExtUserID without value = %q, want empty", id)
-}
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	if id := GetExtUserID(r); id != "" {
+		t.Errorf("GetExtUserID without value = %q, want empty", id)
+	}
 }
 
 func TestSetExtTokenID_RoundTrip(t *testing.T) {
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-r = r.WithContext(SetExtTokenID(r.Context(), "tok-abc"))
-if id := GetExtTokenID(r); id != "tok-abc" {
-t.Errorf("SetExtTokenID/GetExtTokenID = %q, want tok-abc", id)
-}
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetExtTokenID(r.Context(), "tok-abc"))
+	if id := GetExtTokenID(r); id != "tok-abc" {
+		t.Errorf("SetExtTokenID/GetExtTokenID = %q, want tok-abc", id)
+	}
 }
 
 func TestGetExtTokenID_Empty(t *testing.T) {
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-if id := GetExtTokenID(r); id != "" {
-t.Errorf("GetExtTokenID without value = %q, want empty", id)
-}
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	if id := GetExtTokenID(r); id != "" {
+		t.Errorf("GetExtTokenID without value = %q, want empty", id)
+	}
 }
 
 func TestRequireRole_AllowsMatchingRole(t *testing.T) {
-next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-w.WriteHeader(http.StatusOK)
-})
-handler := RequireRole("moderator")(next)
-w := httptest.NewRecorder()
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-r = r.WithContext(SetUserID(SetUserRole(r.Context(), "moderator"), "user-1"))
-handler.ServeHTTP(w, r)
-if w.Code != http.StatusOK {
-t.Errorf("matching role: status = %d, want 200", w.Code)
-}
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	handler := RequireRole("moderator")(next)
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetUserID(SetUserRole(r.Context(), "moderator"), "user-1"))
+	handler.ServeHTTP(w, r)
+	if w.Code != http.StatusOK {
+		t.Errorf("matching role: status = %d, want 200", w.Code)
+	}
 }
 
 func TestRequireRole_RejectsWrongRole(t *testing.T) {
-next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-t.Error("should not reach handler with wrong role")
-})
-handler := RequireRole("moderator")(next)
-w := httptest.NewRecorder()
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-r = r.WithContext(SetUserID(SetUserRole(r.Context(), "user"), "user-1"))
-handler.ServeHTTP(w, r)
-if w.Code != http.StatusForbidden {
-t.Errorf("wrong role: status = %d, want 403", w.Code)
-}
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("should not reach handler with wrong role")
+	})
+	handler := RequireRole("moderator")(next)
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(SetUserID(SetUserRole(r.Context(), "user"), "user-1"))
+	handler.ServeHTTP(w, r)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("wrong role: status = %d, want 403", w.Code)
+	}
 }
 
 func TestRequireRole_RejectsUnauthenticated(t *testing.T) {
-next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-t.Error("should not reach handler without auth")
-})
-handler := RequireRole("admin")(next)
-w := httptest.NewRecorder()
-r, _ := http.NewRequest(http.MethodGet, "/", nil)
-handler.ServeHTTP(w, r)
-if w.Code != http.StatusUnauthorized {
-t.Errorf("unauthenticated: status = %d, want 401", w.Code)
-}
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("should not reach handler without auth")
+	})
+	handler := RequireRole("admin")(next)
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	handler.ServeHTTP(w, r)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unauthenticated: status = %d, want 401", w.Code)
+	}
 }

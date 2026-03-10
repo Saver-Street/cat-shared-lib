@@ -187,125 +187,132 @@ func TestTrimAndNilIfEmpty_NoTrimNeeded(t *testing.T) {
 	}
 }
 
-// --- MaxLength tests ---
+// --- TruncateFilename table-driven tests ---
 
-func TestMaxLength_WithinLimit(t *testing.T) {
-	if got := MaxLength("hello", 10); got != "hello" {
-		t.Errorf("got %q, want hello", got)
+func TestTruncateFilename(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		maxLen int
+		want   string
+	}{
+		{"normal with extension", "report.pdf", 20, "report.pdf"},
+		{"truncated preserves ext", "averylongfilename.txt", 10, "averyl.txt"},
+		{"exact length", "file.txt", 8, "file.txt"},
+		{"shorter than maxLen", "hi.go", 100, "hi.go"},
+		{"maxLen zero", "file.txt", 0, ""},
+		{"maxLen negative", "file.txt", -5, ""},
+		{"empty name", "", 10, ""},
+		{"empty name zero maxLen", "", 0, ""},
+		{"extension longer than maxLen", "x.verylongext", 3, ".verylongext"},
+		{"extension equal to maxLen", "x.tx", 3, ".tx"},
+		{"no extension", "readme", 4, "read"},
+		{"no extension within limit", "readme", 100, "readme"},
+		{"unicode filename", "résumé.pdf", 7, "rés.pdf"},
+		{"unicode ext preserved", "日本語ファイル.txt", 6, "日本.txt"},
+		{"emoji filename", "📄📝.txt", 5, "📄.txt"},
+		{"dot file", ".gitignore", 5, ".gitignore"},
+		{"single char and ext", "a.go", 4, "a.go"},
+		{"maxLen 1 with ext", "file.txt", 1, ".txt"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := TruncateFilename(tt.input, tt.maxLen)
+			if got != tt.want {
+				t.Errorf("TruncateFilename(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.want)
+			}
+		})
 	}
 }
 
-func TestMaxLength_ExactLimit(t *testing.T) {
-	if got := MaxLength("hello", 5); got != "hello" {
-		t.Errorf("got %q, want hello", got)
+// --- MaxLength table-driven tests ---
+
+func TestMaxLength(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		maxLen int
+		want   string
+	}{
+		{"normal truncation", "hello world", 5, "hello"},
+		{"within limit", "hello", 10, "hello"},
+		{"exact limit", "hello", 5, "hello"},
+		{"maxLen zero", "hello", 0, ""},
+		{"maxLen negative", "hello", -1, ""},
+		{"empty string", "", 10, ""},
+		{"empty string zero maxLen", "", 0, ""},
+		{"unicode truncation", "héllo", 3, "hél"},
+		{"unicode within limit", "héllo", 100, "héllo"},
+		{"CJK characters", "日本語テスト", 3, "日本語"},
+		{"emoji truncation", "👍🎉🚀💡", 2, "👍🎉"},
+		{"single char", "x", 1, "x"},
+		{"maxLen 1 long string", "abcdef", 1, "a"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := MaxLength(tt.input, tt.maxLen)
+			if got != tt.want {
+				t.Errorf("MaxLength(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.want)
+			}
+		})
 	}
 }
 
-func TestMaxLength_Truncated(t *testing.T) {
-	if got := MaxLength("hello world", 5); got != "hello" {
-		t.Errorf("got %q, want hello", got)
+// --- SanitizeEmail table-driven tests ---
+
+func TestSanitizeEmail(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"normal email", "alice@example.com", "alice@example.com"},
+		{"leading/trailing whitespace", "  alice@example.com  ", "alice@example.com"},
+		{"uppercase", "Alice@Example.COM", "alice@example.com"},
+		{"whitespace and uppercase", "  User@Example.COM  ", "user@example.com"},
+		{"empty string", "", ""},
+		{"only whitespace", "   ", ""},
+		{"tab whitespace", "\tuser@test.com\t", "user@test.com"},
+		{"mixed whitespace", " \t user@test.com \n ", "user@test.com"},
+		{"already lowercase no spaces", "test@test.io", "test@test.io"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SanitizeEmail(tt.input)
+			if got != tt.want {
+				t.Errorf("SanitizeEmail(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
 	}
 }
 
-func TestMaxLength_ZeroLimit(t *testing.T) {
-	if got := MaxLength("hello", 0); got != "" {
-		t.Errorf("got %q, want empty string", got)
+// --- IsDatabaseError table-driven tests ---
+
+func TestIsDatabaseError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		code string
+		want bool
+	}{
+		{"unique violation match", errors.New("ERROR: duplicate key (SQLSTATE 23505)"), "23505", true},
+		{"foreign key violation", errors.New("ERROR: insert violates foreign key constraint (SQLSTATE 23503)"), "23503", true},
+		{"not null violation", errors.New("ERROR: null value in column (SQLSTATE 23502)"), "23502", true},
+		{"check violation", errors.New("ERROR: check constraint (SQLSTATE 23514)"), "23514", true},
+		{"non-matching code", errors.New("ERROR: something else"), "23505", false},
+		{"nil error", nil, "23505", false},
+		{"nil error different code", nil, "23503", false},
+		{"empty code", errors.New("some error"), "", true},
+		{"partial code match", errors.New("code 2350"), "23505", false},
+		{"wrapped error", fmt.Errorf("insert failed: %w", errors.New("SQLSTATE 23505")), "23505", true},
+		{"wrong code for unique", errors.New("ERROR: duplicate key (SQLSTATE 23505)"), "23503", false},
 	}
-}
-
-func TestMaxLength_NegativeLimit(t *testing.T) {
-	if got := MaxLength("hello", -1); got != "" {
-		t.Errorf("got %q, want empty string", got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsDatabaseError(tt.err, tt.code)
+			if got != tt.want {
+				t.Errorf("IsDatabaseError(%v, %q) = %v, want %v", tt.err, tt.code, got, tt.want)
+			}
+		})
 	}
-}
-
-func TestMaxLength_Unicode(t *testing.T) {
-	s := "héllo"
-	if got := MaxLength(s, 3); got != "hél" {
-		t.Errorf("got %q, want hél", got)
-	}
-}
-
-// --- TruncateFilename tests ---
-
-func TestTruncateFilename_WithinLimit(t *testing.T) {
-	if got := TruncateFilename("file.txt", 20); got != "file.txt" {
-		t.Errorf("got %q, want file.txt", got)
-	}
-}
-
-func TestTruncateFilename_Truncated(t *testing.T) {
-	got := TruncateFilename("averylongfilename.txt", 10)
-	if len([]rune(got)) > 10 {
-		t.Errorf("got %q with length %d, want at most 10 runes", got, len([]rune(got)))
-	}
-	if !strings.HasSuffix(got, ".txt") {
-		t.Errorf("got %q, expected .txt extension preserved", got)
-	}
-}
-
-func TestTruncateFilename_ZeroLimit(t *testing.T) {
-	if got := TruncateFilename("file.txt", 0); got != "" {
-		t.Errorf("got %q, want empty string", got)
-	}
-}
-
-func TestTruncateFilename_NegativeLimit(t *testing.T) {
-	if got := TruncateFilename("file.txt", -1); got != "" {
-		t.Errorf("got %q, want empty string", got)
-	}
-}
-
-func TestTruncateFilename_EmptyName(t *testing.T) {
-	if got := TruncateFilename("", 10); got != "" {
-		t.Errorf("got %q, want empty string", got)
-	}
-}
-
-func TestTruncateFilename_LongExtension(t *testing.T) {
-	// extension longer than maxLen: just return the extension
-	got := TruncateFilename("x.verylongext", 3)
-	if got != ".verylongext" {
-		t.Errorf("got %q, want .verylongext", got)
-	}
-}
-
-func TestSanitizeEmail_Lowercase(t *testing.T) {
-got := SanitizeEmail("  User@Example.COM  ")
-if got != "user@example.com" {
-t.Errorf("SanitizeEmail = %q, want %q", got, "user@example.com")
-}
-}
-
-func TestSanitizeEmail_AlreadyLower(t *testing.T) {
-got := SanitizeEmail("alice@example.com")
-if got != "alice@example.com" {
-t.Errorf("SanitizeEmail = %q, want %q", got, "alice@example.com")
-}
-}
-
-func TestSanitizeEmail_Empty(t *testing.T) {
-if got := SanitizeEmail(""); got != "" {
-t.Errorf("SanitizeEmail empty = %q, want empty string", got)
-}
-}
-
-func TestIsDatabaseError_MatchingCode(t *testing.T) {
-err := errors.New("ERROR: duplicate key value violates unique constraint (SQLSTATE 23505)")
-if !IsDatabaseError(err, "23505") {
-t.Error("expected IsDatabaseError to return true for code 23505")
-}
-}
-
-func TestIsDatabaseError_NonMatchingCode(t *testing.T) {
-err := errors.New("ERROR: some other error")
-if IsDatabaseError(err, "23505") {
-t.Error("expected IsDatabaseError to return false for non-matching code")
-}
-}
-
-func TestIsDatabaseError_NilError(t *testing.T) {
-if IsDatabaseError(nil, "23505") {
-t.Error("expected IsDatabaseError to return false for nil error")
-}
 }

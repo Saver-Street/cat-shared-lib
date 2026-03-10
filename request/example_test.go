@@ -46,18 +46,18 @@ func ExampleRequireURLParamInt() {
 }
 
 func ExampleRequireQueryParam() {
-q := url.Values{"status": {"active"}}
-val, err := request.RequireQueryParam(q, "status")
-fmt.Println(val, err)
-// Output:
-// active <nil>
+	q := url.Values{"status": {"active"}}
+	val, err := request.RequireQueryParam(q, "status")
+	fmt.Println(val, err)
+	// Output:
+	// active <nil>
 }
 
 func ExampleParseBoolParam() {
-q := url.Values{"debug": {"true"}}
-fmt.Println(request.ParseBoolParam(q, "debug", false))
-fmt.Println(request.ParseBoolParam(url.Values{}, "debug", false))
-// Output:
-// true
-// false
+	q := url.Values{"debug": {"true"}}
+	fmt.Println(request.ParseBoolParam(q, "debug", false))
+	fmt.Println(request.ParseBoolParam(url.Values{}, "debug", false))
+	// Output:
+	// true
+	// false
 }

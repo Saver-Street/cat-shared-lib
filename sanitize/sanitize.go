@@ -142,3 +142,21 @@ func Deref[T any](p *T, defaultVal T) T {
 	}
 	return *p
 }
+
+// StripHTML removes all HTML tags from s, returning only the text content.
+// It does not decode HTML entities (e.g. "&amp;" remains "&amp;").
+func StripHTML(s string) string {
+	var b strings.Builder
+	inTag := false
+	for _, r := range s {
+		switch {
+		case r == '<':
+			inTag = true
+		case r == '>':
+			inTag = false
+		case !inTag:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}

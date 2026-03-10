@@ -182,3 +182,25 @@ func ParseCommaSeparatedInts(q url.Values, key string) ([]int64, error) {
 	}
 	return out, nil
 }
+
+// ParseSortOrder parses the "sort" and "order" query parameters, validating "sort" against
+// allowed field names and "order" against "asc"/"desc". Matching is case-insensitive.
+// If the "sort" value is absent or not in allowed, defaultField is returned.
+// If the "order" value is absent or not "asc"/"desc", defaultDir is returned.
+func ParseSortOrder(q url.Values, allowed []string, defaultField, defaultDir string) (field, dir string) {
+	raw := strings.TrimSpace(q.Get("sort"))
+	field = defaultField
+	for _, a := range allowed {
+		if strings.EqualFold(raw, a) {
+			field = a
+			break
+		}
+	}
+	switch strings.ToLower(strings.TrimSpace(q.Get("order"))) {
+	case "asc", "desc":
+		dir = strings.ToLower(strings.TrimSpace(q.Get("order")))
+	default:
+		dir = defaultDir
+	}
+	return field, dir
+}

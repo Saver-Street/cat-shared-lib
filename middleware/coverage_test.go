@@ -374,18 +374,18 @@ func TestRateLimiter_CleanupLoop_FiresOnTicker(t *testing.T) {
 }
 
 func TestBruteForceGuard_StopIdempotent(t *testing.T) {
-g := newTestBF(5)
-// Calling Stop twice must not panic.
-g.Stop()
-g.Stop()
+	g := newTestBF(5)
+	// Calling Stop twice must not panic.
+	g.Stop()
+	g.Stop()
 }
 
 func TestRateLimiter_StopIdempotent(t *testing.T) {
-rl := NewRateLimiter(RateLimiterConfig{
-RequestsPerWindow: 10,
-WindowDuration:    time.Second,
-})
-// Calling Stop twice must not panic.
-rl.Stop()
-rl.Stop()
+	rl := NewRateLimiter(RateLimiterConfig{
+		RequestsPerWindow: 10,
+		WindowDuration:    time.Second,
+	})
+	// Calling Stop twice must not panic.
+	rl.Stop()
+	rl.Stop()
 }

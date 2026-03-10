@@ -32,7 +32,15 @@ type RateLimiter struct {
 }
 
 // NewRateLimiter creates a rate limiter with automatic stale-entry cleanup.
+// Zero or negative RequestsPerWindow defaults to 100.
+// Zero or negative WindowDuration defaults to 1 minute.
 func NewRateLimiter(cfg RateLimiterConfig) *RateLimiter {
+	if cfg.RequestsPerWindow <= 0 {
+		cfg.RequestsPerWindow = 100
+	}
+	if cfg.WindowDuration <= 0 {
+		cfg.WindowDuration = time.Minute
+	}
 	if cfg.CleanupInterval == 0 {
 		cfg.CleanupInterval = cfg.WindowDuration * 2
 	}

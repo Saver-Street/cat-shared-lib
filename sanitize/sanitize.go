@@ -323,3 +323,15 @@ out[transform(k)] = v
 }
 return out
 }
+
+// Filter returns a new slice containing only the elements for which keep
+// returns true. The original slice is not modified.
+func Filter[T any](items []T, keep func(T) bool) []T {
+result := make([]T, 0, len(items))
+for _, item := range items {
+if keep(item) {
+result = append(result, item)
+}
+}
+return result
+}

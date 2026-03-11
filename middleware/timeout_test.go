@@ -3,9 +3,10 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestTimeout_HandlerCompletes(t *testing.T) {
@@ -21,9 +22,7 @@ func TestTimeout_HandlerCompletes(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Errorf("status = %d, want 200", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), `"ok":true`) {
-		t.Errorf("body = %q, want ok:true", rec.Body.String())
-	}
+	testkit.AssertContains(t, rec.Body.String(), `"ok":true`)
 }
 
 func TestTimeout_HandlerExceedsDeadline(t *testing.T) {
@@ -39,9 +38,7 @@ func TestTimeout_HandlerExceedsDeadline(t *testing.T) {
 	if rec.Code != http.StatusGatewayTimeout {
 		t.Errorf("status = %d, want 504", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "timed out") {
-		t.Errorf("body = %q, want 'timed out' message", rec.Body.String())
-	}
+	testkit.AssertContains(t, rec.Body.String(), "timed out")
 }
 
 func TestTimeout_ZeroDuration_NoOp(t *testing.T) {

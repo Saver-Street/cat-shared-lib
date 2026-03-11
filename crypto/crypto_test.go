@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestHashPassword_Basic(t *testing.T) {
@@ -206,9 +208,7 @@ func TestHashPasswordWithCost_InvalidCost(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for invalid bcrypt cost")
 	}
-	if !strings.Contains(err.Error(), "crypto: hash password") {
-		t.Errorf("unexpected error message: %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "crypto: hash password")
 }
 
 func TestNeedsRehash_InvalidHash(t *testing.T) {

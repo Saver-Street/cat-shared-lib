@@ -6,8 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestLogging_BasicRequest(t *testing.T) {
@@ -24,9 +25,7 @@ func TestLogging_BasicRequest(t *testing.T) {
 
 	logged := buf.String()
 	for _, want := range []string{"method=GET", "path=/api/users", "status=200", "duration="} {
-		if !strings.Contains(logged, want) {
-			t.Errorf("log missing %q in: %s", want, logged)
-		}
+		testkit.AssertContains(t, logged, want)
 	}
 }
 
@@ -44,9 +43,7 @@ func TestLogging_IncludesRequestID(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if !strings.Contains(buf.String(), "req-abc-123") {
-		t.Errorf("log missing request_id: %s", buf.String())
-	}
+	testkit.AssertContains(t, buf.String(), "req-abc-123")
 }
 
 func TestLogging_IncludesUserID(t *testing.T) {
@@ -63,9 +60,7 @@ func TestLogging_IncludesUserID(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if !strings.Contains(buf.String(), "user-42") {
-		t.Errorf("log missing user_id: %s", buf.String())
-	}
+	testkit.AssertContains(t, buf.String(), "user-42")
 }
 
 func TestLogging_NonOKStatus(t *testing.T) {
@@ -80,12 +75,8 @@ func TestLogging_NonOKStatus(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if !strings.Contains(buf.String(), "status=404") {
-		t.Errorf("log missing status=404: %s", buf.String())
-	}
-	if !strings.Contains(buf.String(), "method=POST") {
-		t.Errorf("log missing method=POST: %s", buf.String())
-	}
+	testkit.AssertContains(t, buf.String(), "status=404")
+	testkit.AssertContains(t, buf.String(), "method=POST")
 }
 
 func TestLogging_NilLogger(t *testing.T) {
@@ -116,9 +107,7 @@ func TestLogging_DefaultStatusCode(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if !strings.Contains(buf.String(), "status=200") {
-		t.Errorf("expected status=200 default: %s", buf.String())
-	}
+	testkit.AssertContains(t, buf.String(), "status=200")
 }
 
 func TestStatusWriter_WriteHeader(t *testing.T) {
@@ -147,12 +136,8 @@ func TestLogging_NoRequestIDOrUserID(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	logged := buf.String()
-	if strings.Contains(logged, "request_id") {
-		t.Errorf("should not contain request_id when not set: %s", logged)
-	}
-	if strings.Contains(logged, "user_id") {
-		t.Errorf("should not contain user_id when not set: %s", logged)
-	}
+	testkit.AssertNotContains(t, logged, "request_id")
+	testkit.AssertNotContains(t, logged, "user_id")
 }
 
 func TestLogging_ContextPropagation(t *testing.T) {

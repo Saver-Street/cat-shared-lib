@@ -746,3 +746,54 @@ q := url.Values{"ids": {"550e8400-e29b-41d4-a716-446655440000,not-a-uuid"}}
 _, err := ParseIDList(q, "ids")
 testkit.AssertErrorContains(t, err, "not a valid UUID")
 }
+
+// --- ParseCursor ---
+
+func TestParseCursor_Defaults(t *testing.T) {
+	c := ParseCursor(url.Values{}, 20, 100)
+	testkit.AssertEqual(t, c.Cursor, "")
+	testkit.AssertEqual(t, c.Limit, 20)
+}
+
+func TestParseCursor_WithValues(t *testing.T) {
+	q := url.Values{"cursor": {"abc"}, "limit": {"15"}}
+	c := ParseCursor(q, 20, 100)
+	testkit.AssertEqual(t, c.Cursor, "abc")
+	testkit.AssertEqual(t, c.Limit, 15)
+}
+
+func TestParseCursor_MaxLimit(t *testing.T) {
+	q := url.Values{"limit": {"200"}}
+	c := ParseCursor(q, 20, 50)
+	testkit.AssertEqual(t, c.Limit, 50)
+}
+
+func TestParseCursor_InvalidLimit(t *testing.T) {
+	q := url.Values{"limit": {"abc"}}
+	c := ParseCursor(q, 25, 100)
+	testkit.AssertEqual(t, c.Limit, 25)
+}
+
+func TestParseCursor_ZeroLimit(t *testing.T) {
+	q := url.Values{"limit": {"0"}}
+	c := ParseCursor(q, 20, 100)
+	testkit.AssertEqual(t, c.Limit, 20)
+}
+
+func TestParseCursor_NegativeLimit(t *testing.T) {
+	q := url.Values{"limit": {"-5"}}
+	c := ParseCursor(q, 20, 100)
+	testkit.AssertEqual(t, c.Limit, 20)
+}
+
+func TestParseCursor_NegativeDefaults(t *testing.T) {
+	c := ParseCursor(url.Values{}, -1, -1)
+	testkit.AssertEqual(t, c.Limit, 20)
+}
+
+func TestParseCursor_CursorOnly(t *testing.T) {
+	q := url.Values{"cursor": {"tok_xyz"}}
+	c := ParseCursor(q, 10, 50)
+	testkit.AssertEqual(t, c.Cursor, "tok_xyz")
+	testkit.AssertEqual(t, c.Limit, 10)
+}

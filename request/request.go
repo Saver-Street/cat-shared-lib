@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/types"
 )
 
 // Pagination holds parsed page/limit/offset values from query parameters.
@@ -408,4 +410,26 @@ return nil, fmt.Errorf("query parameter %q: %q is not a valid UUID", key, t)
 }
 }
 return tokens, nil
+}
+
+// ParseCursor extracts cursor and limit from URL query parameters.
+// The cursor parameter name is "cursor" and limit is "limit".
+func ParseCursor(q url.Values, defaultLimit, maxLimit int) types.CursorParams {
+	if defaultLimit <= 0 {
+		defaultLimit = 20
+	}
+	if maxLimit <= 0 {
+		maxLimit = 100
+	}
+	cursor := q.Get("cursor")
+	limit := defaultLimit
+	if l := q.Get("limit"); l != "" {
+		if n, err := strconv.Atoi(l); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+	return types.CursorParams{Cursor: cursor, Limit: limit}
 }

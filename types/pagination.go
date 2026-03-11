@@ -48,3 +48,56 @@ func (p PaginationParams) TotalPages(total int) int {
 	}
 	return (total + p.Limit - 1) / p.Limit
 }
+
+// CursorParams holds parameters for cursor-based pagination.
+type CursorParams struct {
+	// Cursor is the opaque cursor from the previous page ("" for the first page).
+	Cursor string
+	// Limit is the maximum number of items to return (1–100).
+	Limit int
+}
+
+// NormalizeCursor ensures limit is within [1, 100], defaulting to 20.
+func NormalizeCursor(cursor string, limit int) CursorParams {
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	return CursorParams{Cursor: cursor, Limit: limit}
+}
+
+// CursorPage represents a page of cursor-paginated results.
+type CursorPage[T any] struct {
+	Items      []T    `json:"items"`
+	NextCursor string `json:"next_cursor,omitempty"`
+	HasMore    bool   `json:"has_more"`
+}
+
+// NewCursorPage constructs a CursorPage from items. If len(items) > limit, it
+// trims to limit and uses cursorFn on the last kept item to derive NextCursor.
+func NewCursorPage[T any](items []T, limit int, cursorFn func(T) string) CursorPage[T] {
+	if len(items) <= limit {
+		return CursorPage[T]{Items: items}
+	}
+	kept := items[:limit]
+	return CursorPage[T]{
+		Items:      kept,
+		NextCursor: cursorFn(kept[limit-1]),
+		HasMore:    true,
+	}
+}
+
+// ApplyOffset returns the sub-slice of items for the given offset/limit pagination.
+// Returns nil if offset >= len(items).
+func ApplyOffset[T any](items []T, offset, limit int) []T {
+	if offset >= len(items) {
+		return nil
+	}
+	end := offset + limit
+	if end > len(items) {
+		end = len(items)
+	}
+	return items[offset:end]
+}

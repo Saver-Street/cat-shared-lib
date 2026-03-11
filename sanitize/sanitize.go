@@ -4,7 +4,9 @@ package sanitize
 import (
 	"errors"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -192,4 +194,26 @@ func TrimStrings(ss []string) []string {
 		}
 	}
 	return out
+}
+
+var multiHyphen = regexp.MustCompile(`-{2,}`)
+
+// Slugify converts s into a URL-friendly slug. It lowercases the string,
+// replaces non-alphanumeric characters with hyphens, collapses consecutive
+// hyphens, and trims leading/trailing hyphens.
+func Slugify(s string) string {
+s = strings.TrimSpace(s)
+s = strings.ToLower(s)
+
+var b strings.Builder
+b.Grow(len(s))
+for _, r := range s {
+if unicode.IsLetter(r) || unicode.IsDigit(r) {
+b.WriteRune(r)
+} else {
+b.WriteByte('-')
+}
+}
+slug := multiHyphen.ReplaceAllString(b.String(), "-")
+return strings.Trim(slug, "-")
 }

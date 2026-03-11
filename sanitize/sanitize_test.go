@@ -428,3 +428,23 @@ func TestTrimStrings_Nil(t *testing.T) {
 	got := TrimStrings(nil)
 	testkit.AssertLen(t, got, 0)
 }
+
+func TestSlugify(t *testing.T) {
+testkit.AssertEqual(t, Slugify("Hello World"), "hello-world")
+}
+
+func TestSlugify_SpecialChars(t *testing.T) {
+testkit.AssertEqual(t, Slugify("My Blog Post!!! #1"), "my-blog-post-1")
+}
+
+func TestSlugify_ConsecutiveHyphens(t *testing.T) {
+testkit.AssertEqual(t, Slugify("a   b   c"), "a-b-c")
+}
+
+func TestSlugify_LeadingTrailing(t *testing.T) {
+testkit.AssertEqual(t, Slugify("  --hello-- "), "hello")
+}
+
+func TestSlugify_Empty(t *testing.T) {
+testkit.AssertEqual(t, Slugify(""), "")
+}

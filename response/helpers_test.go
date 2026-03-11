@@ -451,3 +451,18 @@ func TestText_CustomStatus(t *testing.T) {
 	testkit.AssertEqual(t, w.Code, http.StatusAccepted)
 	testkit.AssertEqual(t, w.Body.String(), "processing")
 }
+
+func TestHTML(t *testing.T) {
+w := httptest.NewRecorder()
+HTML(w, http.StatusOK, "<h1>Hello</h1>")
+testkit.AssertEqual(t, w.Code, http.StatusOK)
+testkit.AssertEqual(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
+testkit.AssertEqual(t, w.Body.String(), "<h1>Hello</h1>")
+}
+
+func TestHTML_CustomStatus(t *testing.T) {
+w := httptest.NewRecorder()
+HTML(w, http.StatusNotFound, "<h1>Not Found</h1>")
+testkit.AssertEqual(t, w.Code, http.StatusNotFound)
+testkit.AssertEqual(t, w.Body.String(), "<h1>Not Found</h1>")
+}

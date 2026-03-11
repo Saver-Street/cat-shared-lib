@@ -253,3 +253,30 @@ func TestStringMap_AllInvalid(t *testing.T) {
 	got := StringMap("CONFIG_TEST_MAP_ALLINV", def)
 	testkit.AssertEqual(t, got["fallback"], "yes")
 }
+
+func TestURL_Valid(t *testing.T) {
+setEnv(t, "CONFIG_TEST_URL", "https://api.example.com/v1")
+got, err := URL("CONFIG_TEST_URL", "")
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, got, "https://api.example.com/v1")
+}
+
+func TestURL_Default(t *testing.T) {
+got, err := URL("CONFIG_TEST_URL_UNSET", "https://default.example.com")
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, got, "https://default.example.com")
+}
+
+func TestURL_BadScheme(t *testing.T) {
+setEnv(t, "CONFIG_TEST_URL_BAD", "ftp://files.example.com")
+_, err := URL("CONFIG_TEST_URL_BAD", "")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "http or https")
+}
+
+func TestURL_NoHost(t *testing.T) {
+setEnv(t, "CONFIG_TEST_URL_NOHOST", "https://")
+_, err := URL("CONFIG_TEST_URL_NOHOST", "")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "must have a host")
+}

@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -185,4 +186,25 @@ func StringMap(key string, defaultVal map[string]string) map[string]string {
 		return defaultVal
 	}
 	return result
+}
+
+// URL reads a URL from the named environment variable, validates that it is
+// a well-formed absolute URL with an http or https scheme, and returns it.
+// If the variable is unset or empty, defaultVal is returned.
+func URL(key string, defaultVal string) (string, error) {
+v := strings.TrimSpace(os.Getenv(key))
+if v == "" {
+return defaultVal, nil
+}
+u, err := url.Parse(v)
+if err != nil {
+return "", fmt.Errorf("config: %s: invalid URL: %w", key, err)
+}
+if u.Scheme != "http" && u.Scheme != "https" {
+return "", fmt.Errorf("config: %s: URL must use http or https scheme", key)
+}
+if u.Host == "" {
+return "", fmt.Errorf("config: %s: URL must have a host", key)
+}
+return v, nil
 }

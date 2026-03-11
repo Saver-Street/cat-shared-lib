@@ -19,9 +19,7 @@ func TestTimeout_HandlerCompletes(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rec.Code)
-	}
+	testkit.AssertStatus(t, rec, http.StatusOK)
 	testkit.AssertContains(t, rec.Body.String(), `"ok":true`)
 }
 
@@ -35,9 +33,7 @@ func TestTimeout_HandlerExceedsDeadline(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusGatewayTimeout {
-		t.Errorf("status = %d, want 504", rec.Code)
-	}
+	testkit.AssertStatus(t, rec, http.StatusGatewayTimeout)
 	testkit.AssertContains(t, rec.Body.String(), "timed out")
 }
 
@@ -52,9 +48,7 @@ func TestTimeout_ZeroDuration_NoOp(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusTeapot {
-		t.Errorf("status = %d, want 418 (pass-through)", rec.Code)
-	}
+	testkit.AssertStatus(t, rec, http.StatusTeapot)
 }
 
 func TestTimeout_NegativeDuration_NoOp(t *testing.T) {
@@ -68,9 +62,7 @@ func TestTimeout_NegativeDuration_NoOp(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusAccepted {
-		t.Errorf("status = %d, want 202 (pass-through)", rec.Code)
-	}
+	testkit.AssertStatus(t, rec, http.StatusAccepted)
 }
 
 func TestTimeout_ContextDeadlineSet(t *testing.T) {
@@ -92,9 +84,7 @@ func TestTimeout_ContextDeadlineSet(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rec.Code)
-	}
+	testkit.AssertStatus(t, rec, http.StatusOK)
 }
 
 func TestTimeout_HandlerAlreadyWrote(t *testing.T) {
@@ -111,32 +101,25 @@ func TestTimeout_HandlerAlreadyWrote(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	// Handler already wrote 201, so timeout must not overwrite with 504.
-	if rec.Code != http.StatusCreated {
-		t.Errorf("status = %d, want 201 (handler already wrote)", rec.Code)
-	}
+	testkit.AssertStatus(t, rec, http.StatusCreated)
 }
 
 func TestTimeoutWriter_WriteSuppressedAfterTimeout(t *testing.T) {
 	tw := &timeoutWriter{ResponseWriter: httptest.NewRecorder()}
 
 	// Simulate timeout happening before any writes.
-	if !tw.tryTimeout() {
-		t.Error("tryTimeout should return true when nothing written")
-	}
+	testkit.AssertTrue(t, tw.tryTimeout())
 
 	// Subsequent writes should be suppressed.
 	tw.WriteHeader(http.StatusOK) // should be no-op
 	n, err := tw.Write([]byte("data"))
-	if n != 0 || err == nil {
-		t.Errorf("Write after timeout: n=%d, err=%v; want 0, non-nil", n, err)
-	}
+	testkit.AssertEqual(t, n, 0)
+	testkit.AssertError(t, err)
 }
 
 func TestTimeoutWriter_TryTimeout_AlreadyWrote(t *testing.T) {
 	tw := &timeoutWriter{ResponseWriter: httptest.NewRecorder()}
 	tw.WriteHeader(http.StatusOK) // handler started
 
-	if tw.tryTimeout() {
-		t.Error("tryTimeout should return false when handler already wrote")
-	}
+	testkit.AssertFalse(t, tw.tryTimeout())
 }

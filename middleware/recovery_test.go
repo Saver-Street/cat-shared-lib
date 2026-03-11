@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestRecovery_NoPanic(t *testing.T) {
@@ -17,12 +19,8 @@ func TestRecovery_NoPanic(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("got status %d, want 200", rr.Code)
-	}
-	if rr.Body.String() != "ok" {
-		t.Errorf("got body %q, want %q", rr.Body.String(), "ok")
-	}
+	testkit.AssertStatus(t, rr, http.StatusOK)
+	testkit.AssertEqual(t, rr.Body.String(), "ok")
 }
 
 func TestRecovery_PanicString(t *testing.T) {
@@ -34,17 +32,13 @@ func TestRecovery_PanicString(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusInternalServerError {
-		t.Errorf("got status %d, want 500", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusInternalServerError)
 
 	var resp map[string]string
 	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if resp["error"] != "Internal server error" {
-		t.Errorf("got error %q, want %q", resp["error"], "Internal server error")
-	}
+	testkit.AssertEqual(t, resp["error"], "Internal server error")
 }
 
 func TestRecovery_PanicError(t *testing.T) {
@@ -56,9 +50,7 @@ func TestRecovery_PanicError(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusInternalServerError {
-		t.Errorf("got status %d, want 500", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusInternalServerError)
 }
 
 func TestRecovery_WithRequestID(t *testing.T) {
@@ -72,7 +64,5 @@ func TestRecovery_WithRequestID(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusInternalServerError {
-		t.Errorf("got status %d, want 500", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusInternalServerError)
 }

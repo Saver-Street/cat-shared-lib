@@ -158,3 +158,31 @@ func Validate(keys ...string) error {
 	}
 	return nil
 }
+
+// StringMap reads a comma-separated list of key=value pairs from an
+// environment variable. Returns the default if the variable is unset or empty.
+// Pairs missing an "=" sign are silently skipped. Both keys and values are trimmed.
+//
+// Example: LABELS="env=prod, region=us-east" → map[string]string{"env":"prod", "region":"us-east"}
+func StringMap(key string, defaultVal map[string]string) map[string]string {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	result := make(map[string]string)
+	for _, pair := range strings.Split(v, ",") {
+		k, val, ok := strings.Cut(strings.TrimSpace(pair), "=")
+		if !ok {
+			continue
+		}
+		k = strings.TrimSpace(k)
+		val = strings.TrimSpace(val)
+		if k != "" {
+			result[k] = val
+		}
+	}
+	if len(result) == 0 {
+		return defaultVal
+	}
+	return result
+}

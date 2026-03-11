@@ -217,3 +217,39 @@ func TestMustDuration_PanicsInvalid(t *testing.T) {
 		MustDuration("CONFIG_TEST_MUST_DUR_BAD")
 	})
 }
+
+func TestStringMap_Valid(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MAP", "env=prod, region=us-east")
+	got := StringMap("CONFIG_TEST_MAP", nil)
+	testkit.AssertEqual(t, got["env"], "prod")
+	testkit.AssertEqual(t, got["region"], "us-east")
+	testkit.AssertLen(t, got, 2)
+}
+
+func TestStringMap_Default(t *testing.T) {
+	def := map[string]string{"a": "b"}
+	got := StringMap("CONFIG_TEST_MAP_UNSET", def)
+	testkit.AssertEqual(t, got["a"], "b")
+}
+
+func TestStringMap_SkipsBadPairs(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MAP_BAD", "good=val, noequalhere, another=ok")
+	got := StringMap("CONFIG_TEST_MAP_BAD", nil)
+	testkit.AssertLen(t, got, 2)
+	testkit.AssertEqual(t, got["good"], "val")
+	testkit.AssertEqual(t, got["another"], "ok")
+}
+
+func TestStringMap_EmptyValue(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MAP_EMPTY", "key=")
+	got := StringMap("CONFIG_TEST_MAP_EMPTY", nil)
+	testkit.AssertLen(t, got, 1)
+	testkit.AssertEqual(t, got["key"], "")
+}
+
+func TestStringMap_AllInvalid(t *testing.T) {
+	def := map[string]string{"fallback": "yes"}
+	setEnv(t, "CONFIG_TEST_MAP_ALLINV", "nope, bad, broken")
+	got := StringMap("CONFIG_TEST_MAP_ALLINV", def)
+	testkit.AssertEqual(t, got["fallback"], "yes")
+}

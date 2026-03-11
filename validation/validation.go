@@ -157,3 +157,20 @@ func Collect(errs ...error) []error {
 	}
 	return result
 }
+
+// slugRe matches URL-friendly slugs: lowercase letters, digits, and hyphens.
+// Must start and end with an alphanumeric character.
+var slugRe = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+
+// Slug validates that value is a URL-friendly slug: lowercase letters, digits,
+// and hyphens only, starting and ending with an alphanumeric character.
+func Slug(field, value string) error {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return &ValidationError{Field: field, Message: field + " is required"}
+	}
+	if !slugRe.MatchString(v) {
+		return &ValidationError{Field: field, Message: field + " must contain only lowercase letters, digits, and hyphens"}
+	}
+	return nil
+}

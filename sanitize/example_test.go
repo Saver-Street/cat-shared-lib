@@ -90,3 +90,19 @@ func ExampleTrimAndNilIfEmpty() {
 	// <nil>
 	// hello
 }
+
+func ExampleMask() {
+	fmt.Println(sanitize.Mask("4111111111111111", 4))
+	fmt.Println(sanitize.Mask("sk-secret-key-abc123", 6))
+	fmt.Println(sanitize.Mask("short", 10))
+	// Output:
+	// ************1111
+	// **************abc123
+	// short
+}
+
+func ExampleStripHTML() {
+	fmt.Println(sanitize.StripHTML("<b>Hello</b> <em>World</em>"))
+	// Output:
+	// Hello World
+}

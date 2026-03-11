@@ -871,3 +871,38 @@ mt := &mockT{}
 AssertHasSuffix(mt, "hello world", "hello")
 AssertTrue(t, mt.errored)
 }
+
+func TestAssertMapHasKey_Pass(t *testing.T) {
+mt := &mockT{}
+m := map[string]int{"a": 1, "b": 2}
+AssertMapHasKey(mt, m, "a")
+AssertFalse(t, mt.errored)
+}
+
+func TestAssertMapHasKey_Fail(t *testing.T) {
+mt := &mockT{}
+m := map[string]int{"a": 1}
+AssertMapHasKey(mt, m, "z")
+AssertTrue(t, mt.errored)
+}
+
+func TestAssertMapNotHasKey_Pass(t *testing.T) {
+mt := &mockT{}
+m := map[string]int{"a": 1}
+AssertMapNotHasKey(mt, m, "z")
+AssertFalse(t, mt.errored)
+}
+
+func TestAssertMapNotHasKey_Fail(t *testing.T) {
+mt := &mockT{}
+m := map[string]int{"a": 1}
+AssertMapNotHasKey(mt, m, "a")
+AssertTrue(t, mt.errored)
+}
+
+func TestAssertMapHasKey_IntKey(t *testing.T) {
+mt := &mockT{}
+m := map[int]string{42: "answer"}
+AssertMapHasKey(mt, m, 42)
+AssertFalse(t, mt.errored)
+}

@@ -531,6 +531,22 @@ func AssertHasSuffix(t T, s, suffix string) {
 	}
 }
 
+// AssertMapHasKey asserts that the map contains the given key.
+func AssertMapHasKey[K comparable, V any](t T, m map[K]V, key K) {
+	t.Helper()
+	if _, ok := m[key]; !ok {
+		t.Errorf("expected map to contain key %v", key)
+	}
+}
+
+// AssertMapNotHasKey asserts that the map does not contain the given key.
+func AssertMapNotHasKey[K comparable, V any](t T, m map[K]V, key K) {
+	t.Helper()
+	if _, ok := m[key]; ok {
+		t.Errorf("expected map not to contain key %v", key)
+	}
+}
+
 // Ptr returns a pointer to v. Useful for creating pointers to literals in
 // test table entries (e.g. testkit.Ptr("hello"), testkit.Ptr(int64(42))).
 func Ptr[T any](v T) *T { return &v }

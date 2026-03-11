@@ -1,6 +1,7 @@
 package testkit_test
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Saver-Street/cat-shared-lib/testkit"
@@ -37,4 +38,29 @@ func ExampleMustMarshalJSON() {
 	fmt.Println(string(b))
 	// Output:
 	// {"x":1}
+}
+
+func ExamplePtr() {
+	s := testkit.Ptr("hello")
+	fmt.Println(*s)
+	n := testkit.Ptr(42)
+	fmt.Println(*n)
+	// Output:
+	// hello
+	// 42
+}
+
+func ExampleContextWithValue() {
+	type ctxKey string
+	ctx := testkit.ContextWithValue(context.Background(), ctxKey("user"), "alice")
+	fmt.Println(ctx.Value(ctxKey("user")))
+	// Output:
+	// alice
+}
+
+func ExampleNewRequest() {
+	r := testkit.NewRequest("GET", "/api/items?page=2", nil)
+	fmt.Println(r.Method, r.URL.Path, r.URL.Query().Get("page"))
+	// Output:
+	// GET /api/items 2
 }

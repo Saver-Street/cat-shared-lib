@@ -343,6 +343,22 @@ func RequireLen(t T, v any, want int) {
 	}
 }
 
+// RequireTrue fails the test immediately if v is false.
+func RequireTrue(t T, v bool) {
+	t.Helper()
+	if !v {
+		t.Fatalf("testkit: got false, want true")
+	}
+}
+
+// RequireFalse fails the test immediately if v is true.
+func RequireFalse(t T, v bool) {
+	t.Helper()
+	if v {
+		t.Fatalf("testkit: got true, want false")
+	}
+}
+
 // ---- HTTP helpers ----
 
 // NewRequest builds an *http.Request for use in handler tests.

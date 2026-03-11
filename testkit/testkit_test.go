@@ -964,3 +964,35 @@ if m.errored {
 t.Fatal("expected no error for boundary values")
 }
 }
+
+func TestRequireTrue_Pass(t *testing.T) {
+m := &mockT{}
+RequireTrue(m, true)
+if m.fatal {
+t.Fatal("expected no fatal for true")
+}
+}
+
+func TestRequireTrue_Fail(t *testing.T) {
+m := &mockT{}
+RequireTrue(m, false)
+if !m.fatal {
+t.Fatal("expected fatal for false")
+}
+}
+
+func TestRequireFalse_Pass(t *testing.T) {
+m := &mockT{}
+RequireFalse(m, false)
+if m.fatal {
+t.Fatal("expected no fatal for false")
+}
+}
+
+func TestRequireFalse_Fail(t *testing.T) {
+m := &mockT{}
+RequireFalse(m, true)
+if !m.fatal {
+t.Fatal("expected fatal for true")
+}
+}

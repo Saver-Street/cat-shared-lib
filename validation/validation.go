@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/url"
 	"regexp"
 	"strings"
@@ -332,6 +333,23 @@ func Base64(s string) error {
 _, err := base64.StdEncoding.DecodeString(s)
 if err != nil {
 return fmt.Errorf("invalid base64")
+}
+return nil
+}
+
+// IP validates that s is a valid IPv4 or IPv6 address.
+func IP(s string) error {
+if net.ParseIP(s) == nil {
+return fmt.Errorf("invalid IP address")
+}
+return nil
+}
+
+// IPv4 validates that s is a valid IPv4 address.
+func IPv4(s string) error {
+ip := net.ParseIP(s)
+if ip == nil || ip.To4() == nil {
+return fmt.Errorf("invalid IPv4 address")
 }
 return nil
 }

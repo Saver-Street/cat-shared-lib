@@ -502,3 +502,30 @@ func TestBase64_Invalid(t *testing.T) {
 testkit.AssertError(t, Base64("not!valid!base64"))
 testkit.AssertErrorContains(t, Base64("abc"), "invalid base64")
 }
+
+func TestIP_Valid(t *testing.T) {
+testkit.AssertNoError(t, IP("192.168.1.1"))
+testkit.AssertNoError(t, IP("::1"))
+testkit.AssertNoError(t, IP("2001:db8::1"))
+}
+
+func TestIP_Invalid(t *testing.T) {
+testkit.AssertError(t, IP("not-an-ip"))
+testkit.AssertError(t, IP(""))
+testkit.AssertErrorContains(t, IP("999.999.999.999"), "invalid IP")
+}
+
+func TestIPv4_Valid(t *testing.T) {
+testkit.AssertNoError(t, IPv4("192.168.1.1"))
+testkit.AssertNoError(t, IPv4("10.0.0.1"))
+}
+
+func TestIPv4_RejectsIPv6(t *testing.T) {
+testkit.AssertError(t, IPv4("::1"))
+testkit.AssertError(t, IPv4("2001:db8::1"))
+}
+
+func TestIPv4_Invalid(t *testing.T) {
+testkit.AssertError(t, IPv4("not-an-ip"))
+testkit.AssertErrorContains(t, IPv4(""), "invalid IPv4")
+}

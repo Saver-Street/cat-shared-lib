@@ -359,27 +359,27 @@ func ExampleAPIKeyMulti() {
 }
 
 func ExampleTimeout() {
-handler := middleware.Timeout(5 * time.Second)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-fmt.Fprintln(w, "ok")
-}))
+	handler := middleware.Timeout(5 * time.Second)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "ok")
+	}))
 
-w := httptest.NewRecorder()
-r := httptest.NewRequest("GET", "/", nil)
-handler.ServeHTTP(w, r)
-fmt.Println(w.Code)
-// Output: 200
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/", nil)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+	// Output: 200
 }
 
 func ExampleMaxBody() {
-handler := middleware.MaxBody(16)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-w.WriteHeader(http.StatusOK)
-}))
+	handler := middleware.MaxBody(16)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
 
-w := httptest.NewRecorder()
-r := httptest.NewRequest("POST", "/", strings.NewReader("small"))
-handler.ServeHTTP(w, r)
-fmt.Println(w.Code)
-// Output: 200
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/", strings.NewReader("small"))
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+	// Output: 200
 }
 
 func ExampleCORS() {

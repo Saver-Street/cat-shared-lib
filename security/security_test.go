@@ -417,140 +417,140 @@ func BenchmarkSanitizeHeader(b *testing.B) {
 }
 
 func TestIsRelativeURL_Valid(t *testing.T) {
-testkit.AssertTrue(t, IsRelativeURL("/dashboard"))
-testkit.AssertTrue(t, IsRelativeURL("/users?page=2"))
-testkit.AssertTrue(t, IsRelativeURL("/path/to/resource"))
-testkit.AssertTrue(t, IsRelativeURL("/"))
+	testkit.AssertTrue(t, IsRelativeURL("/dashboard"))
+	testkit.AssertTrue(t, IsRelativeURL("/users?page=2"))
+	testkit.AssertTrue(t, IsRelativeURL("/path/to/resource"))
+	testkit.AssertTrue(t, IsRelativeURL("/"))
 }
 
 func TestIsRelativeURL_Invalid(t *testing.T) {
-testkit.AssertFalse(t, IsRelativeURL(""))
-testkit.AssertFalse(t, IsRelativeURL("https://evil.com"))
-testkit.AssertFalse(t, IsRelativeURL("//evil.com"))
-testkit.AssertFalse(t, IsRelativeURL("http://evil.com/path"))
-testkit.AssertFalse(t, IsRelativeURL("javascript:alert(1)"))
-testkit.AssertFalse(t, IsRelativeURL("data:text/html,<h1>hi</h1>"))
-testkit.AssertFalse(t, IsRelativeURL("ftp://files.example.com"))
+	testkit.AssertFalse(t, IsRelativeURL(""))
+	testkit.AssertFalse(t, IsRelativeURL("https://evil.com"))
+	testkit.AssertFalse(t, IsRelativeURL("//evil.com"))
+	testkit.AssertFalse(t, IsRelativeURL("http://evil.com/path"))
+	testkit.AssertFalse(t, IsRelativeURL("javascript:alert(1)"))
+	testkit.AssertFalse(t, IsRelativeURL("data:text/html,<h1>hi</h1>"))
+	testkit.AssertFalse(t, IsRelativeURL("ftp://files.example.com"))
 }
 
 func BenchmarkIsRelativeURL(b *testing.B) {
-for b.Loop() {
-IsRelativeURL("/dashboard?tab=overview")
-}
+	for b.Loop() {
+		IsRelativeURL("/dashboard?tab=overview")
+	}
 }
 
 func TestMaskEmail(t *testing.T) {
-testkit.AssertEqual(t, MaskEmail("alice@example.com"), "a****@example.com")
+	testkit.AssertEqual(t, MaskEmail("alice@example.com"), "a****@example.com")
 }
 
 func TestMaskEmail_Short(t *testing.T) {
-testkit.AssertEqual(t, MaskEmail("a@x.com"), "a@x.com")
+	testkit.AssertEqual(t, MaskEmail("a@x.com"), "a@x.com")
 }
 
 func TestMaskEmail_NoAt(t *testing.T) {
-testkit.AssertEqual(t, MaskEmail("notanemail"), "notanemail")
+	testkit.AssertEqual(t, MaskEmail("notanemail"), "notanemail")
 }
 
 func TestMaskEmail_LongLocal(t *testing.T) {
-testkit.AssertEqual(t, MaskEmail("john.doe@company.com"), "j*******@company.com")
+	testkit.AssertEqual(t, MaskEmail("john.doe@company.com"), "j*******@company.com")
 }
 
 func TestRedactURL_WithCredentials(t *testing.T) {
-got := RedactURL("https://admin:s3cret@db.example.com:5432/mydb")
-testkit.AssertEqual(t, got, "https://REDACTED@db.example.com:5432/mydb")
+	got := RedactURL("https://admin:s3cret@db.example.com:5432/mydb")
+	testkit.AssertEqual(t, got, "https://REDACTED@db.example.com:5432/mydb")
 }
 
 func TestRedactURL_UsernameOnly(t *testing.T) {
-got := RedactURL("https://admin@db.example.com/mydb")
-testkit.AssertEqual(t, got, "https://REDACTED@db.example.com/mydb")
+	got := RedactURL("https://admin@db.example.com/mydb")
+	testkit.AssertEqual(t, got, "https://REDACTED@db.example.com/mydb")
 }
 
 func TestRedactURL_NoCredentials(t *testing.T) {
-got := RedactURL("https://example.com/path?q=1")
-testkit.AssertEqual(t, got, "https://example.com/path?q=1")
+	got := RedactURL("https://example.com/path?q=1")
+	testkit.AssertEqual(t, got, "https://example.com/path?q=1")
 }
 
 func TestRedactURL_Invalid(t *testing.T) {
-got := RedactURL("://not-a-url")
-testkit.AssertEqual(t, got, "://not-a-url")
+	got := RedactURL("://not-a-url")
+	testkit.AssertEqual(t, got, "://not-a-url")
 }
 
 func TestRedactURL_Empty(t *testing.T) {
-got := RedactURL("")
-testkit.AssertEqual(t, got, "")
+	got := RedactURL("")
+	testkit.AssertEqual(t, got, "")
 }
 
 func TestSanitizeFilename(t *testing.T) {
-tests := []struct {
-name   string
-input  string
-expect string
-}{
-{"simple", "report.pdf", "report.pdf"},
-{"path traversal", "../../etc/passwd", "passwd"},
-{"windows path", `C:\Users\evil\doc.txt`, "doc.txt"},
-{"unix path", "/var/uploads/file.txt", "file.txt"},
-{"dotdot only", "..", "unnamed"},
-{"dot only", ".", "unnamed"},
-{"empty", "", "unnamed"},
-{"null bytes", "file\x00.txt", "file.txt"},
-}
-for _, tt := range tests {
-t.Run(tt.name, func(t *testing.T) {
-testkit.AssertEqual(t, SanitizeFilename(tt.input), tt.expect)
-})
-}
+	tests := []struct {
+		name   string
+		input  string
+		expect string
+	}{
+		{"simple", "report.pdf", "report.pdf"},
+		{"path traversal", "../../etc/passwd", "passwd"},
+		{"windows path", `C:\Users\evil\doc.txt`, "doc.txt"},
+		{"unix path", "/var/uploads/file.txt", "file.txt"},
+		{"dotdot only", "..", "unnamed"},
+		{"dot only", ".", "unnamed"},
+		{"empty", "", "unnamed"},
+		{"null bytes", "file\x00.txt", "file.txt"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testkit.AssertEqual(t, SanitizeFilename(tt.input), tt.expect)
+		})
+	}
 }
 
 func TestCSPHeader(t *testing.T) {
-csp := CSPHeader(map[string]string{
-"default-src": "'self'",
-"script-src":  "'self' 'unsafe-inline'",
-"img-src":     "'self' data:",
-})
-testkit.AssertEqual(t, csp, "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'")
+	csp := CSPHeader(map[string]string{
+		"default-src": "'self'",
+		"script-src":  "'self' 'unsafe-inline'",
+		"img-src":     "'self' data:",
+	})
+	testkit.AssertEqual(t, csp, "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'")
 }
 
 func TestCSPHeader_Single(t *testing.T) {
-csp := CSPHeader(map[string]string{"default-src": "'none'"})
-testkit.AssertEqual(t, csp, "default-src 'none'")
+	csp := CSPHeader(map[string]string{"default-src": "'none'"})
+	testkit.AssertEqual(t, csp, "default-src 'none'")
 }
 
 func TestCSPHeader_Empty(t *testing.T) {
-csp := CSPHeader(map[string]string{})
-testkit.AssertEqual(t, csp, "")
+	csp := CSPHeader(map[string]string{})
+	testkit.AssertEqual(t, csp, "")
 }
 
 func TestIsStrongPassword_Valid(t *testing.T) {
-testkit.AssertNoError(t, IsStrongPassword("P@ssw0rd!", 8))
+	testkit.AssertNoError(t, IsStrongPassword("P@ssw0rd!", 8))
 }
 
 func TestIsStrongPassword_TooShort(t *testing.T) {
-err := IsStrongPassword("P@1a", 8)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "at least 8 characters")
+	err := IsStrongPassword("P@1a", 8)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "at least 8 characters")
 }
 
 func TestIsStrongPassword_NoUpper(t *testing.T) {
-err := IsStrongPassword("p@ssw0rd!", 8)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "uppercase")
+	err := IsStrongPassword("p@ssw0rd!", 8)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "uppercase")
 }
 
 func TestIsStrongPassword_NoLower(t *testing.T) {
-err := IsStrongPassword("P@SSW0RD!", 8)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "lowercase")
+	err := IsStrongPassword("P@SSW0RD!", 8)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "lowercase")
 }
 
 func TestIsStrongPassword_NoDigit(t *testing.T) {
-err := IsStrongPassword("P@ssword!", 8)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "digit")
+	err := IsStrongPassword("P@ssword!", 8)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "digit")
 }
 
 func TestIsStrongPassword_NoSpecial(t *testing.T) {
-err := IsStrongPassword("Passw0rdd", 8)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "special")
+	err := IsStrongPassword("Passw0rdd", 8)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "special")
 }

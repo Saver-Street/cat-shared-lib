@@ -466,3 +466,22 @@ HTML(w, http.StatusNotFound, "<h1>Not Found</h1>")
 testkit.AssertEqual(t, w.Code, http.StatusNotFound)
 testkit.AssertEqual(t, w.Body.String(), "<h1>Not Found</h1>")
 }
+
+func TestStream(t *testing.T) {
+w := httptest.NewRecorder()
+body := strings.NewReader("file-content-here")
+Stream(w, http.StatusOK, "application/octet-stream", body)
+
+testkit.AssertEqual(t, w.Code, http.StatusOK)
+testkit.AssertEqual(t, w.Header().Get("Content-Type"), "application/octet-stream")
+testkit.AssertEqual(t, w.Body.String(), "file-content-here")
+}
+
+func TestStream_CSV(t *testing.T) {
+w := httptest.NewRecorder()
+csv := "name,age\nAlice,30\n"
+Stream(w, http.StatusOK, "text/csv", strings.NewReader(csv))
+
+testkit.AssertEqual(t, w.Header().Get("Content-Type"), "text/csv")
+testkit.AssertEqual(t, w.Body.String(), csv)
+}

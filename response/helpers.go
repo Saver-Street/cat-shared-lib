@@ -188,3 +188,14 @@ func HTML(w http.ResponseWriter, code int, body string) {
 	w.WriteHeader(code)
 	_, _ = w.Write([]byte(body))
 }
+
+// Stream writes an io.Reader to the response with the given content type and
+// status code. It is useful for proxying file downloads, serving generated
+// content, or streaming large payloads without buffering in memory.
+func Stream(w http.ResponseWriter, code int, contentType string, r io.Reader) {
+w.Header().Set("Content-Type", contentType)
+w.WriteHeader(code)
+if _, err := io.Copy(w, r); err != nil {
+slog.Error("response: stream copy failed", "error", err)
+}
+}

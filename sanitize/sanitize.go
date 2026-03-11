@@ -3,6 +3,7 @@ package sanitize
 
 import (
 	"errors"
+	"html"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -216,4 +217,10 @@ b.WriteByte('-')
 }
 slug := multiHyphen.ReplaceAllString(b.String(), "-")
 return strings.Trim(slug, "-")
+}
+
+// EscapeHTML escapes special HTML characters (<, >, &, ', ") so the string
+// can be safely embedded in HTML content without risk of injection.
+func EscapeHTML(s string) string {
+return html.EscapeString(s)
 }

@@ -50,9 +50,7 @@ func TestState_String(t *testing.T) {
 func TestExecute_Success(t *testing.T) {
 	cb := New("test")
 	err := cb.Execute(func() error { return nil })
-	if err != nil {
-		t.Fatalf("Execute() = %v, want nil", err)
-	}
+	testkit.RequireNoError(t, err)
 	c := cb.Counts()
 	testkit.AssertEqual(t, c.TotalSuccesses, uint32(1))
 	testkit.AssertEqual(t, c.ConsecutiveSuccesses, uint32(1))

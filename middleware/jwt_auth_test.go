@@ -17,9 +17,7 @@ import (
 func makeToken(t *testing.T, claims JWTClaims, secret []byte) string {
 	t.Helper()
 	tok, err := SignHS256(claims, secret)
-	if err != nil {
-		t.Fatalf("SignHS256: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	return tok
 }
 
@@ -290,17 +288,13 @@ func TestSignHS256_RoundTrip(t *testing.T) {
 	}
 
 	token, err := SignHS256(claims, secret)
-	if err != nil {
-		t.Fatalf("SignHS256: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	got, err := validateJWT(req, secret, "test", now)
-	if err != nil {
-		t.Fatalf("validateJWT: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, got.Subject, "user-42")
 	testkit.AssertEqual(t, got.Email, "alice@example.com")
 	testkit.AssertEqual(t, got.Role, "editor")
@@ -356,9 +350,7 @@ func signPayload(input string, secret []byte) (string, error) {
 func TestJWTClaims_JSON(t *testing.T) {
 	c := JWTClaims{Subject: "u1", Email: "a@b.com", Role: "admin"}
 	data, err := json.Marshal(c)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	var got JWTClaims
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)

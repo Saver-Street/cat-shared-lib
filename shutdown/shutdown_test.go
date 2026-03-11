@@ -97,9 +97,7 @@ func TestListenAndServe_GracefulShutdown(t *testing.T) {
 
 	// Find a free port.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	addr := ln.Addr().String()
 	ln.Close()
 
@@ -157,9 +155,7 @@ func TestListenAndServe_OnShutdownError(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(&buf, nil))
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	addr := ln.Addr().String()
 	ln.Close()
 
@@ -206,9 +202,7 @@ func TestListenAndServe_OnShutdownError(t *testing.T) {
 func TestListenAndServe_BindError(t *testing.T) {
 	// Occupy a port.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	defer ln.Close()
 	addr := ln.Addr().String()
 
@@ -308,9 +302,7 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(&buf, nil))
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	addr := ln.Addr().String()
 	ln.Close()
 

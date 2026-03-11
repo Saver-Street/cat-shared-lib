@@ -19,9 +19,7 @@ func TestUser_JSONRoundTrip(t *testing.T) {
 		CreatedAt:          now,
 	}
 	data, err := json.Marshal(u)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	var got User
 	if err := json.Unmarshal(data, &got); err != nil {
@@ -37,9 +35,7 @@ func TestUser_JSONFieldNames(t *testing.T) {
 		SubscriptionStatus: "active",
 	}
 	data, err := json.Marshal(u)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 
 	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
@@ -72,9 +68,7 @@ func TestCandidateProfile_JSONRoundTrip(t *testing.T) {
 		CreatedAt: now,
 	}
 	data, err := json.Marshal(cp)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	var got CandidateProfile
 	if err := json.Unmarshal(data, &got); err != nil {

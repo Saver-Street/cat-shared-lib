@@ -780,16 +780,94 @@ func TestPatchJSON_NilTarget(t *testing.T) {
 }
 
 func TestHead(t *testing.T) {
-srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-testkit.AssertEqual(t, r.Method, http.MethodHead)
-w.Header().Set("X-Custom", "value")
-w.WriteHeader(http.StatusOK)
-}))
-defer srv.Close()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testkit.AssertEqual(t, r.Method, http.MethodHead)
+		w.Header().Set("X-Custom", "value")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
 
-c := New()
-resp, err := c.Head(context.Background(), srv.URL)
-testkit.RequireNoError(t, err)
-testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
-testkit.AssertEqual(t, resp.Header.Get("X-Custom"), "value")
+	c := New()
+	resp, err := c.Head(context.Background(), srv.URL)
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
+	testkit.AssertEqual(t, resp.Header.Get("X-Custom"), "value")
+}
+
+func TestWithBaseURL(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testkit.AssertEqual(t, r.URL.Path, "/v1/users")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := New(WithBaseURL(srv.URL + "/v1"))
+	resp, err := c.Get(context.Background(), "/users")
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
+}
+
+func TestWithBaseURL_FullURLPassedThrough(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := New(WithBaseURL("https://other.example.com"))
+	// Full URL should not have base URL prepended
+	resp, err := c.Get(context.Background(), srv.URL+"/absolute")
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
+}
+
+func TestWithBaseURL_TrailingSlash(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testkit.AssertEqual(t, r.URL.Path, "/api/items")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := New(WithBaseURL(srv.URL + "/api/"))
+	resp, err := c.Get(context.Background(), "/items")
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
+}
+
+func TestWithBearerToken(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testkit.AssertEqual(t, r.Header.Get("Authorization"), "Bearer my-secret-token")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := New(WithBearerToken("my-secret-token"))
+	resp, err := c.Get(context.Background(), srv.URL)
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
+}
+
+func TestWithBearerTokenFunc(t *testing.T) {
+	callCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testkit.AssertEqual(t, r.Header.Get("Authorization"), "Bearer dynamic-token")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := New(WithBearerTokenFunc(func() (string, error) {
+		callCount++
+		return "dynamic-token", nil
+	}))
+	_, err := c.Get(context.Background(), srv.URL)
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, callCount, 1)
+}
+
+func TestWithBearerTokenFunc_Error(t *testing.T) {
+	c := New(WithBearerTokenFunc(func() (string, error) {
+		return "", errors.New("token expired")
+	}))
+	_, err := c.Get(context.Background(), "http://localhost:1/unused")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "token expired")
 }

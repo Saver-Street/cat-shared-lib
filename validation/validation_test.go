@@ -269,3 +269,23 @@ func TestMatch_Empty(t *testing.T) {
 func TestMatch_Trimmed(t *testing.T) {
 	testkit.AssertNoError(t, Match("code", "  ABC123  ", alphanumRe, "alphanumeric characters"))
 }
+
+func TestExactLength_Valid(t *testing.T) {
+testkit.AssertNoError(t, ExactLength("country", "US", 2))
+}
+
+func TestExactLength_TooShort(t *testing.T) {
+err := ExactLength("country", "U", 2)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "exactly 2 characters")
+}
+
+func TestExactLength_TooLong(t *testing.T) {
+err := ExactLength("country", "USA", 2)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "exactly 2 characters")
+}
+
+func TestExactLength_Trimmed(t *testing.T) {
+testkit.AssertNoError(t, ExactLength("pin", "  1234  ", 4))
+}

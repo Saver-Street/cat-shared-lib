@@ -22,4 +22,9 @@
 // injects a unique request ID into the context and response headers.
 // [Recovery] catches panics and returns 500.  [Timeout] enforces a per-request
 // deadline.
+//
+// # Composition
+//
+// [Chain] composes multiple middleware into a single wrapper, applying them
+// in order so that the first argument is the outermost layer.
 package middleware

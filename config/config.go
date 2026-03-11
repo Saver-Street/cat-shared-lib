@@ -372,3 +372,16 @@ panic(fmt.Sprintf("config: %s is required", key))
 }
 return v
 }
+
+// MustPort is like Port but panics if the variable is unset or the value is
+// not a valid port (1–65535). Intended for use during application startup.
+func MustPort(key string) int {
+v, err := Port(key, 0)
+if err != nil {
+panic(err)
+}
+if v == 0 {
+panic(fmt.Sprintf("config: %s is required", key))
+}
+return v
+}

@@ -11,81 +11,65 @@ import (
 
 func TestParsePagination_Defaults(t *testing.T) {
 	p := ParsePagination(url.Values{}, 20, 100)
-	if p.Page != 1 || p.Limit != 20 || p.Offset != 0 {
-		t.Errorf("got %+v, want {Page:1 Limit:20 Offset:0}", p)
-	}
+	testkit.AssertEqual(t, p.Page, 1)
+	testkit.AssertEqual(t, p.Limit, 20)
+	testkit.AssertEqual(t, p.Offset, 0)
 }
 
 func TestParsePagination_CustomValues(t *testing.T) {
 	q := url.Values{"page": {"3"}, "limit": {"15"}}
 	p := ParsePagination(q, 20, 100)
-	if p.Page != 3 || p.Limit != 15 || p.Offset != 30 {
-		t.Errorf("got %+v, want {Page:3 Limit:15 Offset:30}", p)
-	}
+	testkit.AssertEqual(t, p.Page, 3)
+	testkit.AssertEqual(t, p.Limit, 15)
+	testkit.AssertEqual(t, p.Offset, 30)
 }
 
 func TestParsePagination_MaxLimit(t *testing.T) {
 	q := url.Values{"limit": {"200"}}
 	p := ParsePagination(q, 20, 50)
-	if p.Limit != 50 {
-		t.Errorf("limit = %d, want 50 (capped at max)", p.Limit)
-	}
+	testkit.AssertEqual(t, p.Limit, 50)
 }
 
 func TestParsePagination_InvalidPage(t *testing.T) {
 	q := url.Values{"page": {"abc"}}
 	p := ParsePagination(q, 20, 100)
-	if p.Page != 1 {
-		t.Errorf("page = %d, want 1 (fallback for invalid)", p.Page)
-	}
+	testkit.AssertEqual(t, p.Page, 1)
 }
 
 func TestParsePagination_ZeroPage(t *testing.T) {
 	q := url.Values{"page": {"0"}}
 	p := ParsePagination(q, 20, 100)
-	if p.Page != 1 {
-		t.Errorf("page = %d, want 1 (fallback for zero)", p.Page)
-	}
+	testkit.AssertEqual(t, p.Page, 1)
 }
 
 func TestParsePagination_NegativePage(t *testing.T) {
 	q := url.Values{"page": {"-1"}}
 	p := ParsePagination(q, 20, 100)
-	if p.Page != 1 {
-		t.Errorf("page = %d, want 1 (fallback for negative)", p.Page)
-	}
+	testkit.AssertEqual(t, p.Page, 1)
 }
 
 func TestParsePagination_InvalidLimit(t *testing.T) {
 	q := url.Values{"limit": {"xyz"}}
 	p := ParsePagination(q, 25, 100)
-	if p.Limit != 25 {
-		t.Errorf("limit = %d, want 25 (fallback for invalid)", p.Limit)
-	}
+	testkit.AssertEqual(t, p.Limit, 25)
 }
 
 func TestParsePagination_ZeroLimit(t *testing.T) {
 	q := url.Values{"limit": {"0"}}
 	p := ParsePagination(q, 25, 100)
-	if p.Limit != 25 {
-		t.Errorf("limit = %d, want 25 (fallback for zero)", p.Limit)
-	}
+	testkit.AssertEqual(t, p.Limit, 25)
 }
 
 func TestParsePagination_NegativeLimit(t *testing.T) {
 	q := url.Values{"limit": {"-5"}}
 	p := ParsePagination(q, 25, 100)
-	if p.Limit != 25 {
-		t.Errorf("limit = %d, want 25 (fallback for negative)", p.Limit)
-	}
+	testkit.AssertEqual(t, p.Limit, 25)
 }
 
 func TestParsePagination_Page2Offset(t *testing.T) {
 	q := url.Values{"page": {"2"}, "limit": {"10"}}
 	p := ParsePagination(q, 20, 100)
-	if p.Offset != 10 {
-		t.Errorf("offset = %d, want 10 for page 2 limit 10", p.Offset)
-	}
+	testkit.AssertEqual(t, p.Offset, 10)
 }
 
 // ── RequireURLParam Tests ───────────────────────────────────────────────────
@@ -102,9 +86,7 @@ func TestRequireURLParam_Present(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if val != "42" {
-		t.Errorf("got %q, want %q", val, "42")
-	}
+	testkit.AssertEqual(t, val, "42")
 }
 
 func TestRequireURLParam_Missing(t *testing.T) {
@@ -130,9 +112,7 @@ func TestRequireURLParamInt_ValidInt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if n != 123 {
-		t.Errorf("got %d, want 123", n)
-	}
+	testkit.AssertEqual(t, n, int64(123))
 }
 
 func TestRequireURLParamInt_NotAnInt(t *testing.T) {
@@ -175,9 +155,7 @@ func TestRequireURLParamInt_MaxInt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if n != 9223372036854775807 {
-		t.Errorf("got %d, want max int64", n)
-	}
+	testkit.AssertEqual(t, n, int64(9223372036854775807))
 }
 
 func TestRequireURLParamInt_Overflow(t *testing.T) {
@@ -192,9 +170,7 @@ func TestParsePagination_LargePageOffset(t *testing.T) {
 	q := url.Values{"page": {"10000"}, "limit": {"100"}}
 	p := ParsePagination(q, 20, 100)
 	expectedOffset := 9999 * 100
-	if p.Offset != expectedOffset {
-		t.Errorf("offset = %d, want %d", p.Offset, expectedOffset)
-	}
+	testkit.AssertEqual(t, p.Offset, expectedOffset)
 }
 
 // --- Benchmarks ---
@@ -226,17 +202,13 @@ func TestParsePagination_ZeroDefaults(t *testing.T) {
 	// Zero defaultLimit and maxLimit should apply sane built-in defaults.
 	q := url.Values{}
 	p := ParsePagination(q, 0, 0)
-	if p.Limit != 20 {
-		t.Errorf("expected Limit=20, got %d", p.Limit)
-	}
+	testkit.AssertEqual(t, p.Limit, 20)
 }
 
 func TestParsePagination_NegativeDefaults(t *testing.T) {
 	q := url.Values{}
 	p := ParsePagination(q, -5, -1)
-	if p.Limit != 20 {
-		t.Errorf("expected Limit=20, got %d", p.Limit)
-	}
+	testkit.AssertEqual(t, p.Limit, 20)
 }
 
 func TestParsePagination_ZeroMaxLimitCapsCorrectly(t *testing.T) {
@@ -244,9 +216,7 @@ func TestParsePagination_ZeroMaxLimitCapsCorrectly(t *testing.T) {
 	// Now maxLimit defaults to 100, so explicit limit=50 should be honoured.
 	q := url.Values{"limit": {"50"}}
 	p := ParsePagination(q, 0, 0)
-	if p.Limit != 50 {
-		t.Errorf("expected Limit=50, got %d", p.Limit)
-	}
+	testkit.AssertEqual(t, p.Limit, 50)
 }
 
 func TestRequireQueryParam_Present(t *testing.T) {
@@ -255,9 +225,7 @@ func TestRequireQueryParam_Present(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != "active" {
-		t.Errorf("got %q, want %q", got, "active")
-	}
+	testkit.AssertEqual(t, got, "active")
 }
 
 func TestRequireQueryParam_Missing(t *testing.T) {
@@ -279,36 +247,26 @@ func TestRequireQueryParam_Empty(t *testing.T) {
 func TestParseBoolParam_TrueValues(t *testing.T) {
 	for _, v := range []string{"true", "1", "yes", "True", "YES"} {
 		q := url.Values{"active": {v}}
-		if !ParseBoolParam(q, "active", false) {
-			t.Errorf("expected true for %q", v)
-		}
+		testkit.AssertTrue(t, ParseBoolParam(q, "active", false))
 	}
 }
 
 func TestParseBoolParam_FalseValues(t *testing.T) {
 	for _, v := range []string{"false", "0", "no", "False", "NO"} {
 		q := url.Values{"active": {v}}
-		if ParseBoolParam(q, "active", true) {
-			t.Errorf("expected false for %q", v)
-		}
+		testkit.AssertFalse(t, ParseBoolParam(q, "active", true))
 	}
 }
 
 func TestParseBoolParam_DefaultOnMissing(t *testing.T) {
 	q := url.Values{}
-	if !ParseBoolParam(q, "active", true) {
-		t.Error("expected default true when param missing")
-	}
-	if ParseBoolParam(q, "active", false) {
-		t.Error("expected default false when param missing")
-	}
+	testkit.AssertTrue(t, ParseBoolParam(q, "active", true))
+	testkit.AssertFalse(t, ParseBoolParam(q, "active", false))
 }
 
 func TestParseBoolParam_DefaultOnUnknown(t *testing.T) {
 	q := url.Values{"active": {"maybe"}}
-	if !ParseBoolParam(q, "active", true) {
-		t.Error("expected default true for unrecognised value")
-	}
+	testkit.AssertTrue(t, ParseBoolParam(q, "active", true))
 }
 
 func BenchmarkRequireQueryParam(b *testing.B) {
@@ -327,51 +285,37 @@ func BenchmarkParseBoolParam(b *testing.B) {
 
 func TestOptionalQueryParam_Present(t *testing.T) {
 	q := url.Values{"name": {"alice"}}
-	if got := OptionalQueryParam(q, "name", "default"); got != "alice" {
-		t.Errorf("got %q, want alice", got)
-	}
+	testkit.AssertEqual(t, OptionalQueryParam(q, "name", "default"), "alice")
 }
 
 func TestOptionalQueryParam_Missing(t *testing.T) {
 	q := url.Values{}
-	if got := OptionalQueryParam(q, "name", "default"); got != "default" {
-		t.Errorf("got %q, want default", got)
-	}
+	testkit.AssertEqual(t, OptionalQueryParam(q, "name", "default"), "default")
 }
 
 func TestOptionalQueryParam_Empty(t *testing.T) {
 	q := url.Values{"name": {""}}
-	if got := OptionalQueryParam(q, "name", "fallback"); got != "fallback" {
-		t.Errorf("got %q, want fallback", got)
-	}
+	testkit.AssertEqual(t, OptionalQueryParam(q, "name", "fallback"), "fallback")
 }
 
 func TestOptionalQueryInt_Present(t *testing.T) {
 	q := url.Values{"count": {"42"}}
-	if got := OptionalQueryInt(q, "count", 0); got != 42 {
-		t.Errorf("got %d, want 42", got)
-	}
+	testkit.AssertEqual(t, OptionalQueryInt(q, "count", 0), int64(42))
 }
 
 func TestOptionalQueryInt_Missing(t *testing.T) {
 	q := url.Values{}
-	if got := OptionalQueryInt(q, "count", 10); got != 10 {
-		t.Errorf("got %d, want 10", got)
-	}
+	testkit.AssertEqual(t, OptionalQueryInt(q, "count", 10), int64(10))
 }
 
 func TestOptionalQueryInt_Invalid(t *testing.T) {
 	q := url.Values{"count": {"notanint"}}
-	if got := OptionalQueryInt(q, "count", 99); got != 99 {
-		t.Errorf("got %d, want 99 (default on invalid)", got)
-	}
+	testkit.AssertEqual(t, OptionalQueryInt(q, "count", 99), int64(99))
 }
 
 func TestOptionalQueryInt_Negative(t *testing.T) {
 	q := url.Values{"page": {"-5"}}
-	if got := OptionalQueryInt(q, "page", 1); got != -5 {
-		t.Errorf("got %d, want -5 (negatives are valid)", got)
-	}
+	testkit.AssertEqual(t, OptionalQueryInt(q, "page", 1), int64(-5))
 }
 
 func TestRequireQueryParamInt_Valid(t *testing.T) {
@@ -380,9 +324,7 @@ func TestRequireQueryParamInt_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if n != 123 {
-		t.Errorf("got %d, want 123", n)
-	}
+	testkit.AssertEqual(t, n, int64(123))
 }
 
 func TestRequireQueryParamInt_Missing(t *testing.T) {
@@ -404,48 +346,41 @@ func TestRequireQueryParamInt_NotAnInt(t *testing.T) {
 func TestParseCommaSeparated_Values(t *testing.T) {
 	q := url.Values{"tags": {"go, python, rust"}}
 	got := ParseCommaSeparated(q, "tags")
-	if len(got) != 3 || got[0] != "go" || got[1] != "python" || got[2] != "rust" {
-		t.Errorf("got %v, want [go python rust]", got)
-	}
+	testkit.AssertLen(t, got, 3)
+	testkit.AssertEqual(t, got[0], "go")
+	testkit.AssertEqual(t, got[1], "python")
+	testkit.AssertEqual(t, got[2], "rust")
 }
 func TestParseCommaSeparated_Absent(t *testing.T) {
-	if got := ParseCommaSeparated(url.Values{}, "tags"); got != nil {
-		t.Errorf("got %v, want nil", got)
-	}
+	testkit.AssertNil(t, ParseCommaSeparated(url.Values{}, "tags"))
 }
 func TestParseCommaSeparated_EmptyString(t *testing.T) {
-	if got := ParseCommaSeparated(url.Values{"tags": {""}}, "tags"); got != nil {
-		t.Errorf("got %v, want nil", got)
-	}
+	testkit.AssertNil(t, ParseCommaSeparated(url.Values{"tags": {""}}, "tags"))
 }
 func TestParseCommaSeparated_WhitespaceOnly(t *testing.T) {
-	if got := ParseCommaSeparated(url.Values{"tags": {"  , ,  "}}, "tags"); got != nil {
-		t.Errorf("got %v, want nil", got)
-	}
+	testkit.AssertNil(t, ParseCommaSeparated(url.Values{"tags": {"  , ,  "}}, "tags"))
 }
 func TestParseCommaSeparated_Single(t *testing.T) {
 	got := ParseCommaSeparated(url.Values{"tags": {"go"}}, "tags")
-	if len(got) != 1 || got[0] != "go" {
-		t.Errorf("got %v, want [go]", got)
-	}
+	testkit.AssertLen(t, got, 1)
+	testkit.AssertEqual(t, got[0], "go")
 }
 func TestParseCommaSeparatedInts_Valid(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{"ids": {"1,2,3"}}, "ids")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(got) != 3 || got[0] != 1 || got[1] != 2 || got[2] != 3 {
-		t.Errorf("got %v, want [1 2 3]", got)
-	}
+	testkit.AssertLen(t, got, 3)
+	testkit.AssertEqual(t, got[0], int64(1))
+	testkit.AssertEqual(t, got[1], int64(2))
+	testkit.AssertEqual(t, got[2], int64(3))
 }
 func TestParseCommaSeparatedInts_Absent(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{}, "ids")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != nil {
-		t.Errorf("got %v, want nil", got)
-	}
+	testkit.AssertNil(t, got)
 }
 func TestParseCommaSeparatedInts_Invalid(t *testing.T) {
 	_, err := ParseCommaSeparatedInts(url.Values{"ids": {"1,abc,3"}}, "ids")
@@ -458,57 +393,48 @@ func TestParseCommaSeparatedInts_Negative(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got[0] != -1 || got[1] != 0 || got[2] != 2 {
-		t.Errorf("got %v, want [-1 0 2]", got)
-	}
+	testkit.AssertEqual(t, got[0], int64(-1))
+	testkit.AssertEqual(t, got[1], int64(0))
+	testkit.AssertEqual(t, got[2], int64(2))
 }
 
 func TestParseSortOrder_Default(t *testing.T) {
 	field, dir := ParseSortOrder(url.Values{}, []string{"name", "created_at"}, "created_at", "desc")
-	if field != "created_at" || dir != "desc" {
-		t.Errorf("got (%q, %q), want (created_at, desc)", field, dir)
-	}
+	testkit.AssertEqual(t, field, "created_at")
+	testkit.AssertEqual(t, dir, "desc")
 }
 
 func TestParseSortOrder_Valid(t *testing.T) {
 	q := url.Values{"sort": {"name"}, "order": {"asc"}}
 	field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
-	if field != "name" || dir != "asc" {
-		t.Errorf("got (%q, %q), want (name, asc)", field, dir)
-	}
+	testkit.AssertEqual(t, field, "name")
+	testkit.AssertEqual(t, dir, "asc")
 }
 
 func TestParseSortOrder_InvalidSort(t *testing.T) {
 	q := url.Values{"sort": {"unknown"}, "order": {"asc"}}
 	field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
-	if field != "created_at" {
-		t.Errorf("invalid sort should fall back to default, got %q", field)
-	}
-	if dir != "asc" {
-		t.Errorf("valid order should be used, got %q", dir)
-	}
+	testkit.AssertEqual(t, field, "created_at")
+	testkit.AssertEqual(t, dir, "asc")
 }
 
 func TestParseSortOrder_InvalidOrder(t *testing.T) {
 	q := url.Values{"sort": {"name"}, "order": {"random"}}
 	field, dir := ParseSortOrder(q, []string{"name"}, "created_at", "desc")
-	if field != "name" || dir != "desc" {
-		t.Errorf("got (%q, %q), want (name, desc)", field, dir)
-	}
+	testkit.AssertEqual(t, field, "name")
+	testkit.AssertEqual(t, dir, "desc")
 }
 
 func TestParseSortOrder_CaseInsensitive(t *testing.T) {
 	q := url.Values{"sort": {"NAME"}, "order": {"ASC"}}
 	field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
-	if field != "name" || dir != "asc" {
-		t.Errorf("got (%q, %q), want case-normalized (name, asc)", field, dir)
-	}
+	testkit.AssertEqual(t, field, "name")
+	testkit.AssertEqual(t, dir, "asc")
 }
 
 func TestParseSortOrder_EmptyAllowed(t *testing.T) {
 	q := url.Values{"sort": {"name"}, "order": {"asc"}}
 	field, dir := ParseSortOrder(q, []string{}, "created_at", "desc")
-	if field != "created_at" || dir != "asc" {
-		t.Errorf("empty allowed list should always use default field; got (%q, %q)", field, dir)
-	}
+	testkit.AssertEqual(t, field, "created_at")
+	testkit.AssertEqual(t, dir, "asc")
 }

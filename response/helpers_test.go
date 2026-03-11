@@ -2,12 +2,14 @@ package response
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/Saver-Street/cat-shared-lib/apperror"
 	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
@@ -389,4 +391,38 @@ func TestPaginated_EmptyData(t *testing.T) {
 	}
 	testkit.AssertEqual(t, got.Total, 0)
 	testkit.AssertFalse(t, got.HasMore)
+}
+
+func TestAppError_WithAppError(t *testing.T) {
+	w := httptest.NewRecorder()
+	AppError(w, apperror.NotFound("user not found"))
+
+	testkit.AssertStatus(t, w, http.StatusNotFound)
+	testkit.AssertHeader(t, w, "Content-Type", "application/json")
+
+	var body map[string]any
+	testkit.RequireNoError(t, json.NewDecoder(w.Body).Decode(&body))
+	testkit.AssertEqual(t, body["code"], "NOT_FOUND")
+	testkit.AssertEqual(t, body["message"], "user not found")
+}
+
+func TestAppError_WithWrappedAppError(t *testing.T) {
+	inner := apperror.BadRequest("invalid input")
+	wrapped := fmt.Errorf("handler: %w", inner)
+
+	w := httptest.NewRecorder()
+	AppError(w, wrapped)
+
+	testkit.AssertStatus(t, w, http.StatusBadRequest)
+}
+
+func TestAppError_WithGenericError(t *testing.T) {
+	w := httptest.NewRecorder()
+	AppError(w, errors.New("something broke"))
+
+	testkit.AssertStatus(t, w, http.StatusInternalServerError)
+
+	var body map[string]string
+	testkit.RequireNoError(t, json.NewDecoder(w.Body).Decode(&body))
+	testkit.AssertEqual(t, body["error"], "Internal server error")
 }

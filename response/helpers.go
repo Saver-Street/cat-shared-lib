@@ -3,9 +3,12 @@ package response
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
+
+	"github.com/Saver-Street/cat-shared-lib/apperror"
 )
 
 // JSON sends a JSON response with the given status code.
@@ -134,6 +137,18 @@ func Paginated[T any](w http.ResponseWriter, data []T, total, page, limit int) {
 // InternalError logs the error and sends a 500 response.
 func InternalError(w http.ResponseWriter, msg string, err error) {
 	slog.Error(msg, "error", err)
+	Error(w, http.StatusInternalServerError, "Internal server error")
+}
+
+// AppError writes an appropriate JSON error response for the given error.
+// If err is an *apperror.Error, it uses its HTTPStatus and Message.
+// Otherwise it falls back to a generic 500 Internal Server Error.
+func AppError(w http.ResponseWriter, err error) {
+	var appErr *apperror.Error
+	if errors.As(err, &appErr) {
+		JSON(w, appErr.HTTPStatus, appErr)
+		return
+	}
 	Error(w, http.StatusInternalServerError, "Internal server error")
 }
 

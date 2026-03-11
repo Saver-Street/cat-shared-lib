@@ -169,3 +169,51 @@ func BenchmarkInt(b *testing.B) {
 		Int("CONFIG_BENCH_INT", 0)
 	}
 }
+
+func TestMustBool_True(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MUST_BOOL", "true")
+	testkit.AssertTrue(t, MustBool("CONFIG_TEST_MUST_BOOL"))
+}
+
+func TestMustBool_False(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MUST_BOOL", "false")
+	testkit.AssertFalse(t, MustBool("CONFIG_TEST_MUST_BOOL"))
+}
+
+func TestMustBool_Yes(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MUST_BOOL", "YES")
+	testkit.AssertTrue(t, MustBool("CONFIG_TEST_MUST_BOOL"))
+}
+
+func TestMustBool_PanicsMissing(t *testing.T) {
+	os.Unsetenv("CONFIG_TEST_MUST_BOOL_MISS")
+	testkit.AssertPanics(t, func() {
+		MustBool("CONFIG_TEST_MUST_BOOL_MISS")
+	})
+}
+
+func TestMustBool_PanicsInvalid(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MUST_BOOL_BAD", "maybe")
+	testkit.AssertPanics(t, func() {
+		MustBool("CONFIG_TEST_MUST_BOOL_BAD")
+	})
+}
+
+func TestMustDuration_Valid(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MUST_DUR", "5s")
+	testkit.AssertEqual(t, MustDuration("CONFIG_TEST_MUST_DUR"), 5*time.Second)
+}
+
+func TestMustDuration_PanicsMissing(t *testing.T) {
+	os.Unsetenv("CONFIG_TEST_MUST_DUR_MISS")
+	testkit.AssertPanics(t, func() {
+		MustDuration("CONFIG_TEST_MUST_DUR_MISS")
+	})
+}
+
+func TestMustDuration_PanicsInvalid(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MUST_DUR_BAD", "not-a-duration")
+	testkit.AssertPanics(t, func() {
+		MustDuration("CONFIG_TEST_MUST_DUR_BAD")
+	})
+}

@@ -82,3 +82,49 @@ func ExampleNeedsRehash() {
 	// false
 	// true
 }
+
+func ExampleEncrypt() {
+	key := make([]byte, 32) // use a real key in production
+	plaintext := []byte("sensitive data")
+
+	ciphertext, err := crypto.Encrypt(key, plaintext)
+	fmt.Println(err)
+	fmt.Println(len(ciphertext) > len(plaintext))
+
+	decrypted, err := crypto.Decrypt(key, ciphertext)
+	fmt.Println(err)
+	fmt.Println(string(decrypted))
+	// Output:
+	// <nil>
+	// true
+	// <nil>
+	// sensitive data
+}
+
+func ExampleEncryptString() {
+	key := make([]byte, 32) // use a real key in production
+
+	encoded, err := crypto.EncryptString(key, "hello, world!")
+	fmt.Println(err)
+	fmt.Println(len(encoded) > 0)
+
+	decoded, err := crypto.DecryptString(key, encoded)
+	fmt.Println(err)
+	fmt.Println(decoded)
+	// Output:
+	// <nil>
+	// true
+	// <nil>
+	// hello, world!
+}
+
+func ExampleEqualBytes() {
+	a := []byte("token-abc")
+	b := []byte("token-abc")
+	c := []byte("token-xyz")
+	fmt.Println(crypto.EqualBytes(a, b))
+	fmt.Println(crypto.EqualBytes(a, c))
+	// Output:
+	// true
+	// false
+}

@@ -189,49 +189,49 @@ func TestGenerateToken_UsesDefaultReader(t *testing.T) {
 }
 
 func TestGenerateUUID_Format(t *testing.T) {
-id, err := GenerateUUID()
-testkit.RequireNoError(t, err)
-// UUID v4 format: 8-4-4-4-12
-testkit.AssertEqual(t, len(id), 36)
-testkit.AssertEqual(t, id[8], byte('-'))
-testkit.AssertEqual(t, id[13], byte('-'))
-testkit.AssertEqual(t, id[18], byte('-'))
-testkit.AssertEqual(t, id[23], byte('-'))
+	id, err := GenerateUUID()
+	testkit.RequireNoError(t, err)
+	// UUID v4 format: 8-4-4-4-12
+	testkit.AssertEqual(t, len(id), 36)
+	testkit.AssertEqual(t, id[8], byte('-'))
+	testkit.AssertEqual(t, id[13], byte('-'))
+	testkit.AssertEqual(t, id[18], byte('-'))
+	testkit.AssertEqual(t, id[23], byte('-'))
 }
 
 func TestGenerateUUID_Version4(t *testing.T) {
-id, err := GenerateUUID()
-testkit.RequireNoError(t, err)
-// Version nibble should be '4'
-testkit.AssertEqual(t, id[14], byte('4'))
+	id, err := GenerateUUID()
+	testkit.RequireNoError(t, err)
+	// Version nibble should be '4'
+	testkit.AssertEqual(t, id[14], byte('4'))
 }
 
 func TestGenerateUUID_Unique(t *testing.T) {
-a, err := GenerateUUID()
-testkit.RequireNoError(t, err)
-b, err := GenerateUUID()
-testkit.RequireNoError(t, err)
-testkit.AssertNotEqual(t, a, b)
+	a, err := GenerateUUID()
+	testkit.RequireNoError(t, err)
+	b, err := GenerateUUID()
+	testkit.RequireNoError(t, err)
+	testkit.AssertNotEqual(t, a, b)
 }
 
 func BenchmarkGenerateUUID(b *testing.B) {
-for b.Loop() {
-GenerateUUID()
-}
+	for b.Loop() {
+		GenerateUUID()
+	}
 }
 
 func TestHashSHA256(t *testing.T) {
-// SHA-256 of "hello" is well-known
-got := HashSHA256([]byte("hello"))
-testkit.AssertEqual(t, got, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
+	// SHA-256 of "hello" is well-known
+	got := HashSHA256([]byte("hello"))
+	testkit.AssertEqual(t, got, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
 }
 
 func TestHashSHA256_Empty(t *testing.T) {
-got := HashSHA256([]byte(""))
-testkit.AssertEqual(t, got, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+	got := HashSHA256([]byte(""))
+	testkit.AssertEqual(t, got, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 }
 
 func TestHashSHA256_Deterministic(t *testing.T) {
-data := []byte("test data")
-testkit.AssertEqual(t, HashSHA256(data), HashSHA256(data))
+	data := []byte("test data")
+	testkit.AssertEqual(t, HashSHA256(data), HashSHA256(data))
 }

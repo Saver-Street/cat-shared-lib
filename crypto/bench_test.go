@@ -46,3 +46,27 @@ func BenchmarkGenerateToken(b *testing.B) {
 		GenerateToken(32)
 	}
 }
+
+func BenchmarkEncrypt(b *testing.B) {
+	key := make([]byte, 32)
+	plaintext := []byte("sensitive data that needs encryption for storage")
+	for b.Loop() {
+		Encrypt(key, plaintext)
+	}
+}
+
+func BenchmarkDecrypt(b *testing.B) {
+	key := make([]byte, 32)
+	ct, _ := Encrypt(key, []byte("sensitive data that needs encryption for storage"))
+	for b.Loop() {
+		Decrypt(key, ct)
+	}
+}
+
+func BenchmarkEqualBytes(b *testing.B) {
+	a := []byte("some-token-value-that-is-reasonably-long")
+	c := []byte("some-token-value-that-is-reasonably-long")
+	for b.Loop() {
+		EqualBytes(a, c)
+	}
+}

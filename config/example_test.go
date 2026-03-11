@@ -51,3 +51,52 @@ func ExampleDuration() {
 	// 30s
 	// 5s
 }
+
+func ExampleStringRequired() {
+	os.Setenv("DB_HOST", "localhost")
+	defer os.Unsetenv("DB_HOST")
+
+	val, err := config.StringRequired("DB_HOST")
+	fmt.Println(val, err)
+
+	_, err = config.StringRequired("MISSING_REQUIRED")
+	fmt.Println(err)
+	// Output:
+	// localhost <nil>
+	// config: required environment variable MISSING_REQUIRED is not set
+}
+
+func ExampleStringSlice() {
+	os.Setenv("ALLOWED_ORIGINS", "http://localhost,https://example.com")
+	defer os.Unsetenv("ALLOWED_ORIGINS")
+
+	fmt.Println(config.StringSlice("ALLOWED_ORIGINS", nil))
+	fmt.Println(config.StringSlice("MISSING_SLICE", []string{"default"}))
+	// Output:
+	// [http://localhost https://example.com]
+	// [default]
+}
+
+func ExampleStringMap() {
+	os.Setenv("LABELS", "env=prod,region=us-east-1")
+	defer os.Unsetenv("LABELS")
+
+	m := config.StringMap("LABELS", nil)
+	fmt.Println(m["env"], m["region"])
+	// Output:
+	// prod us-east-1
+}
+
+func ExampleValidate() {
+	os.Setenv("REQUIRED_A", "set")
+	defer os.Unsetenv("REQUIRED_A")
+
+	err := config.Validate("REQUIRED_A")
+	fmt.Println(err)
+
+	err = config.Validate("REQUIRED_A", "MISSING_B")
+	fmt.Println(err)
+	// Output:
+	// <nil>
+	// config: missing required environment variables: MISSING_B
+}

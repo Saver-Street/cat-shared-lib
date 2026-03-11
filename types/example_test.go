@@ -44,3 +44,23 @@ func ExamplePaginationParams_IsLastPage() {
 	// true
 	// false
 }
+
+func ExampleNewSet() {
+	s := types.NewSet("go", "rust", "python", "go")
+	fmt.Println(s.Len())
+	fmt.Println(s.Contains("go"))
+	fmt.Println(s.Contains("java"))
+	// Output:
+	// 3
+	// true
+	// false
+}
+
+func ExampleSet_Union() {
+	a := types.NewSet(1, 2, 3)
+	b := types.NewSet(3, 4, 5)
+	u := a.Union(b)
+	fmt.Println(u.Len())
+	// Output:
+	// 5
+}

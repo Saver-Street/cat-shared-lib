@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // T is a subset of *testing.T used by helpers so they can accept both
@@ -550,3 +551,12 @@ func AssertMapNotHasKey[K comparable, V any](t T, m map[K]V, key K) {
 // Ptr returns a pointer to v. Useful for creating pointers to literals in
 // test table entries (e.g. testkit.Ptr("hello"), testkit.Ptr(int64(42))).
 func Ptr[T any](v T) *T { return &v }
+
+// AssertWithin asserts that a duration is at most maxDur. Useful for
+// verifying timeouts, latency bounds, and retry back-off windows.
+func AssertWithin(t T, got, maxDur time.Duration) {
+	t.Helper()
+	if got > maxDur {
+		t.Errorf("expected duration ≤ %v, got %v", maxDur, got)
+	}
+}

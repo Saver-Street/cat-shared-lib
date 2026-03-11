@@ -441,3 +441,23 @@ testkit.AssertContains(t, err.Error(), "uppercase")
 func TestUppercase_Empty(t *testing.T) {
 testkit.AssertNoError(t, Uppercase("code", ""))
 }
+
+func TestStartsWith_Valid(t *testing.T) {
+testkit.AssertNoError(t, StartsWith("path", "/api/v1/users", "/api/"))
+}
+
+func TestStartsWith_Invalid(t *testing.T) {
+err := StartsWith("path", "/web/index", "/api/")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "start with")
+}
+
+func TestEndsWith_Valid(t *testing.T) {
+testkit.AssertNoError(t, EndsWith("file", "report.pdf", ".pdf"))
+}
+
+func TestEndsWith_Invalid(t *testing.T) {
+err := EndsWith("file", "report.txt", ".pdf")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "end with")
+}

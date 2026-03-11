@@ -51,9 +51,7 @@ func TestGet_Success(t *testing.T) {
 
 	c := New()
 	resp, err := c.Get(context.Background(), srv.URL)
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, resp.StatusCode, 200)
 	testkit.AssertEqual(t, resp.Header.Get("X-Test"), "value")
 	testkit.AssertEqual(t, string(resp.Body), "{\"ok\":true}")
@@ -74,9 +72,7 @@ func TestPost_WithBody(t *testing.T) {
 
 	c := New()
 	resp, err := c.Post(context.Background(), srv.URL, strings.NewReader("hello"))
-	if err != nil {
-		t.Fatalf("Post() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, resp.StatusCode, 201)
 }
 
@@ -91,9 +87,7 @@ func TestPut_WithBody(t *testing.T) {
 
 	c := New()
 	resp, err := c.Put(context.Background(), srv.URL, strings.NewReader("data"))
-	if err != nil {
-		t.Fatalf("Put() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, resp.StatusCode, 200)
 }
 
@@ -108,9 +102,7 @@ func TestDelete_Success(t *testing.T) {
 
 	c := New()
 	resp, err := c.Delete(context.Background(), srv.URL)
-	if err != nil {
-		t.Fatalf("Delete() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, resp.StatusCode, 204)
 }
 
@@ -134,9 +126,7 @@ func TestRetry_TransientFailure(t *testing.T) {
 	)
 
 	resp, err := c.Get(context.Background(), srv.URL)
-	if err != nil {
-		t.Fatalf("Get() error = %v, expected success after retries", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, resp.StatusCode, 200)
 	testkit.AssertEqual(t, int(attempts.Load()), 3)
 }
@@ -201,9 +191,7 @@ func TestHeaders_AppliedToRequest(t *testing.T) {
 		WithHeader("Authorization", "Bearer token"),
 	)
 	_, err := c.Get(context.Background(), srv.URL)
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 }
 
 func TestRequestHook(t *testing.T) {
@@ -220,9 +208,7 @@ func TestRequestHook(t *testing.T) {
 		return nil
 	}))
 	_, err := c.Get(context.Background(), srv.URL)
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 }
 
 func TestRequestHook_Error(t *testing.T) {
@@ -252,9 +238,7 @@ func TestResponseHook(t *testing.T) {
 		return nil
 	}))
 	_, err := c.Get(context.Background(), srv.URL)
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, hookedStatus, 200)
 }
 
@@ -272,9 +256,7 @@ func TestGetJSON(t *testing.T) {
 	c := New()
 	var result payload
 	err := c.GetJSON(context.Background(), srv.URL, &result)
-	if err != nil {
-		t.Fatalf("GetJSON() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, result.Name, "Alice")
 	testkit.AssertEqual(t, result.Age, 30)
 }
@@ -301,9 +283,7 @@ func TestPostJSON(t *testing.T) {
 	c := New()
 	var result resp
 	err := c.PostJSON(context.Background(), srv.URL, req{Value: "test"}, &result)
-	if err != nil {
-		t.Fatalf("PostJSON() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, result.ID, "123")
 }
 
@@ -315,9 +295,7 @@ func TestPostJSON_NilTarget(t *testing.T) {
 
 	c := New()
 	err := c.PostJSON(context.Background(), srv.URL, map[string]string{"key": "val"}, nil)
-	if err != nil {
-		t.Fatalf("PostJSON() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 }
 
 func TestPutJSON(t *testing.T) {
@@ -333,9 +311,7 @@ func TestPutJSON(t *testing.T) {
 	c := New()
 	var result map[string]bool
 	err := c.PutJSON(context.Background(), srv.URL, map[string]string{"key": "val"}, &result)
-	if err != nil {
-		t.Fatalf("PutJSON() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertTrue(t, result["updated"])
 }
 
@@ -352,9 +328,7 @@ func TestDeleteJSON(t *testing.T) {
 	c := New()
 	var result map[string]bool
 	err := c.DeleteJSON(context.Background(), srv.URL, &result)
-	if err != nil {
-		t.Fatalf("DeleteJSON() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertTrue(t, result["deleted"])
 }
 
@@ -424,9 +398,7 @@ func TestRetry_BodyReplay(t *testing.T) {
 	)
 
 	resp, err := c.Post(context.Background(), srv.URL, strings.NewReader("replay-me"))
-	if err != nil {
-		t.Fatalf("Post() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, resp.StatusCode, 200)
 }
 
@@ -475,9 +447,7 @@ func TestTransport_Custom(t *testing.T) {
 	})))
 
 	resp, err := c.Get(context.Background(), "http://fake.example")
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertTrue(t, called)
 	testkit.AssertEqual(t, string(resp.Body), "custom")
 }
@@ -557,9 +527,7 @@ func TestPutJSON_NilTarget(t *testing.T) {
 
 	c := New()
 	err := c.PutJSON(context.Background(), srv.URL, map[string]string{"key": "val"}, nil)
-	if err != nil {
-		t.Fatalf("PutJSON() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 }
 
 func TestPutJSON_RequestError(t *testing.T) {
@@ -582,9 +550,7 @@ func TestDeleteJSON_NilTarget(t *testing.T) {
 
 	c := New()
 	err := c.DeleteJSON(context.Background(), srv.URL, nil)
-	if err != nil {
-		t.Fatalf("DeleteJSON() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 }
 
 func TestDeleteJSON_RequestError(t *testing.T) {
@@ -768,9 +734,7 @@ func TestGetJSON_DecodeError(t *testing.T) {
 
 func TestDoJSON_UnmarshalablePayload(t *testing.T) {
 	b, err := json.Marshal(map[string]any{"key": "value"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	if len(b) == 0 {
 		t.Fatal("expected non-empty JSON")
 	}

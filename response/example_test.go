@@ -173,3 +173,38 @@ func ExampleServiceUnavailable() {
 	// Output:
 	// 503
 }
+
+func ExampleMethodNotAllowed() {
+	w := httptest.NewRecorder()
+	response.MethodNotAllowed(w, "only GET is supported")
+	fmt.Println(w.Code)
+	// Output:
+	// 405
+}
+
+func ExampleGone() {
+	w := httptest.NewRecorder()
+	response.Gone(w, "resource has been removed")
+	fmt.Println(w.Code)
+	// Output:
+	// 410
+}
+
+func ExampleGatewayTimeout() {
+	w := httptest.NewRecorder()
+	response.GatewayTimeout(w, "upstream service timed out")
+	fmt.Println(w.Code)
+	// Output:
+	// 504
+}
+
+func ExamplePaginated() {
+	w := httptest.NewRecorder()
+	items := []string{"a", "b", "c"}
+	response.Paginated(w, items, 10, 1, 3)
+	fmt.Println(w.Code)
+	fmt.Println(strings.TrimSpace(w.Body.String()))
+	// Output:
+	// 200
+	// {"data":["a","b","c"],"total":10,"page":1,"limit":3,"has_more":true}
+}

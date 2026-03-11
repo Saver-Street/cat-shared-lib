@@ -152,3 +152,17 @@ return false
 }
 return u.Host == "" && u.Scheme == ""
 }
+
+// MaskEmail masks an email address for safe logging by keeping the first
+// character of the local part and the domain, replacing the rest with
+// asterisks. For example, "alice@example.com" becomes "a****@example.com".
+// Returns the original string if it does not contain exactly one "@".
+func MaskEmail(email string) string {
+at := strings.LastIndex(email, "@")
+if at <= 0 {
+return email
+}
+local := email[:at]
+domain := email[at:]
+return string(local[0]) + strings.Repeat("*", len(local)-1) + domain
+}

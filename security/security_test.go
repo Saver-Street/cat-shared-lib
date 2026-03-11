@@ -438,3 +438,19 @@ for b.Loop() {
 IsRelativeURL("/dashboard?tab=overview")
 }
 }
+
+func TestMaskEmail(t *testing.T) {
+testkit.AssertEqual(t, MaskEmail("alice@example.com"), "a****@example.com")
+}
+
+func TestMaskEmail_Short(t *testing.T) {
+testkit.AssertEqual(t, MaskEmail("a@x.com"), "a@x.com")
+}
+
+func TestMaskEmail_NoAt(t *testing.T) {
+testkit.AssertEqual(t, MaskEmail("notanemail"), "notanemail")
+}
+
+func TestMaskEmail_LongLocal(t *testing.T) {
+testkit.AssertEqual(t, MaskEmail("john.doe@company.com"), "j*******@company.com")
+}

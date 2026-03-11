@@ -4,7 +4,12 @@
 //
 // [PaginationParams] carries limit/offset values with helpers like
 // [PaginationParams.HasNextPage], [PaginationParams.TotalPages], and
-// [NormalizePage] for safe page-to-offset conversion.
+// [NormalizePage] for safe page-to-offset conversion. [ApplyOffset] provides
+// generic in-memory offset/limit slicing.
+//
+// [CursorParams] and [CursorPage] support cursor-based pagination with
+// [NormalizeCursor] for limit clamping and [NewCursorPage] for constructing
+// pages with automatic next-cursor derivation.
 //
 // [User] represents an authenticated account with subscription fields and
 // convenience methods [User.IsAdmin], [User.IsActive], [User.IsTrialing], and

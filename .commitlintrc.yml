@@ -1,0 +1,101 @@
+# Conventional Commits configuration
+# See: https://www.conventionalcommits.org/
+# See: https://commitlint.js.org/
+extends:
+  - "@commitlint/config-conventional"
+
+rules:
+  # Type must be one of the allowed values.
+  type-enum:
+    - 2 # error
+    - always
+    - - feat      # new feature
+      - fix       # bug fix
+      - docs      # documentation only
+      - style     # formatting, missing semicolons, etc.
+      - refactor  # code change that neither fixes a bug nor adds a feature
+      - perf      # performance improvement
+      - test      # adding or correcting tests
+      - build     # changes to build system or dependencies
+      - ci        # changes to CI configuration
+      - chore     # other changes that don't modify src or test
+      - revert    # reverts a previous commit
+
+  # Scope is optional but when present should be a package name.
+  scope-enum:
+    - 1 # warning (not error — allow new scopes)
+    - always
+    - - apperror
+      - cache
+      - circuitbreaker
+      - config
+      - contracts
+      - cors
+      - crypto
+      - database
+      - discovery
+      - email
+      - entitlements
+      - featureflags
+      - flags
+      - health
+      - httpclient
+      - identity
+      - logging
+      - metrics
+      - middleware
+      - migration
+      - openapi
+      - ratelimit
+      - request
+      - response
+      - retry
+      - sanitize
+      - scan
+      - security
+      - server
+      - servicetest
+      - shutdown
+      - sorting
+      - testkit
+      - tracing
+      - types
+      - validation
+      - deps        # dependency updates
+      - ci          # CI/CD changes
+
+  # Subject must not be empty.
+  subject-empty:
+    - 2
+    - never
+
+  # Subject must not end with a period.
+  subject-full-stop:
+    - 2
+    - never
+    - "."
+
+  # Subject must be lower-case.
+  subject-case:
+    - 2
+    - always
+    - - lower-case
+      - sentence-case
+
+  # Type must be lower-case.
+  type-case:
+    - 2
+    - always
+    - lower-case
+
+  # Header must not exceed 100 characters.
+  header-max-length:
+    - 2
+    - always
+    - 100
+
+  # Body lines should not exceed 200 characters (warning only).
+  body-max-line-length:
+    - 1
+    - always
+    - 200

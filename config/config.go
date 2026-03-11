@@ -359,3 +359,16 @@ panic(fmt.Sprintf("config: %s is required", key))
 }
 return v
 }
+
+// MustURL is like URL but panics if the variable is unset or the value is
+// not a valid HTTP/HTTPS URL. Intended for use during application startup.
+func MustURL(key string) string {
+v, err := URL(key, "")
+if err != nil {
+panic(err)
+}
+if v == "" {
+panic(fmt.Sprintf("config: %s is required", key))
+}
+return v
+}

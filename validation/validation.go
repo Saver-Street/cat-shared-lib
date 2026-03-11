@@ -437,3 +437,19 @@ func (v *Validator) Errors() []error {
 	}
 	return v.errs
 }
+
+var hexRe = regexp.MustCompile(`^[a-fA-F0-9]+$`)
+
+// Hex validates that value (after trimming) contains only hexadecimal
+// characters (0-9, a-f, A-F). Useful for token hashes, color codes, and
+// binary-encoded identifiers.
+func Hex(field, value string) error {
+v := strings.TrimSpace(value)
+if v == "" {
+return &ValidationError{Field: field, Message: field + " is required"}
+}
+if !hexRe.MatchString(v) {
+return &ValidationError{Field: field, Message: field + " must contain only hexadecimal characters"}
+}
+return nil
+}

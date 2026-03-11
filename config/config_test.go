@@ -390,3 +390,31 @@ _, err := Addr("CFG_TEST_ADDR_BAD", ":8080")
 testkit.AssertError(t, err)
 testkit.AssertContains(t, err.Error(), "port must be between")
 }
+
+func TestStringSliceRequired_Set(t *testing.T) {
+t.Setenv("CFG_TEST_SSR", "a, b, c")
+got, err := StringSliceRequired("CFG_TEST_SSR")
+testkit.AssertNoError(t, err)
+testkit.AssertLen(t, got, 3)
+testkit.AssertEqual(t, got[0], "a")
+testkit.AssertEqual(t, got[1], "b")
+testkit.AssertEqual(t, got[2], "c")
+}
+
+func TestStringSliceRequired_Unset(t *testing.T) {
+_, err := StringSliceRequired("CFG_TEST_SSR_UNSET")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "is required")
+}
+
+func TestStringSliceRequired_Empty(t *testing.T) {
+t.Setenv("CFG_TEST_SSR_EMPTY", "")
+_, err := StringSliceRequired("CFG_TEST_SSR_EMPTY")
+testkit.AssertError(t, err)
+}
+
+func TestStringSliceRequired_OnlyCommas(t *testing.T) {
+t.Setenv("CFG_TEST_SSR_COMMAS", ", , ,")
+_, err := StringSliceRequired("CFG_TEST_SSR_COMMAS")
+testkit.AssertError(t, err)
+}

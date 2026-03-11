@@ -273,3 +273,25 @@ return "", fmt.Errorf("config: %s: port must be between 1 and 65535", key)
 }
 return net.JoinHostPort(host, portStr), nil
 }
+
+// StringSliceRequired reads a comma-separated environment variable into a
+// string slice and returns an error if the variable is unset, empty, or
+// contains no non-empty elements after trimming.
+func StringSliceRequired(key string) ([]string, error) {
+v := os.Getenv(key)
+if v == "" {
+return nil, fmt.Errorf("config: %s is required", key)
+}
+parts := strings.Split(v, ",")
+result := make([]string, 0, len(parts))
+for _, p := range parts {
+p = strings.TrimSpace(p)
+if p != "" {
+result = append(result, p)
+}
+}
+if len(result) == 0 {
+return nil, fmt.Errorf("config: %s is required", key)
+}
+return result, nil
+}

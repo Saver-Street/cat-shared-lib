@@ -415,3 +415,26 @@ func BenchmarkSanitizeHeader(b *testing.B) {
 		SanitizeHeader(s)
 	}
 }
+
+func TestIsRelativeURL_Valid(t *testing.T) {
+testkit.AssertTrue(t, IsRelativeURL("/dashboard"))
+testkit.AssertTrue(t, IsRelativeURL("/users?page=2"))
+testkit.AssertTrue(t, IsRelativeURL("/path/to/resource"))
+testkit.AssertTrue(t, IsRelativeURL("/"))
+}
+
+func TestIsRelativeURL_Invalid(t *testing.T) {
+testkit.AssertFalse(t, IsRelativeURL(""))
+testkit.AssertFalse(t, IsRelativeURL("https://evil.com"))
+testkit.AssertFalse(t, IsRelativeURL("//evil.com"))
+testkit.AssertFalse(t, IsRelativeURL("http://evil.com/path"))
+testkit.AssertFalse(t, IsRelativeURL("javascript:alert(1)"))
+testkit.AssertFalse(t, IsRelativeURL("data:text/html,<h1>hi</h1>"))
+testkit.AssertFalse(t, IsRelativeURL("ftp://files.example.com"))
+}
+
+func BenchmarkIsRelativeURL(b *testing.B) {
+for b.Loop() {
+IsRelativeURL("/dashboard?tab=overview")
+}
+}

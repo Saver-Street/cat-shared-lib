@@ -2,6 +2,7 @@
 package security
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -132,4 +133,22 @@ func TruncateForLog(s string, maxLen int) string {
 // use as an HTTP header value.
 func SanitizeHeader(s string) string {
 	return strings.NewReplacer("\r\n", "", "\r", "", "\n", "").Replace(s)
+}
+
+// IsRelativeURL returns true if rawURL is a relative path (starts with /)
+// and does not point to a different host. This prevents open redirect
+// vulnerabilities when using user-supplied redirect targets.
+func IsRelativeURL(rawURL string) bool {
+if rawURL == "" || rawURL[0] != '/' {
+return false
+}
+// Reject protocol-relative URLs like //evil.com
+if len(rawURL) > 1 && rawURL[1] == '/' {
+return false
+}
+u, err := url.Parse(rawURL)
+if err != nil {
+return false
+}
+return u.Host == "" && u.Scheme == ""
 }

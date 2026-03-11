@@ -93,6 +93,22 @@ func AssertNotEqual(t T, got, notWant any) {
 	}
 }
 
+// AssertEmpty fails the test if s is not the empty string.
+func AssertEmpty(t T, s string) {
+	t.Helper()
+	if s != "" {
+		t.Errorf("testkit: expected empty string, got %q", s)
+	}
+}
+
+// AssertNotEmpty fails the test if s is the empty string.
+func AssertNotEmpty(t T, s string) {
+	t.Helper()
+	if s == "" {
+		t.Errorf("testkit: expected non-empty string")
+	}
+}
+
 // AssertApprox fails the test if |got - want| > epsilon.
 // Useful for floating-point comparisons that need tolerance.
 func AssertApprox(t T, got, want, epsilon float64) {

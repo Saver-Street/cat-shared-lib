@@ -37,6 +37,30 @@ func TestAssertNotEqual_Fail(t *testing.T) {
 	}
 }
 
+func TestAssertEmpty_Pass(t *testing.T) {
+	AssertEmpty(t, "")
+}
+
+func TestAssertEmpty_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertEmpty(mock, "hello")
+	if !mock.errored {
+		t.Error("expected failure for non-empty string")
+	}
+}
+
+func TestAssertNotEmpty_Pass(t *testing.T) {
+	AssertNotEmpty(t, "hello")
+}
+
+func TestAssertNotEmpty_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertNotEmpty(mock, "")
+	if !mock.errored {
+		t.Error("expected failure for empty string")
+	}
+}
+
 func TestAssertApprox_Pass(t *testing.T) {
 	AssertApprox(t, 1.0, 1.0, 0.001)
 	AssertApprox(t, 1.0005, 1.0, 0.001)

@@ -8,6 +8,7 @@
 //
 // [Drainer] tracks in-flight requests via [Drainer.Add] and [Drainer.Done].
 // Wrap an http.Handler with [Drainer.Middleware] to count active connections
-// automatically, then call [Drainer.Wait] during shutdown to block until all
-// requests complete.
+// automatically, then call [Drainer.Wait] or [Drainer.WaitWithContext] during
+// shutdown to block until all requests complete.  [Drainer.Active] and
+// [Drainer.Completed] provide real-time observability into drain progress.
 package shutdown

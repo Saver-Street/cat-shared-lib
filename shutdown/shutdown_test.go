@@ -354,3 +354,89 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 
 	testkit.AssertContains(t, buf.String(), "server shutdown error")
 }
+
+func TestDrainer_ActiveAndCompleted(t *testing.T) {
+	d := &Drainer{}
+	testkit.AssertEqual(t, d.Active(), int64(0))
+	testkit.AssertEqual(t, d.Completed(), int64(0))
+
+	d.Add()
+	d.Add()
+	testkit.AssertEqual(t, d.Active(), int64(2))
+	testkit.AssertEqual(t, d.Completed(), int64(0))
+
+	d.Done()
+	testkit.AssertEqual(t, d.Active(), int64(1))
+	testkit.AssertEqual(t, d.Completed(), int64(1))
+
+	d.Done()
+	testkit.AssertEqual(t, d.Active(), int64(0))
+	testkit.AssertEqual(t, d.Completed(), int64(2))
+}
+
+func TestDrainer_ActiveDuringMiddleware(t *testing.T) {
+	d := &Drainer{}
+	inHandler := make(chan struct{})
+	canFinish := make(chan struct{})
+
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(inHandler)
+		<-canFinish
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler := d.Middleware(inner)
+
+	go func() {
+		w := &fakeResponseWriter{}
+		r, _ := http.NewRequest(http.MethodGet, "/", nil)
+		handler.ServeHTTP(w, r)
+	}()
+
+	<-inHandler
+	testkit.AssertEqual(t, d.Active(), int64(1))
+
+	close(canFinish)
+	d.Wait()
+	testkit.AssertEqual(t, d.Active(), int64(0))
+	testkit.AssertEqual(t, d.Completed(), int64(1))
+}
+
+func TestDrainer_WaitWithContext_Success(t *testing.T) {
+	d := &Drainer{}
+	d.Add()
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		d.Done()
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := d.WaitWithContext(ctx)
+	testkit.AssertNoError(t, err)
+}
+
+func TestDrainer_WaitWithContext_Cancelled(t *testing.T) {
+	d := &Drainer{}
+	d.Add()
+	// Never call Done - will time out.
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	err := d.WaitWithContext(ctx)
+	testkit.AssertError(t, err)
+	testkit.AssertTrue(t, errors.Is(err, context.DeadlineExceeded))
+
+	// Clean up to avoid panic.
+	d.Done()
+}
+
+func TestDrainer_WaitWithContext_AlreadyDrained(t *testing.T) {
+	d := &Drainer{}
+	ctx := context.Background()
+	err := d.WaitWithContext(ctx)
+	testkit.AssertNoError(t, err)
+}

@@ -152,3 +152,32 @@ func (l *Limiter) cleanup() {
 		}
 	}
 }
+
+// Remaining returns the current number of available tokens for the given key
+// without consuming any. If the key has no bucket yet, it returns the burst
+// capacity.
+func (l *Limiter) Remaining(key string) int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	b, exists := l.buckets[key]
+	if !exists {
+		return l.config.Burst
+	}
+
+	now := l.now()
+	elapsed := now.Sub(b.lastTime).Seconds()
+	tokens := b.tokens + elapsed*l.config.Rate
+	if tokens > float64(l.config.Burst) {
+		tokens = float64(l.config.Burst)
+	}
+	return int(tokens)
+}
+
+// Reset removes the bucket for the given key, restoring it to full capacity
+// on next access.
+func (l *Limiter) Reset(key string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.buckets, key)
+}

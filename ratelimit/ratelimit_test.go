@@ -209,3 +209,55 @@ func BenchmarkAllow_Parallel(b *testing.B) {
 		}
 	})
 }
+
+func TestRemaining_UnknownKey(t *testing.T) {
+	l := New(Config{Burst: 10})
+	defer l.Stop()
+	testkit.AssertEqual(t, l.Remaining("unknown"), 10)
+}
+
+func TestRemaining_AfterConsumption(t *testing.T) {
+	l := New(Config{Rate: 0.001, Burst: 5})
+	defer l.Stop()
+	l.Allow("k")
+	l.Allow("k")
+	rem := l.Remaining("k")
+	testkit.AssertEqual(t, rem, 3)
+}
+
+func TestRemaining_Refill(t *testing.T) {
+	l := New(Config{Rate: 10, Burst: 10})
+	defer l.Stop()
+
+	// Drain all tokens
+	for range 10 {
+		l.Allow("k")
+	}
+	testkit.AssertEqual(t, l.Remaining("k"), 0)
+
+	// Advance the clock by 1 second → should refill 10 tokens
+	fakeNow := l.now()
+	l.now = func() time.Time { return fakeNow.Add(1 * time.Second) }
+	testkit.AssertEqual(t, l.Remaining("k"), 10)
+}
+
+func TestReset_RestoresCapacity(t *testing.T) {
+	l := New(Config{Rate: 0.001, Burst: 5})
+	defer l.Stop()
+
+	for range 5 {
+		l.Allow("k")
+	}
+	testkit.AssertFalse(t, l.Allow("k"))
+
+	l.Reset("k")
+	testkit.AssertTrue(t, l.Allow("k"))
+	testkit.AssertEqual(t, l.Remaining("k"), 4)
+}
+
+func TestReset_UnknownKeyNoop(t *testing.T) {
+	l := New(Config{Burst: 5})
+	defer l.Stop()
+	l.Reset("nonexistent") // should not panic
+	testkit.AssertEqual(t, l.Len(), 0)
+}

@@ -282,109 +282,196 @@ func BenchmarkGet(b *testing.B) {
 }
 
 func TestKeys_Empty(t *testing.T) {
-c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
-defer c.Stop()
-testkit.AssertLen(t, c.Keys(), 0)
+	c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
+	defer c.Stop()
+	testkit.AssertLen(t, c.Keys(), 0)
 }
 
 func TestKeys_Order(t *testing.T) {
-c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
-defer c.Stop()
-c.Set("a", 1)
-c.Set("b", 2)
-c.Set("c", 3)
+	c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
+	defer c.Stop()
+	c.Set("a", 1)
+	c.Set("b", 2)
+	c.Set("c", 3)
 
-// Most recently used first: c, b, a
-keys := c.Keys()
-testkit.AssertLen(t, keys, 3)
-testkit.AssertEqual(t, keys[0], "c")
-testkit.AssertEqual(t, keys[1], "b")
-testkit.AssertEqual(t, keys[2], "a")
+	// Most recently used first: c, b, a
+	keys := c.Keys()
+	testkit.AssertLen(t, keys, 3)
+	testkit.AssertEqual(t, keys[0], "c")
+	testkit.AssertEqual(t, keys[1], "b")
+	testkit.AssertEqual(t, keys[2], "a")
 }
 
 func TestKeys_AfterAccess(t *testing.T) {
-c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
-defer c.Stop()
-c.Set("a", 1)
-c.Set("b", 2)
-c.Set("c", 3)
+	c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
+	defer c.Stop()
+	c.Set("a", 1)
+	c.Set("b", 2)
+	c.Set("c", 3)
 
-// Access "a" to move it to front
-c.Get("a")
+	// Access "a" to move it to front
+	c.Get("a")
 
-keys := c.Keys()
-testkit.AssertEqual(t, keys[0], "a")
+	keys := c.Keys()
+	testkit.AssertEqual(t, keys[0], "a")
 }
 
 func TestGetOrSet_Miss(t *testing.T) {
-c := New[string, int](Config{MaxEntries: 10, DefaultTTL: time.Minute})
-defer c.Stop()
+	c := New[string, int](Config{MaxEntries: 10, DefaultTTL: time.Minute})
+	defer c.Stop()
 
-calls := 0
-v := c.GetOrSet("key", func() int {
-calls++
-return 42
-})
-testkit.AssertEqual(t, v, 42)
-testkit.AssertEqual(t, calls, 1)
+	calls := 0
+	v := c.GetOrSet("key", func() int {
+		calls++
+		return 42
+	})
+	testkit.AssertEqual(t, v, 42)
+	testkit.AssertEqual(t, calls, 1)
 
-// Should be cached now
-got, ok := c.Get("key")
-testkit.AssertTrue(t, ok)
-testkit.AssertEqual(t, got, 42)
+	// Should be cached now
+	got, ok := c.Get("key")
+	testkit.AssertTrue(t, ok)
+	testkit.AssertEqual(t, got, 42)
 }
 
 func TestGetOrSet_Hit(t *testing.T) {
-c := New[string, int](Config{MaxEntries: 10, DefaultTTL: time.Minute})
-defer c.Stop()
-c.Set("key", 100)
+	c := New[string, int](Config{MaxEntries: 10, DefaultTTL: time.Minute})
+	defer c.Stop()
+	c.Set("key", 100)
 
-calls := 0
-v := c.GetOrSet("key", func() int {
-calls++
-return 999
-})
-testkit.AssertEqual(t, v, 100) // should return cached value
-testkit.AssertEqual(t, calls, 0) // fill should not be called
+	calls := 0
+	v := c.GetOrSet("key", func() int {
+		calls++
+		return 999
+	})
+	testkit.AssertEqual(t, v, 100)   // should return cached value
+	testkit.AssertEqual(t, calls, 0) // fill should not be called
 }
 
 func TestContains_Hit(t *testing.T) {
-c := New[string, int](Config{DefaultTTL: time.Minute})
-defer c.Stop()
+	c := New[string, int](Config{DefaultTTL: time.Minute})
+	defer c.Stop()
 
-c.Set("k", 42)
-testkit.AssertTrue(t, c.Contains("k"))
+	c.Set("k", 42)
+	testkit.AssertTrue(t, c.Contains("k"))
 }
 
 func TestContains_Miss(t *testing.T) {
-c := New[string, int](Config{DefaultTTL: time.Minute})
-defer c.Stop()
+	c := New[string, int](Config{DefaultTTL: time.Minute})
+	defer c.Stop()
 
-testkit.AssertFalse(t, c.Contains("nope"))
+	testkit.AssertFalse(t, c.Contains("nope"))
 }
 
 func TestContains_Expired(t *testing.T) {
-now := time.Now()
-c := New[string, int](Config{DefaultTTL: time.Minute})
-defer c.Stop()
-c.now = func() time.Time { return now }
+	now := time.Now()
+	c := New[string, int](Config{DefaultTTL: time.Minute})
+	defer c.Stop()
+	c.now = func() time.Time { return now }
 
-c.Set("k", 1)
-c.now = func() time.Time { return now.Add(2 * time.Minute) }
-testkit.AssertFalse(t, c.Contains("k"))
+	c.Set("k", 1)
+	c.now = func() time.Time { return now.Add(2 * time.Minute) }
+	testkit.AssertFalse(t, c.Contains("k"))
 }
 
 func TestContains_DoesNotPromoteLRU(t *testing.T) {
-c := New[string, int](Config{DefaultTTL: time.Minute, MaxEntries: 2})
-defer c.Stop()
+	c := New[string, int](Config{DefaultTTL: time.Minute, MaxEntries: 2})
+	defer c.Stop()
 
-c.Set("a", 1)
-c.Set("b", 2)
-// Contains should NOT promote "a"
-c.Contains("a")
-// Adding a third should evict "a" (oldest) since Contains didn't promote it
-c.Set("c", 3)
-testkit.AssertFalse(t, c.Contains("a"))
-testkit.AssertTrue(t, c.Contains("b"))
-testkit.AssertTrue(t, c.Contains("c"))
+	c.Set("a", 1)
+	c.Set("b", 2)
+	// Contains should NOT promote "a"
+	c.Contains("a")
+	// Adding a third should evict "a" (oldest) since Contains didn't promote it
+	c.Set("c", 3)
+	testkit.AssertFalse(t, c.Contains("a"))
+	testkit.AssertTrue(t, c.Contains("b"))
+	testkit.AssertTrue(t, c.Contains("c"))
+}
+
+func TestStats_HitsMisses(t *testing.T) {
+	c := New[string, int](Config{DefaultTTL: time.Minute, MaxEntries: 10})
+	defer c.Stop()
+
+	c.Set("a", 1)
+	c.Get("a") // hit
+	c.Get("a") // hit
+	c.Get("b") // miss
+
+	stats := c.Stats()
+	testkit.AssertEqual(t, stats.Hits, int64(2))
+	testkit.AssertEqual(t, stats.Misses, int64(1))
+	testkit.AssertEqual(t, stats.Size, 1)
+	// HitRate = 2/3 ≈ 0.666...
+	testkit.AssertTrue(t, stats.HitRate > 0.66 && stats.HitRate < 0.67)
+}
+
+func TestStats_Zero(t *testing.T) {
+	c := New[string, int](Config{DefaultTTL: time.Minute})
+	defer c.Stop()
+
+	stats := c.Stats()
+	testkit.AssertEqual(t, stats.Hits, int64(0))
+	testkit.AssertEqual(t, stats.Misses, int64(0))
+	testkit.AssertEqual(t, stats.HitRate, float64(0))
+}
+
+func TestResetStats(t *testing.T) {
+	c := New[string, int](Config{DefaultTTL: time.Minute})
+	defer c.Stop()
+
+	c.Set("a", 1)
+	c.Get("a")
+	c.Get("z")
+	c.ResetStats()
+
+	stats := c.Stats()
+	testkit.AssertEqual(t, stats.Hits, int64(0))
+	testkit.AssertEqual(t, stats.Misses, int64(0))
+}
+
+func TestOnEvict_LRU(t *testing.T) {
+	var evicted []string
+	c := New[string, int](Config{
+		MaxEntries: 2,
+		DefaultTTL: time.Minute,
+		OnEvict: func(key any, value any) {
+			evicted = append(evicted, key.(string))
+		},
+	})
+	defer c.Stop()
+
+	c.Set("a", 1)
+	c.Set("b", 2)
+	c.Set("c", 3) // evicts "a"
+
+	testkit.AssertEqual(t, len(evicted), 1)
+	testkit.AssertEqual(t, evicted[0], "a")
+}
+
+func TestOnEvict_Delete(t *testing.T) {
+	var evicted []string
+	c := New[string, int](Config{
+		DefaultTTL: time.Minute,
+		OnEvict: func(key any, value any) {
+			evicted = append(evicted, key.(string))
+		},
+	})
+	defer c.Stop()
+
+	c.Set("x", 42)
+	c.Delete("x")
+
+	testkit.AssertEqual(t, len(evicted), 1)
+	testkit.AssertEqual(t, evicted[0], "x")
+}
+
+func TestOnEvict_Nil(t *testing.T) {
+	// Ensure no panic when OnEvict is nil
+	c := New[string, int](Config{MaxEntries: 1, DefaultTTL: time.Minute})
+	defer c.Stop()
+
+	c.Set("a", 1)
+	c.Set("b", 2) // evicts "a"
+	testkit.AssertEqual(t, c.Len(), 1)
 }

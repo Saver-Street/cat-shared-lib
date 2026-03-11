@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -131,24 +132,16 @@ func TestPoolConfig_Defaults(t *testing.T) {
 	cfg := PoolConfig{DSN: "postgres://localhost/test"}
 	cfg.defaults()
 
-	if cfg.MaxConns != 10 {
-		t.Errorf("MaxConns = %d, want 10", cfg.MaxConns)
-	}
-	if cfg.MinConns != 2 {
-		t.Errorf("MinConns = %d, want 2", cfg.MinConns)
-	}
+	testkit.AssertEqual(t, cfg.MaxConns, int32(10))
+	testkit.AssertEqual(t, cfg.MinConns, int32(2))
 }
 
 func TestPoolConfig_NoOverrideNonZero(t *testing.T) {
 	cfg := PoolConfig{DSN: "x", MaxConns: 20, MinConns: 5}
 	cfg.defaults()
 
-	if cfg.MaxConns != 20 {
-		t.Errorf("MaxConns = %d, want 20", cfg.MaxConns)
-	}
-	if cfg.MinConns != 5 {
-		t.Errorf("MinConns = %d, want 5", cfg.MinConns)
-	}
+	testkit.AssertEqual(t, cfg.MaxConns, int32(20))
+	testkit.AssertEqual(t, cfg.MinConns, int32(5))
 }
 
 func TestWithTx_Success(t *testing.T) {
@@ -171,9 +164,7 @@ func TestWithTx_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !committed {
-		t.Error("transaction should have been committed")
-	}
+	testkit.AssertTrue(t, committed)
 }
 
 func TestWithTx_FnError(t *testing.T) {
@@ -193,12 +184,8 @@ func TestWithTx_FnError(t *testing.T) {
 	err := WithTx(context.Background(), pool, func(tx pgx.Tx) error {
 		return fmt.Errorf("operation failed")
 	})
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if !rolledBack {
-		t.Error("transaction should have been rolled back")
-	}
+	testkit.AssertError(t, err)
+	testkit.AssertTrue(t, rolledBack)
 }
 
 func TestWithTx_Panic(t *testing.T) {
@@ -219,9 +206,7 @@ func TestWithTx_Panic(t *testing.T) {
 		if r := recover(); r == nil {
 			t.Error("expected panic to propagate")
 		}
-		if !rolledBack {
-			t.Error("transaction should have been rolled back on panic")
-		}
+		testkit.AssertTrue(t, rolledBack)
 	}()
 
 	_ = WithTx(context.Background(), pool, func(tx pgx.Tx) error {
@@ -239,9 +224,7 @@ func TestWithTx_BeginError(t *testing.T) {
 	err := WithTx(context.Background(), pool, func(tx pgx.Tx) error {
 		return nil
 	})
-	if err == nil {
-		t.Fatal("expected error from Begin")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestWithTx_CommitError(t *testing.T) {
@@ -259,9 +242,7 @@ func TestWithTx_CommitError(t *testing.T) {
 	err := WithTx(context.Background(), pool, func(tx pgx.Tx) error {
 		return nil
 	})
-	if err == nil {
-		t.Fatal("expected error from Commit")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestWithTx_RollbackError(t *testing.T) {
@@ -279,9 +260,7 @@ func TestWithTx_RollbackError(t *testing.T) {
 	err := WithTx(context.Background(), pool, func(tx pgx.Tx) error {
 		return fmt.Errorf("fn error")
 	})
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMigrate_CreateTableError(t *testing.T) {
@@ -292,9 +271,7 @@ func TestMigrate_CreateTableError(t *testing.T) {
 	}
 
 	err := Migrate(context.Background(), q, nil)
-	if err == nil {
-		t.Fatal("expected error from create table")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMigrate_EmptyList(t *testing.T) {
@@ -344,9 +321,8 @@ func TestMigrate_AppliesMigrations(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !insertedVersions[1] || !insertedVersions[2] {
-		t.Errorf("expected both migrations applied, got %v", insertedVersions)
-	}
+	testkit.AssertTrue(t, insertedVersions[1])
+	testkit.AssertTrue(t, insertedVersions[2])
 }
 
 func TestMigrate_SkipsApplied(t *testing.T) {
@@ -386,9 +362,7 @@ func TestMigrate_CheckError(t *testing.T) {
 	}
 
 	err := Migrate(context.Background(), q, []Migration{{Version: 1, Name: "init", SQL: "SELECT 1"}})
-	if err == nil {
-		t.Fatal("expected error from check query")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMigrate_ExecError(t *testing.T) {
@@ -415,9 +389,7 @@ func TestMigrate_ExecError(t *testing.T) {
 	}
 
 	err := Migrate(context.Background(), q, []Migration{{Version: 1, Name: "init", SQL: "BAD SQL"}})
-	if err == nil {
-		t.Fatal("expected error from exec")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMigrate_RecordError(t *testing.T) {
@@ -445,17 +417,13 @@ func TestMigrate_RecordError(t *testing.T) {
 	}
 
 	err := Migrate(context.Background(), q, []Migration{{Version: 1, Name: "init", SQL: "CREATE TABLE x (id INT)"}})
-	if err == nil {
-		t.Fatal("expected error from record")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestNewPool_BadDSN(t *testing.T) {
 	// An empty DSN should fail to parse
 	_, err := NewPool(context.Background(), PoolConfig{DSN: "://invalid"})
-	if err == nil {
-		t.Fatal("expected error for bad DSN")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestNewPool_ConnectionRefused(t *testing.T) {
@@ -463,7 +431,5 @@ func TestNewPool_ConnectionRefused(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	_, err := NewPool(ctx, PoolConfig{DSN: "postgres://localhost:1/nonexistent?connect_timeout=1"})
-	if err == nil {
-		t.Fatal("expected error for unreachable host")
-	}
+	testkit.AssertError(t, err)
 }

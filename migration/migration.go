@@ -265,6 +265,73 @@ func sortedCopy(migrations []Migration) []Migration {
 // ErrDuplicateID is returned when two migrations share the same ID.
 var ErrDuplicateID = errors.New("migration: duplicate migration ID")
 
+// ErrEmptyUp is returned when a migration has no Up SQL.
+var ErrEmptyUp = errors.New("migration: empty Up SQL")
+
+// ErrEmptyName is returned when a migration has no name.
+var ErrEmptyName = errors.New("migration: empty name")
+
+// ErrInvalidID is returned when a migration has a non-positive ID.
+var ErrInvalidID = errors.New("migration: ID must be positive")
+
+// ErrMissingDown is returned when a migration has no Down SQL.
+// This is a warning rather than a hard error; callers may choose to ignore it.
+var ErrMissingDown = errors.New("migration: missing Down SQL")
+
+// ValidationError collects multiple validation issues found in a migration set.
+type ValidationError struct {
+	Errors []error
+}
+
+// Error returns a summary of all validation errors.
+func (ve *ValidationError) Error() string {
+	if len(ve.Errors) == 1 {
+		return ve.Errors[0].Error()
+	}
+	return fmt.Sprintf("migration: %d validation errors (first: %v)", len(ve.Errors), ve.Errors[0])
+}
+
+// Unwrap returns the first error for compatibility with errors.Is/As.
+func (ve *ValidationError) Unwrap() error {
+	if len(ve.Errors) == 0 {
+		return nil
+	}
+	return ve.Errors[0]
+}
+
+// ValidateMigrations checks a migration set for common issues: non-positive IDs,
+// duplicate IDs, empty names, empty Up SQL, and missing Down SQL. Returns nil
+// if all migrations are valid. The returned error is a *ValidationError
+// containing all issues found.
+func ValidateMigrations(migrations []Migration) error {
+	var errs []error
+	seen := make(map[int]bool, len(migrations))
+
+	for _, m := range migrations {
+		if m.ID <= 0 {
+			errs = append(errs, fmt.Errorf("%w: %d", ErrInvalidID, m.ID))
+		}
+		if m.Name == "" {
+			errs = append(errs, fmt.Errorf("%w: migration ID %d", ErrEmptyName, m.ID))
+		}
+		if m.Up == "" {
+			errs = append(errs, fmt.Errorf("%w: migration %d (%s)", ErrEmptyUp, m.ID, m.Name))
+		}
+		if m.Down == "" {
+			errs = append(errs, fmt.Errorf("%w: migration %d (%s)", ErrMissingDown, m.ID, m.Name))
+		}
+		if seen[m.ID] {
+			errs = append(errs, fmt.Errorf("%w: %d", ErrDuplicateID, m.ID))
+		}
+		seen[m.ID] = true
+	}
+
+	if len(errs) > 0 {
+		return &ValidationError{Errors: errs}
+	}
+	return nil
+}
+
 func validateIDs(sorted []Migration) error {
 	for i := 1; i < len(sorted); i++ {
 		if sorted[i].ID == sorted[i-1].ID {

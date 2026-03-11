@@ -29,3 +29,29 @@ func ExampleErrDuplicateID() {
 	// Output:
 	// migration: duplicate migration ID
 }
+
+func ExampleValidateMigrations() {
+	migrations := []migration.Migration{
+		{ID: 1, Name: "create_users", Up: "CREATE TABLE users (id INT)", Down: "DROP TABLE users"},
+		{ID: 2, Name: "create_posts", Up: "CREATE TABLE posts (id INT)", Down: "DROP TABLE posts"},
+	}
+	if err := migration.ValidateMigrations(migrations); err != nil {
+		fmt.Println("validation failed:", err)
+		return
+	}
+	fmt.Println("all migrations valid")
+	// Output:
+	// all migrations valid
+}
+
+func ExampleValidateMigrations_errors() {
+	migrations := []migration.Migration{
+		{ID: 0, Name: "", Up: "", Down: ""},
+	}
+	err := migration.ValidateMigrations(migrations)
+	if err != nil {
+		fmt.Println("validation failed")
+	}
+	// Output:
+	// validation failed
+}

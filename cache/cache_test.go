@@ -280,3 +280,38 @@ func BenchmarkGet(b *testing.B) {
 		i++
 	}
 }
+
+func TestKeys_Empty(t *testing.T) {
+c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
+defer c.Stop()
+testkit.AssertLen(t, c.Keys(), 0)
+}
+
+func TestKeys_Order(t *testing.T) {
+c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
+defer c.Stop()
+c.Set("a", 1)
+c.Set("b", 2)
+c.Set("c", 3)
+
+// Most recently used first: c, b, a
+keys := c.Keys()
+testkit.AssertLen(t, keys, 3)
+testkit.AssertEqual(t, keys[0], "c")
+testkit.AssertEqual(t, keys[1], "b")
+testkit.AssertEqual(t, keys[2], "a")
+}
+
+func TestKeys_AfterAccess(t *testing.T) {
+c := New[string, int](Config{MaxEntries: 5, DefaultTTL: time.Minute})
+defer c.Stop()
+c.Set("a", 1)
+c.Set("b", 2)
+c.Set("c", 3)
+
+// Access "a" to move it to front
+c.Get("a")
+
+keys := c.Keys()
+testkit.AssertEqual(t, keys[0], "a")
+}

@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
@@ -403,4 +404,46 @@ func TestParseSortOrder_EmptyAllowed(t *testing.T) {
 	field, dir := ParseSortOrder(q, []string{}, "created_at", "desc")
 	testkit.AssertEqual(t, field, "created_at")
 	testkit.AssertEqual(t, dir, "asc")
+}
+
+func TestParseDateParam_RFC3339(t *testing.T) {
+	q := url.Values{"start": {"2024-06-15T10:30:00Z"}}
+	got, err := ParseDateParam(q, "start")
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, got, time.Date(2024, 6, 15, 10, 30, 0, 0, time.UTC))
+}
+
+func TestParseDateParam_DateOnly(t *testing.T) {
+	q := url.Values{"start": {"2024-06-15"}}
+	got, err := ParseDateParam(q, "start")
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, got, time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC))
+}
+
+func TestParseDateParam_Missing(t *testing.T) {
+	q := url.Values{}
+	got, err := ParseDateParam(q, "start")
+	testkit.AssertNoError(t, err)
+	testkit.AssertTrue(t, got.IsZero())
+}
+
+func TestParseDateParam_Empty(t *testing.T) {
+	q := url.Values{"start": {""}}
+	got, err := ParseDateParam(q, "start")
+	testkit.AssertNoError(t, err)
+	testkit.AssertTrue(t, got.IsZero())
+}
+
+func TestParseDateParam_Invalid(t *testing.T) {
+	q := url.Values{"start": {"not-a-date"}}
+	_, err := ParseDateParam(q, "start")
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "invalid date format")
+}
+
+func TestParseDateParam_WhitespaceTrimmed(t *testing.T) {
+	q := url.Values{"start": {"  2024-06-15  "}}
+	got, err := ParseDateParam(q, "start")
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, got, time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC))
 }

@@ -268,6 +268,53 @@ func AssertPanicsContains(t T, fn func(), substr string) {
 	fn()
 }
 
+// ---- Require helpers (fatal on failure) ----
+//
+// Require* helpers mirror their Assert* counterparts but call t.Fatalf
+// instead of t.Errorf, stopping the test immediately on failure. Use them
+// when subsequent test logic depends on the assertion passing (guard checks).
+
+// RequireNoError fails the test immediately if err is non-nil.
+func RequireNoError(t T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("testkit: unexpected error: %v", err)
+	}
+}
+
+// RequireEqual fails the test immediately if got != want (reflect.DeepEqual).
+func RequireEqual(t T, got, want any) {
+	t.Helper()
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("testkit: got %v (%T), want %v (%T)", got, got, want, want)
+	}
+}
+
+// RequireNil fails the test immediately if v is non-nil.
+func RequireNil(t T, v any) {
+	t.Helper()
+	if !isNil(v) {
+		t.Fatalf("testkit: expected nil, got %v", v)
+	}
+}
+
+// RequireNotNil fails the test immediately if v is nil.
+func RequireNotNil(t T, v any) {
+	t.Helper()
+	if isNil(v) {
+		t.Fatalf("testkit: got nil, want non-nil")
+	}
+}
+
+// RequireLen fails the test immediately if the length of v does not match want.
+func RequireLen(t T, v any, want int) {
+	t.Helper()
+	rv := reflect.ValueOf(v)
+	if rv.Len() != want {
+		t.Fatalf("testkit: len = %d, want %d", rv.Len(), want)
+	}
+}
+
 // ---- HTTP helpers ----
 
 // NewRequest builds an *http.Request for use in handler tests.

@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -201,4 +202,20 @@ func SanitizeFilename(name string) string {
 		return "unnamed"
 	}
 	return name
+}
+
+// CSPHeader builds a Content-Security-Policy header value from a map of
+// directives. Keys are directive names (e.g. "default-src") and values
+// are the sources. Directives are sorted alphabetically for determinism.
+func CSPHeader(directives map[string]string) string {
+keys := make([]string, 0, len(directives))
+for k := range directives {
+keys = append(keys, k)
+}
+sort.Strings(keys)
+parts := make([]string, 0, len(keys))
+for _, k := range keys {
+parts = append(parts, k+" "+directives[k])
+}
+return strings.Join(parts, "; ")
 }

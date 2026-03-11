@@ -515,6 +515,22 @@ func AssertLess[V cmp.Ordered](t T, got, want V) {
 	}
 }
 
+// AssertHasPrefix asserts that s starts with the given prefix.
+func AssertHasPrefix(t T, s, prefix string) {
+	t.Helper()
+	if !strings.HasPrefix(s, prefix) {
+		t.Errorf("expected %q to have prefix %q", s, prefix)
+	}
+}
+
+// AssertHasSuffix asserts that s ends with the given suffix.
+func AssertHasSuffix(t T, s, suffix string) {
+	t.Helper()
+	if !strings.HasSuffix(s, suffix) {
+		t.Errorf("expected %q to have suffix %q", s, suffix)
+	}
+}
+
 // Ptr returns a pointer to v. Useful for creating pointers to literals in
 // test table entries (e.g. testkit.Ptr("hello"), testkit.Ptr(int64(42))).
 func Ptr[T any](v T) *T { return &v }

@@ -847,3 +847,27 @@ mt := &mockT{}
 AssertLess(mt, "a", "b")
 AssertFalse(t, mt.errored)
 }
+
+func TestAssertHasPrefix_Pass(t *testing.T) {
+mt := &mockT{}
+AssertHasPrefix(mt, "hello world", "hello")
+AssertFalse(t, mt.errored)
+}
+
+func TestAssertHasPrefix_Fail(t *testing.T) {
+mt := &mockT{}
+AssertHasPrefix(mt, "hello world", "world")
+AssertTrue(t, mt.errored)
+}
+
+func TestAssertHasSuffix_Pass(t *testing.T) {
+mt := &mockT{}
+AssertHasSuffix(mt, "hello world", "world")
+AssertFalse(t, mt.errored)
+}
+
+func TestAssertHasSuffix_Fail(t *testing.T) {
+mt := &mockT{}
+AssertHasSuffix(mt, "hello world", "hello")
+AssertTrue(t, mt.errored)
+}

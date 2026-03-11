@@ -148,6 +148,9 @@ handler := middleware.Chain(
     middleware.Timeout(30*time.Second),
     middleware.Logging(logger),
     middleware.AllowMethods("GET", "POST", "PUT", "DELETE"),
+    middleware.ContentType("application/json"), // enforce JSON for POST/PUT/PATCH
+    middleware.Compress,            // gzip response compression
+    middleware.RealIP,              // normalize X-Real-IP from proxy headers
 )(apiHandler)
 
 // --- Per-route caching ---
@@ -184,6 +187,11 @@ tcpPort, err := config.Port("TCP_PORT", 3000)
 // Panic-free required string (returns error instead)
 secret, err := config.StringRequired("JWT_SECRET")
 allowed, err := config.StringSliceRequired("ALLOWED_ORIGINS")
+
+// Enum-style constraints
+logLevel, err := config.Enum("LOG_LEVEL", "info", []string{"debug", "info", "warn", "error"})
+mode := config.MustEnum("APP_MODE", []string{"development", "staging", "production"})
+apiBase := config.MustURL("API_BASE_URL")
 ```
 
 ---
@@ -249,12 +257,19 @@ errs := validation.Collect(
     validation.Numeric("zip",       req.Zip),
     validation.Hex("color",         req.Color),
     validation.Between("age",       req.Age, 18, 120),
+    validation.Lowercase("slug",    req.Slug),
+    validation.Uppercase("country", req.Country),
+    validation.StartsWith("path",   req.Path, "/api/"),
+    validation.EndsWith("file",     req.File, ".pdf"),
 )
 if len(errs) > 0 {
     // Each error is a *validation.ValidationError with .Field and .Message
     response.BadRequest(w, errs[0].Error())
     return
 }
+
+// Validate all elements in a slice
+err := validation.EachString("tags", req.Tags, validation.Alphanumeric)
 ```
 
 ---
@@ -292,7 +307,13 @@ if !ok {
 c.Delete("user:42")
 c.Clear() // remove all entries
 
-fmt.Println(c.Len()) // current entry count
+fmt.Println(c.Len())      // current entry count
+fmt.Println(c.Contains("user:42")) // check existence without LRU promotion
+
+// Lazy-load pattern
+user := c.GetOrSet("user:42", func() User {
+    return fetchUserFromDB("42")
+})
 ```
 
 ---
@@ -325,6 +346,9 @@ err := retry.Do(ctx, retry.Config{
 if err != nil {
     // all attempts exhausted or context cancelled
 }
+
+// Calculate delay for a given attempt (for logging)
+d := retry.Delay(retry.Config{InitialDelay: 100*time.Millisecond}, 2) // 400ms
 ```
 
 ---
@@ -359,6 +383,10 @@ hexToken, err := crypto.GenerateHexToken(16) // 16 random bytes → hex string
 // --- HMAC-SHA256 signing ---
 mac := crypto.HMACSHA256([]byte("my-secret-key"), []byte("payload"))
 ok  := crypto.VerifyHMACSHA256([]byte("my-secret-key"), []byte("payload"), mac)
+
+// --- Utility ---
+code := crypto.RandomString(6)   // cryptographically random alphanumeric
+hash := crypto.HashSHA256(data)  // hex-encoded SHA-256
 ```
 
 ---
@@ -534,6 +562,9 @@ var req CreateUserRequest
 if !response.DecodeOrFail(w, r, &req) {
     return // 400 already written
 }
+
+// XML response
+response.XML(w, http.StatusOK, xmlData)
 ```
 
 ---
@@ -558,6 +589,12 @@ token, ok := request.ExtractBearerToken(r)
 
 // Check Content-Type
 if request.IsJSON(r) { /* decode JSON body */ }
+
+// Require a header or return error
+tenantID, err := request.RequireHeader(r, "X-Tenant-ID")
+
+// Tri-state boolean query param (nil when absent)
+active := request.OptionalQueryBool(r.URL.Query(), "active")
 ```
 
 ---
@@ -707,6 +744,7 @@ testkit.AssertLess(t, latency, maxAllowed)
 testkit.AssertHasPrefix(t, path, "/api/")
 testkit.AssertHasSuffix(t, file, ".json")
 testkit.AssertMapHasKey(t, headers, "Content-Type")
+testkit.AssertWithin(t, elapsed, 100*time.Millisecond)
 
 // Require* helpers use t.Fatalf (fatal — stops test on failure):
 testkit.RequireNoError(t, err)   // guard: stop test if err is non-nil
@@ -734,6 +772,10 @@ security.IsRelativeURL("/dashboard")       // safe redirect check
 security.MaskEmail("alice@example.com")    // → "a****@example.com"
 security.RedactURL("https://u:p@host/db") // → "https://REDACTED@host/db"
 security.SanitizeFilename("../../etc/passwd") // → "passwd"
+security.CSPHeader(map[string]string{          // build CSP header
+    "default-src": "'self'",
+    "script-src":  "'self' 'unsafe-inline'",
+})
 ```
 
 **`sanitize`** — Input sanitization and string processing.
@@ -747,6 +789,8 @@ sanitize.Truncate("long string", 8)       // → "long st…"
 sanitize.TrimStrings([]string{" a ", ""})  // → ["a"]
 sanitize.NormalizeWhitespace("a  b\tc")   // → "a b c"
 sanitize.RemoveNonPrintable("a\x00b")     // → "ab"
+sanitize.CamelToSnake("HTTPClient")       // → "http_client"
+sanitize.SnakeToCamel("http_client")      // → "httpClient"
 sanitize.Deref(ptr, "default")            // generic pointer dereference
 ```
 

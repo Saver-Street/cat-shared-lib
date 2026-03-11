@@ -22,9 +22,7 @@ func TestUser_JSONRoundTrip(t *testing.T) {
 	testkit.RequireNoError(t, err)
 
 	var got User
-	if err := json.Unmarshal(data, &got); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	testkit.AssertJSON(t, data, &got)
 	testkit.AssertEqual(t, got, u)
 }
 
@@ -38,9 +36,7 @@ func TestUser_JSONFieldNames(t *testing.T) {
 	testkit.RequireNoError(t, err)
 
 	var m map[string]any
-	if err := json.Unmarshal(data, &m); err != nil {
-		t.Fatal(err)
-	}
+	testkit.AssertJSON(t, data, &m)
 
 	for _, key := range []string{"id", "email", "role", "subscriptionTier", "subscriptionStatus", "createdAt"} {
 		if _, ok := m[key]; !ok {
@@ -71,9 +67,7 @@ func TestCandidateProfile_JSONRoundTrip(t *testing.T) {
 	testkit.RequireNoError(t, err)
 
 	var got CandidateProfile
-	if err := json.Unmarshal(data, &got); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	testkit.AssertJSON(t, data, &got)
 	testkit.AssertEqual(t, got, cp)
 }
 
@@ -82,9 +76,7 @@ func TestCandidateProfile_JSONFieldNames(t *testing.T) {
 	data, _ := json.Marshal(cp)
 
 	var m map[string]any
-	if err := json.Unmarshal(data, &m); err != nil {
-		t.Fatal(err)
-	}
+	testkit.AssertJSON(t, data, &m)
 
 	for _, key := range []string{"id", "userId", "firstName", "lastName", "email", "createdAt"} {
 		if _, ok := m[key]; !ok {

@@ -2,7 +2,9 @@
 package request
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"net/url"
@@ -308,4 +310,17 @@ if i := strings.LastIndex(addr, ":"); i > 0 {
 return addr[:i]
 }
 return addr
+}
+
+// ParseJSONBody reads the request body (limited to 1 MB) and decodes it
+// into a value of type T. It returns the decoded value and any decoding
+// error. The body is closed after reading.
+func ParseJSONBody[T any](r *http.Request) (T, error) {
+var v T
+defer func() { _ = r.Body.Close() }()
+limited := io.LimitReader(r.Body, 1<<20) // 1 MB
+if err := json.NewDecoder(limited).Decode(&v); err != nil {
+return v, fmt.Errorf("request: invalid JSON body: %w", err)
+}
+return v, nil
 }

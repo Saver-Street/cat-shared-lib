@@ -4,6 +4,7 @@
 package validation
 
 import (
+	"cmp"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -242,6 +243,18 @@ return &ValidationError{Field: field, Message: field + " is required"}
 }
 if !numericRe.MatchString(v) {
 return &ValidationError{Field: field, Message: field + " must contain only digits"}
+}
+return nil
+}
+
+// Between validates that value is in the inclusive range [min, max].
+// Works with any ordered type (int, float64, string, etc.).
+func Between[V cmp.Ordered](field string, value, min, max V) error {
+if value < min || value > max {
+return &ValidationError{
+Field:   field,
+Message: fmt.Sprintf("%s must be between %v and %v", field, min, max),
+}
 }
 return nil
 }

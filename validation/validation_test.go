@@ -358,3 +358,34 @@ testkit.AssertError(t, err)
 func TestNumeric_Trimmed(t *testing.T) {
 testkit.AssertNoError(t, Numeric("zip", "  12345  "))
 }
+
+func TestBetween_Valid(t *testing.T) {
+testkit.AssertNoError(t, Between("age", 25, 18, 65))
+}
+
+func TestBetween_AtMin(t *testing.T) {
+testkit.AssertNoError(t, Between("age", 18, 18, 65))
+}
+
+func TestBetween_AtMax(t *testing.T) {
+testkit.AssertNoError(t, Between("age", 65, 18, 65))
+}
+
+func TestBetween_BelowMin(t *testing.T) {
+err := Between("age", 10, 18, 65)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "must be between 18 and 65")
+}
+
+func TestBetween_AboveMax(t *testing.T) {
+err := Between("age", 70, 18, 65)
+testkit.AssertError(t, err)
+}
+
+func TestBetween_Float(t *testing.T) {
+testkit.AssertNoError(t, Between("rate", 0.5, 0.0, 1.0))
+}
+
+func TestBetween_String(t *testing.T) {
+testkit.AssertNoError(t, Between("grade", "B", "A", "F"))
+}

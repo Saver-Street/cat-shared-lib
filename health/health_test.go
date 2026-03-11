@@ -18,7 +18,7 @@ func TestHandler_NoCheckers(t *testing.T) {
 
 	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 
-		var s Status
+	var s Status
 	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertEqual(t, s.Status, "ok")
 	testkit.AssertEqual(t, s.Service, "test-service")
@@ -237,7 +237,7 @@ func TestHandler_UptimePresent(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-		var s Status
+	var s Status
 	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertNotEqual(t, s.Uptime, "")
 }

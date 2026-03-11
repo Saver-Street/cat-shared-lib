@@ -361,3 +361,16 @@ result[i] = fn(item)
 }
 return result
 }
+
+// Compact removes zero-value elements from a slice, returning a new slice
+// containing only non-zero elements in their original order.
+func Compact[T comparable](items []T) []T {
+var zero T
+result := make([]T, 0, len(items))
+for _, item := range items {
+if item != zero {
+result = append(result, item)
+}
+}
+return result
+}

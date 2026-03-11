@@ -660,3 +660,27 @@ func TestMap_Empty(t *testing.T) {
 got := Map([]string{}, strings.ToUpper)
 testkit.AssertLen(t, got, 0)
 }
+
+func TestCompact_Strings(t *testing.T) {
+got := Compact([]string{"a", "", "b", "", "c"})
+testkit.AssertLen(t, got, 3)
+testkit.AssertEqual(t, got[0], "a")
+testkit.AssertEqual(t, got[1], "b")
+testkit.AssertEqual(t, got[2], "c")
+}
+
+func TestCompact_Ints(t *testing.T) {
+got := Compact([]int{0, 1, 0, 2, 3})
+testkit.AssertLen(t, got, 3)
+testkit.AssertEqual(t, got[0], 1)
+}
+
+func TestCompact_NoZeros(t *testing.T) {
+got := Compact([]string{"a", "b"})
+testkit.AssertLen(t, got, 2)
+}
+
+func TestCompact_AllZeros(t *testing.T) {
+got := Compact([]string{"", ""})
+testkit.AssertLen(t, got, 0)
+}

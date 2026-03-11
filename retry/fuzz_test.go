@@ -75,3 +75,39 @@ func FuzzDo(f *testing.F) {
 		_ = calls
 	})
 }
+
+func FuzzDoWithStats(f *testing.F) {
+	f.Add(1, 10)
+	f.Add(3, 50)
+	f.Add(10, 1)
+	f.Add(0, 0)
+	f.Add(100, 100)
+
+	f.Fuzz(func(t *testing.T, maxAttempts, delayMs int) {
+		if maxAttempts > 10 {
+			maxAttempts = 10
+		}
+		if delayMs > 100 {
+			delayMs = 100
+		}
+		if delayMs < 0 {
+			delayMs = 0
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer cancel()
+
+		cfg := Config{
+			MaxAttempts:  maxAttempts,
+			InitialDelay: time.Duration(delayMs) * time.Millisecond,
+		}
+		r := DoWithStats(ctx, cfg, func(_ context.Context) error {
+			return errors.New("fail")
+		})
+
+		// Must not panic, attempts should be reasonable.
+		if r.Attempts < 0 {
+			t.Error("negative attempts")
+		}
+	})
+}

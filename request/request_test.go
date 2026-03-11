@@ -726,3 +726,23 @@ testkit.RequireNoError(t, err)
 testkit.AssertFalse(t, dr.Start.IsZero())
 testkit.AssertTrue(t, dr.End.IsZero())
 }
+
+func TestParseIDList_Valid(t *testing.T) {
+q := url.Values{"ids": {"550e8400-e29b-41d4-a716-446655440000,6ba7b810-9dad-11d1-80b4-00c04fd430c8"}}
+got, err := ParseIDList(q, "ids")
+testkit.AssertNoError(t, err)
+testkit.AssertLen(t, got, 2)
+testkit.AssertEqual(t, got[0], "550e8400-e29b-41d4-a716-446655440000")
+}
+
+func TestParseIDList_Missing(t *testing.T) {
+got, err := ParseIDList(url.Values{}, "ids")
+testkit.AssertNoError(t, err)
+testkit.AssertNil(t, got)
+}
+
+func TestParseIDList_InvalidUUID(t *testing.T) {
+q := url.Values{"ids": {"550e8400-e29b-41d4-a716-446655440000,not-a-uuid"}}
+_, err := ParseIDList(q, "ids")
+testkit.AssertErrorContains(t, err, "not a valid UUID")
+}

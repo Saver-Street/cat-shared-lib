@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestGetUserTierAndUsage_CancelledContext(t *testing.T) {
@@ -20,12 +22,8 @@ func TestGetUserTierAndUsage_CancelledContext(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for cancelled context")
 	}
-	if tier != "free" {
-		t.Errorf("tier = %q, want free on cancelled ctx", tier)
-	}
-	if count != 0 {
-		t.Errorf("count = %d, want 0", count)
-	}
+	testkit.AssertEqual(t, tier, "free")
+	testkit.AssertEqual(t, count, 0)
 }
 
 func TestGetUserTierAndUsage_Concurrent(t *testing.T) {
@@ -87,9 +85,7 @@ func FuzzGetUserTier(f *testing.F) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if tier != "pro" {
-			t.Errorf("tier = %q, want pro", tier)
-		}
+		testkit.AssertEqual(t, tier, "pro")
 	})
 }
 
@@ -101,9 +97,7 @@ func TestTierConfig_AllTiersHaveConsistentLimits(t *testing.T) {
 		if !ok {
 			t.Fatalf("TierConfig missing tier %q", name)
 		}
-		if limits.Tier != name {
-			t.Errorf("TierConfig[%q].Tier = %q, want %q", name, limits.Tier, name)
-		}
+		testkit.AssertEqual(t, limits.Tier, name)
 		if i > 0 {
 			prev := TierConfig[tiers[i-1]]
 			if limits.MonthlyApplications < prev.MonthlyApplications {

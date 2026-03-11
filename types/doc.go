@@ -11,6 +11,9 @@
 // [NormalizeCursor] for limit clamping and [NewCursorPage] for constructing
 // pages with automatic next-cursor derivation.
 //
+// [Set] is a generic unordered collection of unique comparable values with
+// [Set.Union], [Set.Intersect], [Set.Diff], and [Set.Equal] operations.
+//
 // [User] represents an authenticated account with subscription fields and
 // convenience methods [User.IsAdmin], [User.IsActive], [User.IsTrialing], and
 // [User.HasAccess].  [CandidateProfile] holds a job-seeker's profile linked

@@ -448,3 +448,22 @@ testkit.AssertEqual(t, Slugify("  --hello-- "), "hello")
 func TestSlugify_Empty(t *testing.T) {
 testkit.AssertEqual(t, Slugify(""), "")
 }
+
+func TestEscapeHTML(t *testing.T) {
+tests := []struct {
+name   string
+input  string
+expect string
+}{
+{"script tag", `<script>alert("xss")</script>`, `&lt;script&gt;alert(&#34;xss&#34;)&lt;/script&gt;`},
+{"ampersand", `a & b`, `a &amp; b`},
+{"single quote", `it's`, `it&#39;s`},
+{"plain text", "hello", "hello"},
+{"empty", "", ""},
+}
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+testkit.AssertEqual(t, EscapeHTML(tt.input), tt.expect)
+})
+}
+}

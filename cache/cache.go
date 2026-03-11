@@ -149,6 +149,18 @@ func (c *Cache[K, V]) Clear() {
 	c.order.Init()
 }
 
+// Keys returns a snapshot of all keys currently in the cache.
+// The order is from most recently used to least recently used.
+func (c *Cache[K, V]) Keys() []K {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	keys := make([]K, 0, c.order.Len())
+	for el := c.order.Front(); el != nil; el = el.Next() {
+		keys = append(keys, el.Value.(*entry[K, V]).key)
+	}
+	return keys
+}
+
 // Stop halts the background cleanup goroutine. Safe to call multiple times.
 func (c *Cache[K, V]) Stop() {
 	c.mu.Lock()

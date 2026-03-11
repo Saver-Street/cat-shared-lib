@@ -520,3 +520,28 @@ testkit.AssertContains(t, fmt.Sprint(r), "not one of")
 }()
 MustEnum("TEST_MUST_ENUM", []string{"debug", "info", "warn"})
 }
+
+func TestMustURL_Valid(t *testing.T) {
+t.Setenv("TEST_MUST_URL", "https://api.example.com")
+v := MustURL("TEST_MUST_URL")
+testkit.AssertEqual(t, v, "https://api.example.com")
+}
+
+func TestMustURL_Missing(t *testing.T) {
+defer func() {
+r := recover()
+testkit.AssertNotNil(t, r)
+testkit.AssertContains(t, fmt.Sprint(r), "required")
+}()
+MustURL("TEST_MUST_URL_UNSET")
+}
+
+func TestMustURL_Invalid(t *testing.T) {
+t.Setenv("TEST_MUST_URL", "ftp://example.com")
+defer func() {
+r := recover()
+testkit.AssertNotNil(t, r)
+testkit.AssertContains(t, fmt.Sprint(r), "http or https")
+}()
+MustURL("TEST_MUST_URL")
+}

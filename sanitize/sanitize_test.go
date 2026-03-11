@@ -491,3 +491,24 @@ testkit.AssertEqual(t, Truncate("héllo wörld", 6), "héllo…")
 func TestTruncate_Empty(t *testing.T) {
 testkit.AssertEqual(t, Truncate("", 5), "")
 }
+
+func TestRemoveNonPrintable(t *testing.T) {
+tests := []struct {
+name   string
+input  string
+expect string
+}{
+{"plain text", "hello world", "hello world"},
+{"with null byte", "hello\x00world", "helloworld"},
+{"with control chars", "line1\x01\x02\x03line2", "line1line2"},
+{"preserves newline", "line1\nline2", "line1\nline2"},
+{"preserves tab", "col1\tcol2", "col1\tcol2"},
+{"empty", "", ""},
+{"unicode", "héllo wörld", "héllo wörld"},
+}
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+testkit.AssertEqual(t, RemoveNonPrintable(tt.input), tt.expect)
+})
+}
+}

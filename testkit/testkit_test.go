@@ -931,3 +931,36 @@ if m.errored {
 t.Fatal("expected no error for duration equal to bound")
 }
 }
+
+func TestAssertBetween_Pass(t *testing.T) {
+m := &mockT{}
+AssertBetween(m, 5, 1, 10)
+if m.errored {
+t.Fatal("expected no error for value in range")
+}
+}
+
+func TestAssertBetween_Fail_Low(t *testing.T) {
+m := &mockT{}
+AssertBetween(m, 0, 1, 10)
+if !m.errored {
+t.Fatal("expected error for value below range")
+}
+}
+
+func TestAssertBetween_Fail_High(t *testing.T) {
+m := &mockT{}
+AssertBetween(m, 11, 1, 10)
+if !m.errored {
+t.Fatal("expected error for value above range")
+}
+}
+
+func TestAssertBetween_Boundary(t *testing.T) {
+m := &mockT{}
+AssertBetween(m, 1, 1, 10)
+AssertBetween(m, 10, 1, 10)
+if m.errored {
+t.Fatal("expected no error for boundary values")
+}
+}

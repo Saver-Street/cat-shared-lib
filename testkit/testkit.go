@@ -560,3 +560,11 @@ func AssertWithin(t T, got, maxDur time.Duration) {
 		t.Errorf("expected duration ≤ %v, got %v", maxDur, got)
 	}
 }
+
+// AssertBetween asserts that got is in the inclusive range [lo, hi].
+func AssertBetween[V cmp.Ordered](t T, got, lo, hi V) {
+	t.Helper()
+	if got < lo || got > hi {
+		t.Errorf("expected %v to be between %v and %v", got, lo, hi)
+	}
+}

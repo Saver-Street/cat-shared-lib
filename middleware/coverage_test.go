@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 // --- Additional brute force tests ---
@@ -13,15 +15,9 @@ import (
 func TestBruteForce_DefaultConfig(t *testing.T) {
 	g := NewBruteForceGuard(BruteForceConfig{})
 	defer g.Stop()
-	if g.cfg.MaxFailures != 5 {
-		t.Errorf("default MaxFailures = %d, want 5", g.cfg.MaxFailures)
-	}
-	if g.cfg.BlockDuration != 15*time.Minute {
-		t.Errorf("default BlockDuration = %v, want 15m", g.cfg.BlockDuration)
-	}
-	if g.cfg.Window != 10*time.Minute {
-		t.Errorf("default Window = %v, want 10m", g.cfg.Window)
-	}
+	testkit.AssertEqual(t, g.cfg.MaxFailures, 5)
+	testkit.AssertEqual(t, g.cfg.BlockDuration, 15*time.Minute)
+	testkit.AssertEqual(t, g.cfg.Window, 10*time.Minute)
 }
 
 func TestBruteForce_Middleware_BlockedIP(t *testing.T) {
@@ -37,12 +33,8 @@ func TestBruteForce_Middleware_BlockedIP(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodPost, "/login", nil)
 	r.RemoteAddr = ip + ":1234"
 	g.Middleware(next).ServeHTTP(w, r)
-	if w.Code != http.StatusTooManyRequests {
-		t.Errorf("status = %d, want 429", w.Code)
-	}
-	if w.Header().Get("Retry-After") == "" {
-		t.Error("missing Retry-After header")
-	}
+	testkit.AssertStatus(t, w, http.StatusTooManyRequests)
+	testkit.AssertNotEqual(t, w.Header().Get("Retry-After"), "")
 }
 
 func TestBruteForce_Middleware_AllowedIP(t *testing.T) {
@@ -57,12 +49,8 @@ func TestBruteForce_Middleware_AllowedIP(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodPost, "/login", nil)
 	r.RemoteAddr = "8.8.8.8:9999"
 	g.Middleware(next).ServeHTTP(w, r)
-	if !reached {
-		t.Error("allowed IP should reach next handler")
-	}
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", w.Code)
-	}
+	testkit.AssertTrue(t, reached)
+	testkit.AssertStatus(t, w, http.StatusOK)
 }
 
 func TestBruteForce_Cleanup_RemovesExpiredBlock(t *testing.T) {
@@ -78,9 +66,7 @@ func TestBruteForce_Cleanup_RemovesExpiredBlock(t *testing.T) {
 	g.mu.Lock()
 	_, exists := g.entries[ip]
 	g.mu.Unlock()
-	if exists {
-		t.Error("expired blocked entry should be cleaned up")
-	}
+	testkit.AssertFalse(t, exists)
 }
 
 func TestBruteForce_Cleanup_RemovesExpiredWindow(t *testing.T) {
@@ -96,9 +82,7 @@ func TestBruteForce_Cleanup_RemovesExpiredWindow(t *testing.T) {
 	g.mu.Lock()
 	_, exists := g.entries[ip]
 	g.mu.Unlock()
-	if exists {
-		t.Error("window-expired unblocked entry should be cleaned up")
-	}
+	testkit.AssertFalse(t, exists)
 }
 
 func TestBruteForce_RecordFailure_WindowExpiredResets(t *testing.T) {
@@ -110,9 +94,7 @@ func TestBruteForce_RecordFailure_WindowExpiredResets(t *testing.T) {
 	time.Sleep(250 * time.Millisecond) // window expires
 	// After window expires, next RecordFailure should start fresh
 	blocked := g.RecordFailure(ip)
-	if blocked {
-		t.Error("failure after window expiry should start fresh count at 1, not block")
-	}
+	testkit.AssertFalse(t, blocked)
 }
 
 func TestBruteForce_IsBlocked_BlockExpires(t *testing.T) {
@@ -135,57 +117,43 @@ func TestBruteForce_IsBlocked_BlockExpires(t *testing.T) {
 		t.Fatal("should be blocked")
 	}
 	time.Sleep(80 * time.Millisecond) // > blockDuration
-	if g.IsBlocked(ip) {
-		t.Error("block should have expired via IsBlocked check")
-	}
+	testkit.AssertFalse(t, g.IsBlocked(ip))
 	g.mu.Lock()
 	_, exists := g.entries[ip]
 	g.mu.Unlock()
-	if exists {
-		t.Error("expired block entry should be deleted from IsBlocked")
-	}
+	testkit.AssertFalse(t, exists)
 }
 
 // --- Additional JWT/context tests ---
 
 func TestGetUserEmail_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if email := GetUserEmail(r); email != "" {
-		t.Errorf("empty context email = %q, want empty", email)
-	}
+	testkit.AssertEqual(t, GetUserEmail(r), "")
 }
 
 func TestGetUserEmail_Set(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(r.Context(), UserEmailKey, "test@example.com")
 	r = r.WithContext(ctx)
-	if email := GetUserEmail(r); email != "test@example.com" {
-		t.Errorf("GetUserEmail = %q, want test@example.com", email)
-	}
+	testkit.AssertEqual(t, GetUserEmail(r), "test@example.com")
 }
 
 func TestSetUserEmail_RoundTrip(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetUserEmail(r.Context(), "a@b.com"))
-	if email := GetUserEmail(r); email != "a@b.com" {
-		t.Errorf("SetUserEmail round trip = %q, want a@b.com", email)
-	}
+	testkit.AssertEqual(t, GetUserEmail(r), "a@b.com")
 }
 
 func TestGetExtCandidateID_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if id := GetExtCandidateID(r); id != "" {
-		t.Errorf("empty context ext candidate = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "")
 }
 
 func TestGetExtCandidateID_Set(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(r.Context(), ExtCandidateIDKey, "ext-cand-xyz")
 	r = r.WithContext(ctx)
-	if id := GetExtCandidateID(r); id != "ext-cand-xyz" {
-		t.Errorf("GetExtCandidateID = %q, want ext-cand-xyz", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "ext-cand-xyz")
 }
 
 func TestRequireAdmin_NoUserID(t *testing.T) {
@@ -196,17 +164,13 @@ func TestRequireAdmin_NoUserID(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest(http.MethodGet, "/admin", nil)
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("no user ID: status = %d, want 401", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestSetUserRole_RoundTrip(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetUserRole(r.Context(), "moderator"))
-	if role := GetUserRole(r); role != "moderator" {
-		t.Errorf("SetUserRole round trip = %q, want moderator", role)
-	}
+	testkit.AssertEqual(t, GetUserRole(r), "moderator")
 }
 
 // --- Additional rate limiter tests ---
@@ -220,9 +184,7 @@ func TestRateLimiter_Cleanup_RemovesStaleEntries(t *testing.T) {
 	rl.mu.RLock()
 	_, exists := rl.visitors["11.0.0.1"]
 	rl.mu.RUnlock()
-	if exists {
-		t.Error("stale visitor should be cleaned up")
-	}
+	testkit.AssertFalse(t, exists)
 }
 
 func TestRateLimiter_WindowResetsAfterDuration(t *testing.T) {
@@ -235,26 +197,20 @@ func TestRateLimiter_WindowResetsAfterDuration(t *testing.T) {
 		t.Fatalf("second request (over limit): %d", code)
 	}
 	time.Sleep(150 * time.Millisecond) // wait for window to expire
-	if code := doRequest(rl, "12.0.0.1"); code != http.StatusOK {
-		t.Errorf("request after window reset: status = %d, want 200", code)
-	}
+	testkit.AssertEqual(t, doRequest(rl, "12.0.0.1"), http.StatusOK)
 }
 
 func TestClientIP_NoPort(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r.RemoteAddr = "192.168.1.1" // no port
-	if ip := GetClientIP(r); ip != "192.168.1.1" {
-		t.Errorf("clientIP no port = %q, want 192.168.1.1", ip)
-	}
+	testkit.AssertEqual(t, GetClientIP(r), "192.168.1.1")
 }
 
 func TestClientIP_EmptyXFF(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Set("X-Forwarded-For", "")
 	r.RemoteAddr = "10.0.0.5:8080"
-	if ip := GetClientIP(r); ip != "10.0.0.5" {
-		t.Errorf("empty XFF clientIP = %q, want 10.0.0.5", ip)
-	}
+	testkit.AssertEqual(t, GetClientIP(r), "10.0.0.5")
 }
 
 func TestRateLimiter_DefaultCleanupInterval(t *testing.T) {
@@ -263,21 +219,15 @@ func TestRateLimiter_DefaultCleanupInterval(t *testing.T) {
 		WindowDuration:    5 * time.Second,
 	})
 	defer rl.Stop()
-	if rl.config.CleanupInterval != 10*time.Second {
-		t.Errorf("default CleanupInterval = %v, want 10s", rl.config.CleanupInterval)
-	}
+	testkit.AssertEqual(t, rl.config.CleanupInterval, 10*time.Second)
 }
 
 func TestRateLimiter_ExemptPaths_Icons(t *testing.T) {
-	if !IsExemptFromRateLimit("/icons/favicon.ico") {
-		t.Error("/icons/favicon.ico should be exempt")
-	}
+	testkit.AssertTrue(t, IsExemptFromRateLimit("/icons/favicon.ico"))
 }
 
 func TestRateLimiter_ExemptPaths_Static(t *testing.T) {
-	if !IsExemptFromRateLimit("/static/bundle.js") {
-		t.Error("/static/bundle.js should be exempt")
-	}
+	testkit.AssertTrue(t, IsExemptFromRateLimit("/static/bundle.js"))
 }
 
 func TestBruteForce_IsBlocked_EntryExistsButNotBlocked(t *testing.T) {
@@ -286,9 +236,7 @@ func TestBruteForce_IsBlocked_EntryExistsButNotBlocked(t *testing.T) {
 	ip := "9.0.0.5"
 	g.RecordFailure(ip) // 1 of 5, not blocked
 	// Entry exists with blockedAt == nil
-	if g.IsBlocked(ip) {
-		t.Error("1 failure of max 5 should not block")
-	}
+	testkit.AssertFalse(t, g.IsBlocked(ip))
 }
 
 func TestBruteForce_ConcurrentRecordFailure(t *testing.T) {
@@ -307,9 +255,7 @@ func TestBruteForce_ConcurrentRecordFailure(t *testing.T) {
 		<-done
 	}
 	// Should not panic or race — verified by -race flag
-	if g.IsBlocked(ip) {
-		t.Error("50 failures of max 100 should not block")
-	}
+	testkit.AssertFalse(t, g.IsBlocked(ip))
 }
 
 func TestBruteForce_ConcurrentIsBlocked(t *testing.T) {
@@ -368,9 +314,7 @@ func TestRateLimiter_CleanupLoop_FiresOnTicker(t *testing.T) {
 	rl.mu.RLock()
 	_, exists := rl.visitors["13.0.0.1"]
 	rl.mu.RUnlock()
-	if exists {
-		t.Error("cleanup loop should have removed expired visitor")
-	}
+	testkit.AssertFalse(t, exists)
 }
 
 func TestBruteForceGuard_StopIdempotent(t *testing.T) {

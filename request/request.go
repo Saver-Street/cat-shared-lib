@@ -339,3 +339,23 @@ return defaultValue
 }
 return f
 }
+
+// OptionalQueryBool reads a boolean query parameter, returning nil when the
+// parameter is absent or empty. Accepted true values: "true", "1", "yes";
+// false values: "false", "0", "no". Unrecognised values return nil.
+func OptionalQueryBool(q url.Values, key string) *bool {
+val := strings.TrimSpace(strings.ToLower(q.Get(key)))
+if val == "" {
+return nil
+}
+switch val {
+case "true", "1", "yes":
+b := true
+return &b
+case "false", "0", "no":
+b := false
+return &b
+default:
+return nil
+}
+}

@@ -4,6 +4,7 @@ package response
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -197,5 +198,17 @@ w.Header().Set("Content-Type", contentType)
 w.WriteHeader(code)
 if _, err := io.Copy(w, r); err != nil {
 slog.Error("response: stream copy failed", "error", err)
+}
+}
+
+// Download writes an io.Reader as a file download response. It sets
+// Content-Disposition to "attachment" with the given filename, and
+// streams the content using the specified content type.
+func Download(w http.ResponseWriter, contentType, filename string, r io.Reader) {
+w.Header().Set("Content-Type", contentType)
+w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+w.WriteHeader(http.StatusOK)
+if _, err := io.Copy(w, r); err != nil {
+slog.Error("response: download copy failed", "error", err)
 }
 }

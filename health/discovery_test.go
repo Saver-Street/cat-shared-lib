@@ -32,10 +32,7 @@ func TestServiceDiscoveryChecker_AllHealthy(t *testing.T) {
 		Registry: reg,
 	})
 
-	err := checker.Check(t.Context())
-	if err != nil {
-		t.Errorf("Check() error = %v, want nil (all healthy)", err)
-	}
+	testkit.AssertNoError(t, checker.Check(t.Context()))
 }
 
 func TestServiceDiscoveryChecker_OneUnhealthy(t *testing.T) {
@@ -68,8 +65,8 @@ func TestServiceDiscoveryChecker_OneUnhealthy(t *testing.T) {
 	// Verify that the unhealthy instance was marked in registry.
 	all, _ := reg.ResolveAll("billing")
 	for _, inst := range all {
-		if inst.ID == "b-2" && inst.Status != discovery.StatusUnhealthy {
-			t.Errorf("b-2 status = %v, want unhealthy", inst.Status)
+		if inst.ID == "b-2" {
+			testkit.AssertEqual(t, inst.Status, discovery.StatusUnhealthy)
 		}
 	}
 }
@@ -93,16 +90,11 @@ func TestServiceDiscoveryChecker_InstanceRecovery(t *testing.T) {
 		Registry: reg,
 	})
 
-	err := checker.Check(t.Context())
-	if err != nil {
-		t.Errorf("Check() error = %v, want nil (instance recovered)", err)
-	}
+	testkit.AssertNoError(t, checker.Check(t.Context()))
 
 	// Verify instance marked healthy again.
 	all, _ := reg.ResolveAll("billing")
-	if all[0].Status != discovery.StatusHealthy {
-		t.Errorf("status = %v, want healthy after recovery", all[0].Status)
-	}
+	testkit.AssertEqual(t, all[0].Status, discovery.StatusHealthy)
 }
 
 func TestServiceDiscoveryChecker_NoInstances(t *testing.T) {
@@ -112,10 +104,7 @@ func TestServiceDiscoveryChecker_NoInstances(t *testing.T) {
 		Registry: reg,
 	})
 
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for missing service")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestServiceDiscoveryChecker_InvalidInstanceAddr(t *testing.T) {
@@ -127,10 +116,7 @@ func TestServiceDiscoveryChecker_InvalidInstanceAddr(t *testing.T) {
 		Registry: reg,
 	})
 
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Fatal("Check() = nil, want error for invalid instance address")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestServiceDiscoveryChecker_ConnectionRefused(t *testing.T) {
@@ -145,10 +131,7 @@ func TestServiceDiscoveryChecker_ConnectionRefused(t *testing.T) {
 		Registry: reg,
 	})
 
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for connection refused")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestServiceDiscoveryChecker_CustomPath(t *testing.T) {
@@ -171,10 +154,7 @@ func TestServiceDiscoveryChecker_CustomPath(t *testing.T) {
 		HealthPath: "/api/healthz",
 	})
 
-	err := checker.Check(t.Context())
-	if err != nil {
-		t.Errorf("Check() error = %v", err)
-	}
+	testkit.AssertNoError(t, checker.Check(t.Context()))
 }
 
 func TestServiceDiscoveryChecker_NonOKStatus(t *testing.T) {
@@ -192,10 +172,7 @@ func TestServiceDiscoveryChecker_NonOKStatus(t *testing.T) {
 		Registry: reg,
 	})
 
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for non-ok status")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestServiceDiscoveryChecker_UnexpectedStatusCode(t *testing.T) {
@@ -212,10 +189,7 @@ func TestServiceDiscoveryChecker_UnexpectedStatusCode(t *testing.T) {
 		Registry: reg,
 	})
 
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for unexpected 500")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestServiceDiscoveryChecker_InHandler(t *testing.T) {
@@ -236,13 +210,9 @@ func TestServiceDiscoveryChecker_InHandler(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rec.Code)
-	}
+	testkit.AssertEqual(t, rec.Code, http.StatusOK)
 
 	var status Status
 	_ = json.NewDecoder(rec.Body).Decode(&status)
-	if status.Checks["auth"] != "ok" {
-		t.Errorf("checks[auth] = %q, want ok", status.Checks["auth"])
-	}
+	testkit.AssertEqual(t, status.Checks["auth"], "ok")
 }

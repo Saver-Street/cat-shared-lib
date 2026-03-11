@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 type mockPool struct {
@@ -14,12 +16,8 @@ func (m *mockPool) Ping(ctx context.Context) error { return m.err }
 
 func TestDBChecker_Healthy(t *testing.T) {
 	c := DBChecker(&mockPool{})
-	if c.Name() != "db" {
-		t.Errorf("expected name db, got %s", c.Name())
-	}
-	if err := c.Check(context.Background()); err != nil {
-		t.Errorf("expected nil, got %v", err)
-	}
+	testkit.AssertEqual(t, c.Name(), "db")
+	testkit.AssertNoError(t, c.Check(context.Background()))
 }
 
 func TestDBChecker_Unhealthy(t *testing.T) {
@@ -28,9 +26,7 @@ func TestDBChecker_Unhealthy(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if err.Error() != "connection refused" {
-		t.Errorf("expected 'connection refused', got %s", err.Error())
-	}
+	testkit.AssertEqual(t, err.Error(), "connection refused")
 }
 
 func BenchmarkDBChecker(b *testing.B) {

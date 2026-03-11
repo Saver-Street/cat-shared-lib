@@ -545,3 +545,28 @@ testkit.AssertContains(t, fmt.Sprint(r), "http or https")
 }()
 MustURL("TEST_MUST_URL")
 }
+
+func TestMustPort_Valid(t *testing.T) {
+t.Setenv("TEST_MUST_PORT", "8080")
+v := MustPort("TEST_MUST_PORT")
+testkit.AssertEqual(t, v, 8080)
+}
+
+func TestMustPort_Missing(t *testing.T) {
+defer func() {
+r := recover()
+testkit.AssertNotNil(t, r)
+testkit.AssertContains(t, fmt.Sprint(r), "required")
+}()
+MustPort("TEST_MUST_PORT_UNSET")
+}
+
+func TestMustPort_Invalid(t *testing.T) {
+t.Setenv("TEST_MUST_PORT", "99999")
+defer func() {
+r := recover()
+testkit.AssertNotNil(t, r)
+testkit.AssertContains(t, fmt.Sprint(r), "between 1 and 65535")
+}()
+MustPort("TEST_MUST_PORT")
+}

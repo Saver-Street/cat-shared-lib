@@ -3,6 +3,7 @@ package middleware_test
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -359,27 +360,27 @@ func ExampleAPIKeyMulti() {
 }
 
 func ExampleTimeout() {
-handler := middleware.Timeout(5 * time.Second)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-fmt.Fprintln(w, "ok")
-}))
+	handler := middleware.Timeout(5 * time.Second)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "ok")
+	}))
 
-w := httptest.NewRecorder()
-r := httptest.NewRequest("GET", "/", nil)
-handler.ServeHTTP(w, r)
-fmt.Println(w.Code)
-// Output: 200
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/", nil)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+	// Output: 200
 }
 
 func ExampleMaxBody() {
-handler := middleware.MaxBody(16)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-w.WriteHeader(http.StatusOK)
-}))
+	handler := middleware.MaxBody(16)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
 
-w := httptest.NewRecorder()
-r := httptest.NewRequest("POST", "/", strings.NewReader("small"))
-handler.ServeHTTP(w, r)
-fmt.Println(w.Code)
-// Output: 200
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/", strings.NewReader("small"))
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+	// Output: 200
 }
 
 func ExampleCORS() {
@@ -400,4 +401,103 @@ func ExampleCORS() {
 	// Output:
 	// 204
 	// https://app.example.com
+}
+
+func ExampleDetailedLogging() {
+	var buf strings.Builder
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	handler := middleware.DetailedLogging(logger)(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}),
+	)
+	req := httptest.NewRequest(http.MethodGet, "/api/items", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	fmt.Println(rec.Code)
+	fmt.Println(strings.Contains(buf.String(), "/api/items"))
+	// Output:
+	// 200
+	// true
+}
+
+func ExampleCorrelationID() {
+	handler := middleware.CorrelationID(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cid := middleware.GetCorrelationID(r)
+			fmt.Println(cid != "")
+		}),
+	)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	// Output:
+	// true
+}
+
+func ExampleCorrelationID_existing() {
+	handler := middleware.CorrelationID(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println(middleware.GetCorrelationID(r))
+		}),
+	)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Correlation-ID", "existing-id")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	// Output:
+	// existing-id
+}
+
+func ExampleCorrelationIDFromContext() {
+	ctx := middleware.SetCorrelationID(context.Background(), "ctx-id-123")
+	fmt.Println(middleware.CorrelationIDFromContext(ctx))
+	// Output:
+	// ctx-id-123
+}
+
+func ExampleSetCorrelationID() {
+	ctx := middleware.SetCorrelationID(context.Background(), "my-correlation-id")
+	fmt.Println(middleware.CorrelationIDFromContext(ctx))
+	// Output:
+	// my-correlation-id
+}
+
+func ExampleLogging() {
+	var buf strings.Builder
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	handler := middleware.Logging(logger)(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}),
+	)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	fmt.Println(rec.Code)
+	// Output:
+	// 200
+}
+
+func ExampleGetSubscriptionTier() {
+	ctx := middleware.SetSubscriptionTier(context.Background(), "pro")
+	req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetSubscriptionTier(req))
+	// Output:
+	// pro
+}
+
+func ExampleGetSubscriptionStatus() {
+	ctx := middleware.SetSubscriptionStatus(context.Background(), "active")
+	req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetSubscriptionStatus(req))
+	// Output:
+	// active
+}
+
+func ExampleRequestIDFromContext() {
+	ctx := middleware.SetRequestID(context.Background(), "req-abc")
+	fmt.Println(middleware.RequestIDFromContext(ctx))
+	// Output:
+	// req-abc
 }

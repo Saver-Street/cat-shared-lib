@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/Saver-Street/cat-shared-lib/discovery"
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestServiceDiscoveryChecker_AllHealthy(t *testing.T) {

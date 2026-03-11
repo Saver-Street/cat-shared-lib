@@ -273,4 +273,3 @@ func validateIDs(sorted []Migration) error {
 	}
 	return nil
 }
-

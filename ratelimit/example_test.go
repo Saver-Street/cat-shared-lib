@@ -20,9 +20,9 @@ func ExampleLimiter_AllowN() {
 	l := ratelimit.New(ratelimit.Config{Rate: 10, Burst: 10})
 	defer l.Stop()
 
-	fmt.Println(l.AllowN("user-1", 5))  // consumes 5 of 10
-	fmt.Println(l.AllowN("user-1", 5))  // consumes remaining 5
-	fmt.Println(l.AllowN("user-1", 1))  // over limit
+	fmt.Println(l.AllowN("user-1", 5)) // consumes 5 of 10
+	fmt.Println(l.AllowN("user-1", 5)) // consumes remaining 5
+	fmt.Println(l.AllowN("user-1", 1)) // over limit
 	// Output:
 	// true
 	// true

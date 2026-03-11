@@ -4,7 +4,6 @@
 package apperror
 
 import (
-
 	"errors"
 	"fmt"
 	"net/http"

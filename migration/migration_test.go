@@ -84,10 +84,10 @@ type mockRows struct {
 	scanErr error
 }
 
-func (r *mockRows) Next() bool        { r.idx++; return r.idx <= len(r.records) }
-func (r *mockRows) Err() error        { return r.err }
-func (r *mockRows) Close()            {}
-func (r *mockRows) CommandTag() pgconn.CommandTag { return pgconn.CommandTag{} }
+func (r *mockRows) Next() bool                                   { r.idx++; return r.idx <= len(r.records) }
+func (r *mockRows) Err() error                                   { return r.err }
+func (r *mockRows) Close()                                       {}
+func (r *mockRows) CommandTag() pgconn.CommandTag                { return pgconn.CommandTag{} }
 func (r *mockRows) FieldDescriptions() []pgconn.FieldDescription { return nil }
 func (r *mockRows) Values() ([]any, error)                       { return nil, nil }
 func (r *mockRows) RawValues() [][]byte                          { return nil }
@@ -650,4 +650,3 @@ func TestApplied_InitError(t *testing.T) {
 		t.Fatal("expected init error to propagate")
 	}
 }
-

@@ -172,11 +172,11 @@ func RequireRole(role string) func(http.Handler) http.Handler {
 // tierRank maps subscription tier names to their ordinal rank (higher = more capable).
 // free < starter < pro < power < concierge.
 var tierRank = map[string]int{
-"free":      0,
-"starter":   1,
-"pro":       2,
-"power":     3,
-"concierge": 4,
+	"free":      0,
+	"starter":   1,
+	"pro":       2,
+	"power":     3,
+	"concierge": 4,
 }
 
 // RequireSubscriptionTier returns a middleware that allows only users whose subscription
@@ -184,19 +184,19 @@ var tierRank = map[string]int{
 // Returns 401 for unauthenticated requests, 403 for insufficient or unrecognised tier.
 // The user's tier is read from the context key set by SetSubscriptionTier.
 func RequireSubscriptionTier(minTier string) func(http.Handler) http.Handler {
-return func(next http.Handler) http.Handler {
-return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if GetUserID(r) == "" {
-response.Error(w, http.StatusUnauthorized, "Authentication required")
-return
-}
-userRank, userOK := tierRank[GetSubscriptionTier(r)]
-minRank, minOK := tierRank[minTier]
-if !userOK || !minOK || userRank < minRank {
-response.Error(w, http.StatusForbidden, "Subscription tier insufficient")
-return
-}
-next.ServeHTTP(w, r)
-})
-}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if GetUserID(r) == "" {
+				response.Error(w, http.StatusUnauthorized, "Authentication required")
+				return
+			}
+			userRank, userOK := tierRank[GetSubscriptionTier(r)]
+			minRank, minOK := tierRank[minTier]
+			if !userOK || !minOK || userRank < minRank {
+				response.Error(w, http.StatusForbidden, "Subscription tier insufficient")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

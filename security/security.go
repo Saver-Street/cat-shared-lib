@@ -3,6 +3,7 @@ package security
 
 import (
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -179,4 +180,25 @@ if u.User != nil {
 u.User = url.User("REDACTED")
 }
 return u.String()
+}
+
+// SanitizeFilename removes path traversal components and dangerous characters
+// from a filename to prevent directory traversal attacks on uploaded files.
+// It strips all directory separators and dot-dot sequences, returning only
+// the base name. Returns "unnamed" if the result is empty.
+func SanitizeFilename(name string) string {
+	// Normalize Windows backslashes to forward slashes.
+	name = strings.ReplaceAll(name, "\\", "/")
+	// Strip path components.
+	name = filepath.Base(name)
+	// Reject special path values.
+	if name == "." || name == ".." || name == "" {
+		return "unnamed"
+	}
+	// Remove null bytes which can bypass checks.
+	name = strings.ReplaceAll(name, "\x00", "")
+	if name == "" {
+		return "unnamed"
+	}
+	return name
 }

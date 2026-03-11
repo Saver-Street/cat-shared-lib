@@ -461,3 +461,17 @@ err := EndsWith("file", "report.txt", ".pdf")
 testkit.AssertError(t, err)
 testkit.AssertContains(t, err.Error(), "end with")
 }
+
+func TestNotOneOf_Valid(t *testing.T) {
+testkit.AssertNoError(t, NotOneOf("username", "alice", []string{"admin", "root", "system"}))
+}
+
+func TestNotOneOf_Invalid(t *testing.T) {
+err := NotOneOf("username", "admin", []string{"admin", "root", "system"})
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "admin")
+}
+
+func TestNotOneOf_Empty(t *testing.T) {
+testkit.AssertNoError(t, NotOneOf("username", "anything", []string{}))
+}

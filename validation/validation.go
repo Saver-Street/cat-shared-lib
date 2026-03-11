@@ -305,3 +305,14 @@ return fmt.Errorf("%s must end with %q", field, suffix)
 }
 return nil
 }
+
+// NotOneOf validates that value is NOT in the blocked list. Useful for
+// rejecting reserved words, banned usernames, or unsafe values.
+func NotOneOf(field, value string, blocked []string) error {
+for _, b := range blocked {
+if value == b {
+return fmt.Errorf("%s must not be %q", field, value)
+}
+}
+return nil
+}

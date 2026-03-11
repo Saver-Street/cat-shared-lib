@@ -45,6 +45,48 @@ func ExampleClient_GetJSON() {
 	// Output: Alice
 }
 
+func ExampleClient_PostJSON() {
+	type Req struct {
+		Name string `json:"name"`
+	}
+	type Resp struct {
+		ID int `json:"id"`
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(Resp{ID: 42})
+	}))
+	defer srv.Close()
+
+	client := httpclient.New()
+	var resp Resp
+	if err := client.PostJSON(context.Background(), srv.URL, Req{Name: "Alice"}, &resp); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	fmt.Println(resp.ID)
+	// Output: 42
+}
+
+func ExampleClient_DeleteJSON() {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]bool{"deleted": true})
+	}))
+	defer srv.Close()
+
+	client := httpclient.New()
+	var result map[string]bool
+	if err := client.DeleteJSON(context.Background(), srv.URL, &result); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	fmt.Println(result["deleted"])
+	// Output: true
+}
+
 func ExampleWithCircuitBreaker() {
 	cb := circuitbreaker.New("api",
 		circuitbreaker.WithFailureThreshold(5),

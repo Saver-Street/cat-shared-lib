@@ -126,3 +126,10 @@ func TruncateForLog(s string, maxLen int) string {
 	}
 	return b.String()
 }
+
+// SanitizeHeader removes carriage returns (\r) and line feeds (\n) from s,
+// preventing HTTP header injection (CRLF injection). The result is safe for
+// use as an HTTP header value.
+func SanitizeHeader(s string) string {
+	return strings.NewReplacer("\r\n", "", "\r", "", "\n", "").Replace(s)
+}

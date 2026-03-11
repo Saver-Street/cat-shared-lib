@@ -1,0 +1,10 @@
+# Code owners for cat-shared-lib
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @devaloi
+
+# CI and build configuration
+.github/ @devaloi
+Makefile @devaloi
+.golangci.yml @devaloi

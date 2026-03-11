@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -174,12 +173,8 @@ func TestValidate_SomeMissing(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing vars")
 	}
-	if !strings.Contains(err.Error(), "CONFIG_V4") {
-		t.Errorf("error should mention CONFIG_V4: %v", err)
-	}
-	if !strings.Contains(err.Error(), "CONFIG_V5") {
-		t.Errorf("error should mention CONFIG_V5: %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "CONFIG_V4")
+	testkit.AssertErrorContains(t, err, "CONFIG_V5")
 }
 
 func TestValidate_NoneRequired(t *testing.T) {

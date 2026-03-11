@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestHTTPChecker_Healthy(t *testing.T) {
@@ -163,9 +164,7 @@ func TestAggregateChecker_UnexpectedStatusCode(t *testing.T) {
 	if err == nil {
 		t.Error("Check() = nil, want error for 500 status")
 	}
-	if !strings.Contains(err.Error(), "returned 500") {
-		t.Errorf("error = %v, want mention of 500", err)
-	}
+	testkit.AssertErrorContains(t, err, "returned 500")
 }
 
 func TestHTTPChecker_InHandler(t *testing.T) {
@@ -232,9 +231,7 @@ func TestHTTPChecker_InvalidURL(t *testing.T) {
 	if err == nil {
 		t.Fatal("Check() = nil, want error for invalid URL")
 	}
-	if !strings.Contains(err.Error(), "creating request") {
-		t.Errorf("error = %v, want 'creating request'", err)
-	}
+	testkit.AssertErrorContains(t, err, "creating request")
 }
 
 func TestAggregateChecker_InvalidURL(t *testing.T) {
@@ -244,9 +241,7 @@ func TestAggregateChecker_InvalidURL(t *testing.T) {
 	if err == nil {
 		t.Fatal("Check() = nil, want error for invalid URL")
 	}
-	if !strings.Contains(err.Error(), "creating request") {
-		t.Errorf("error = %v, want 'creating request'", err)
-	}
+	testkit.AssertErrorContains(t, err, "creating request")
 }
 
 func TestAggregateChecker_ReadBodyError(t *testing.T) {

@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestParsePagination_Defaults(t *testing.T) {
@@ -112,9 +113,7 @@ func TestRequireURLParam_Missing(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing param")
 	}
-	if !strings.Contains(err.Error(), "missing") {
-		t.Errorf("expected 'missing' in error, got: %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "missing")
 }
 
 func TestRequireURLParam_Empty(t *testing.T) {
@@ -142,9 +141,7 @@ func TestRequireURLParamInt_NotAnInt(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for non-integer")
 	}
-	if !strings.Contains(err.Error(), "integer") {
-		t.Errorf("expected 'integer' in error, got: %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "integer")
 }
 
 func TestRequireURLParamInt_Zero(t *testing.T) {
@@ -153,9 +150,7 @@ func TestRequireURLParamInt_Zero(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for zero")
 	}
-	if !strings.Contains(err.Error(), "positive") {
-		t.Errorf("expected 'positive' in error, got: %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "positive")
 }
 
 func TestRequireURLParamInt_Negative(t *testing.T) {

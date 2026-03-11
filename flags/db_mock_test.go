@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -42,45 +43,35 @@ func newErrorRow(msg string) *mockRow {
 // --- IsFeatureEnabled tests ---
 
 func TestIsFeatureEnabled_NilQuerier(t *testing.T) {
-	if !IsFeatureEnabled(context.Background(), nil, FlagAIScoring) {
-		t.Error("nil querier should return true (safe default)")
-	}
+	testkit.AssertTrue(t, IsFeatureEnabled(context.Background(), nil, FlagAIScoring))
 }
 
 func TestIsFeatureEnabled_FlagTrue(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newValueRow("true")
 	}}
-	if !IsFeatureEnabled(context.Background(), db, FlagAIScoring) {
-		t.Error("flag=true should return true")
-	}
+	testkit.AssertTrue(t, IsFeatureEnabled(context.Background(), db, FlagAIScoring))
 }
 
 func TestIsFeatureEnabled_FlagFalse(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newValueRow("false")
 	}}
-	if IsFeatureEnabled(context.Background(), db, FlagAIScoring) {
-		t.Error("flag=false should return false")
-	}
+	testkit.AssertFalse(t, IsFeatureEnabled(context.Background(), db, FlagAIScoring))
 }
 
 func TestIsFeatureEnabled_FlagNotFound(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newNoRowsRow()
 	}}
-	if !IsFeatureEnabled(context.Background(), db, "nonexistent") {
-		t.Error("missing flag should return true (safe default)")
-	}
+	testkit.AssertTrue(t, IsFeatureEnabled(context.Background(), db, "nonexistent"))
 }
 
 func TestIsFeatureEnabled_DBError(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newErrorRow("connection lost")
 	}}
-	if !IsFeatureEnabled(context.Background(), db, FlagResumeParsing) {
-		t.Error("DB error should return true (safe default)")
-	}
+	testkit.AssertTrue(t, IsFeatureEnabled(context.Background(), db, FlagResumeParsing))
 }
 
 func TestIsFeatureEnabled_FlagKeyPrefix(t *testing.T) {
@@ -92,109 +83,84 @@ func TestIsFeatureEnabled_FlagKeyPrefix(t *testing.T) {
 		return newValueRow("true")
 	}}
 	IsFeatureEnabled(context.Background(), db, "myFlag")
-	if capturedSQL != "SELECT value FROM site_settings WHERE key = $1" {
-		t.Errorf("unexpected SQL: %s", capturedSQL)
-	}
-	if len(capturedArgs) != 1 || capturedArgs[0] != "flag_myFlag" {
-		t.Errorf("expected flag_myFlag arg, got %v", capturedArgs)
-	}
+	testkit.AssertEqual(t, capturedSQL, "SELECT value FROM site_settings WHERE key = $1")
+	testkit.AssertLen(t, capturedArgs, 1)
+	testkit.AssertEqual(t, capturedArgs[0], "flag_myFlag")
 }
 
 func TestIsFeatureEnabled_EmptyValue(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newValueRow("")
 	}}
-	if IsFeatureEnabled(context.Background(), db, FlagSIAFI) {
-		t.Error("empty value should return false (not 'true')")
-	}
+	testkit.AssertFalse(t, IsFeatureEnabled(context.Background(), db, FlagSIAFI))
 }
 
 // --- IsMaintenanceModeActive tests ---
 
 func TestIsMaintenanceModeActive_NilQuerier(t *testing.T) {
-	if IsMaintenanceModeActive(context.Background(), nil) {
-		t.Error("nil querier should return false")
-	}
+	testkit.AssertFalse(t, IsMaintenanceModeActive(context.Background(), nil))
 }
 
 func TestIsMaintenanceModeActive_True(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newValueRow("true")
 	}}
-	if !IsMaintenanceModeActive(context.Background(), db) {
-		t.Error("maintenance=true should return true")
-	}
+	testkit.AssertTrue(t, IsMaintenanceModeActive(context.Background(), db))
 }
 
 func TestIsMaintenanceModeActive_False(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newValueRow("false")
 	}}
-	if IsMaintenanceModeActive(context.Background(), db) {
-		t.Error("maintenance=false should return false")
-	}
+	testkit.AssertFalse(t, IsMaintenanceModeActive(context.Background(), db))
 }
 
 func TestIsMaintenanceModeActive_NotFound(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newNoRowsRow()
 	}}
-	if IsMaintenanceModeActive(context.Background(), db) {
-		t.Error("missing row should return false")
-	}
+	testkit.AssertFalse(t, IsMaintenanceModeActive(context.Background(), db))
 }
 
 func TestIsMaintenanceModeActive_DBError(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newErrorRow("timeout")
 	}}
-	if IsMaintenanceModeActive(context.Background(), db) {
-		t.Error("DB error should return false")
-	}
+	testkit.AssertFalse(t, IsMaintenanceModeActive(context.Background(), db))
 }
 
 // --- IsGlobalAutomationPaused tests ---
 
 func TestIsGlobalAutomationPaused_NilQuerier(t *testing.T) {
-	if IsGlobalAutomationPaused(context.Background(), nil) {
-		t.Error("nil querier should return false")
-	}
+	testkit.AssertFalse(t, IsGlobalAutomationPaused(context.Background(), nil))
 }
 
 func TestIsGlobalAutomationPaused_True(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newValueRow("true")
 	}}
-	if !IsGlobalAutomationPaused(context.Background(), db) {
-		t.Error("paused=true should return true")
-	}
+	testkit.AssertTrue(t, IsGlobalAutomationPaused(context.Background(), db))
 }
 
 func TestIsGlobalAutomationPaused_False(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newValueRow("false")
 	}}
-	if IsGlobalAutomationPaused(context.Background(), db) {
-		t.Error("paused=false should return false")
-	}
+	testkit.AssertFalse(t, IsGlobalAutomationPaused(context.Background(), db))
 }
 
 func TestIsGlobalAutomationPaused_NotFound(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newNoRowsRow()
 	}}
-	if IsGlobalAutomationPaused(context.Background(), db) {
-		t.Error("missing row should return false")
-	}
+	testkit.AssertFalse(t, IsGlobalAutomationPaused(context.Background(), db))
 }
 
 func TestIsGlobalAutomationPaused_DBError(t *testing.T) {
 	db := &mockQuerier{queryRowFunc: func(_ context.Context, _ string, _ ...any) pgx.Row {
 		return newErrorRow("connection reset")
 	}}
-	if IsGlobalAutomationPaused(context.Background(), db) {
-		t.Error("DB error should return false")
-	}
+	testkit.AssertFalse(t, IsGlobalAutomationPaused(context.Background(), db))
 }
 
 func BenchmarkIsFeatureEnabled(b *testing.B) {

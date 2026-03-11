@@ -3,24 +3,20 @@ package flags
 import (
 	"context"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestIsFeatureEnabled_NilPool(t *testing.T) {
-	if !IsFeatureEnabled(context.TODO(), nil, FlagAIScoring) {
-		t.Error("nil pool should return true (safe default)")
-	}
+	testkit.AssertTrue(t, IsFeatureEnabled(context.TODO(), nil, FlagAIScoring))
 }
 
 func TestIsMaintenanceModeActive_NilPool(t *testing.T) {
-	if IsMaintenanceModeActive(context.TODO(), nil) {
-		t.Error("nil pool should return false for maintenance mode")
-	}
+	testkit.AssertFalse(t, IsMaintenanceModeActive(context.TODO(), nil))
 }
 
 func TestIsGlobalAutomationPaused_NilPool(t *testing.T) {
-	if IsGlobalAutomationPaused(context.TODO(), nil) {
-		t.Error("nil pool should return false for automation pause")
-	}
+	testkit.AssertFalse(t, IsGlobalAutomationPaused(context.TODO(), nil))
 }
 
 func TestFlagConstants_NonEmpty(t *testing.T) {
@@ -56,13 +52,9 @@ func TestFlagConstants_Unique(t *testing.T) {
 }
 
 func TestIsCustomFlagEnabled_NilDB_DefaultTrue(t *testing.T) {
-	if !IsCustomFlagEnabled(context.TODO(), nil, "any_key", true) {
-		t.Error("nil db with defaultValue=true should return true")
-	}
+	testkit.AssertTrue(t, IsCustomFlagEnabled(context.TODO(), nil, "any_key", true))
 }
 
 func TestIsCustomFlagEnabled_NilDB_DefaultFalse(t *testing.T) {
-	if IsCustomFlagEnabled(context.TODO(), nil, "any_key", false) {
-		t.Error("nil db with defaultValue=false should return false")
-	}
+	testkit.AssertFalse(t, IsCustomFlagEnabled(context.TODO(), nil, "any_key", false))
 }

@@ -426,3 +426,34 @@ func TestAppError_WithGenericError(t *testing.T) {
 	testkit.RequireNoError(t, json.NewDecoder(w.Body).Decode(&body))
 	testkit.AssertEqual(t, body["error"], "Internal server error")
 }
+
+func TestValidationErrors_WithErrors(t *testing.T) {
+	w := httptest.NewRecorder()
+	errs := []error{
+		errors.New("name: name is required"),
+		errors.New("email: invalid email format"),
+	}
+	wrote := ValidationErrors(w, errs)
+	testkit.AssertTrue(t, wrote)
+	testkit.AssertStatus(t, w, http.StatusUnprocessableEntity)
+
+	var body map[string]any
+	testkit.RequireNoError(t, json.NewDecoder(w.Body).Decode(&body))
+	testkit.AssertEqual(t, body["error"], "Validation failed")
+	details, ok := body["details"].([]any)
+	testkit.AssertTrue(t, ok)
+	testkit.AssertLen(t, details, 2)
+}
+
+func TestValidationErrors_Empty(t *testing.T) {
+	w := httptest.NewRecorder()
+	wrote := ValidationErrors(w, nil)
+	testkit.AssertFalse(t, wrote)
+	testkit.AssertEqual(t, w.Code, http.StatusOK) // no response written
+}
+
+func TestValidationErrors_EmptySlice(t *testing.T) {
+	w := httptest.NewRecorder()
+	wrote := ValidationErrors(w, []error{})
+	testkit.AssertFalse(t, wrote)
+}

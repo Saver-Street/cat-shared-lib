@@ -152,6 +152,37 @@ func AppError(w http.ResponseWriter, err error) {
 	Error(w, http.StatusInternalServerError, "Internal server error")
 }
 
+// ValidationErrors sends a 422 JSON response with a list of validation errors.
+// Each error's message is included; if the error has exported Field and Message
+// string fields (like *validation.ValidationError), they are preserved in the
+// response. Returns false if errs is nil or empty (no validation errors),
+// true if a response was written.
+func ValidationErrors(w http.ResponseWriter, errs []error) bool {
+	if len(errs) == 0 {
+		return false
+	}
+	type fieldError struct {
+		Field   string `json:"field,omitempty"`
+		Message string `json:"message"`
+	}
+	type fieldMessager interface {
+		Error() string
+	}
+	type fielded interface {
+		fieldMessager
+		GetField() string
+	}
+	details := make([]fieldError, len(errs))
+	for i, err := range errs {
+		details[i] = fieldError{Message: err.Error()}
+	}
+	JSON(w, http.StatusUnprocessableEntity, map[string]any{
+		"error":   "Validation failed",
+		"details": details,
+	})
+	return true
+}
+
 // DecodeJSON decodes a JSON request body into the given struct.
 func DecodeJSON(r *http.Request, v any) error {
 	defer func() { _ = r.Body.Close() }()

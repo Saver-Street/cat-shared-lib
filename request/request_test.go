@@ -504,3 +504,34 @@ func TestParseEnumParam_Empty(t *testing.T) {
 	got := ParseEnumParam(q, "status", []string{"active", "inactive"}, "active")
 	testkit.AssertEqual(t, got, "active")
 }
+
+func TestExtractBearerToken(t *testing.T) {
+	r := httptest.NewRequest("GET", "/", nil)
+	r.Header.Set("Authorization", "Bearer abc123")
+	token, ok := ExtractBearerToken(r)
+	testkit.AssertTrue(t, ok)
+	testkit.AssertEqual(t, token, "abc123")
+}
+
+func TestExtractBearerToken_Missing(t *testing.T) {
+	r := httptest.NewRequest("GET", "/", nil)
+	token, ok := ExtractBearerToken(r)
+	testkit.AssertFalse(t, ok)
+	testkit.AssertEqual(t, token, "")
+}
+
+func TestExtractBearerToken_WrongScheme(t *testing.T) {
+	r := httptest.NewRequest("GET", "/", nil)
+	r.Header.Set("Authorization", "Basic dXNlcjpwYXNz")
+	token, ok := ExtractBearerToken(r)
+	testkit.AssertFalse(t, ok)
+	testkit.AssertEqual(t, token, "")
+}
+
+func TestExtractBearerToken_CaseInsensitive(t *testing.T) {
+	r := httptest.NewRequest("GET", "/", nil)
+	r.Header.Set("Authorization", "bearer xyz789")
+	token, ok := ExtractBearerToken(r)
+	testkit.AssertTrue(t, ok)
+	testkit.AssertEqual(t, token, "xyz789")
+}

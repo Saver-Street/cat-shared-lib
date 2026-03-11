@@ -256,3 +256,15 @@ func ParseEnumParam(q url.Values, key string, allowed []string, defaultValue str
 	}
 	return defaultValue
 }
+
+// ExtractBearerToken extracts the token from an Authorization header with
+// the "Bearer" scheme. It returns the token and true if present, or an
+// empty string and false otherwise.
+func ExtractBearerToken(r *http.Request) (string, bool) {
+	auth := r.Header.Get("Authorization")
+	const prefix = "Bearer "
+	if len(auth) > len(prefix) && strings.EqualFold(auth[:len(prefix)], prefix) {
+		return auth[len(prefix):], true
+	}
+	return "", false
+}

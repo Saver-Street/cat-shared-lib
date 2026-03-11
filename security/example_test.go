@@ -40,3 +40,19 @@ func ExampleTruncateForLog() {
 	// hello
 	// a very lon
 }
+
+func ExampleSanitizeHeader() {
+	clean := security.SanitizeHeader("Bearer token\r\nX-Injected: evil")
+	fmt.Println(clean)
+	// Output: Bearer tokenX-Injected: evil
+}
+
+func ExampleIsRelativeURL() {
+	fmt.Println(security.IsRelativeURL("/dashboard"))
+	fmt.Println(security.IsRelativeURL("//evil.com"))
+	fmt.Println(security.IsRelativeURL("https://evil.com"))
+	// Output:
+	// true
+	// false
+	// false
+}

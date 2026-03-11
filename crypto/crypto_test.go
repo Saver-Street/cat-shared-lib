@@ -51,7 +51,7 @@ func TestCheckPassword_Empty(t *testing.T) {
 
 func TestCheckPassword_BadHash(t *testing.T) {
 	err := CheckPassword("password", "notahash")
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 }
 
 func TestGenerateToken(t *testing.T) {
@@ -67,9 +67,9 @@ func TestGenerateToken(t *testing.T) {
 
 func TestGenerateToken_InvalidLen(t *testing.T) {
 	_, err := GenerateToken(0)
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 	_, err = GenerateToken(-1)
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 }
 
 func TestGenerateToken_URLSafe(t *testing.T) {
@@ -90,7 +90,7 @@ func TestGenerateHexToken(t *testing.T) {
 
 func TestGenerateHexToken_InvalidLen(t *testing.T) {
 	_, err := GenerateHexToken(0)
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 }
 
 func TestHMACSHA256(t *testing.T) {
@@ -136,7 +136,7 @@ func TestBcryptCost(t *testing.T) {
 
 func TestBcryptCost_Invalid(t *testing.T) {
 	_, err := BcryptCost("notahash")
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 }
 
 func TestNeedsRehash(t *testing.T) {
@@ -148,7 +148,7 @@ func TestNeedsRehash(t *testing.T) {
 
 func TestHashPasswordWithCost_InvalidCost(t *testing.T) {
 	_, err := HashPasswordWithCost("password", 100) // cost too high
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 	testkit.AssertErrorContains(t, err, "crypto: hash password")
 }
 

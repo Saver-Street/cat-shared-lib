@@ -1,6 +1,7 @@
 package shutdown_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -36,4 +37,37 @@ func ExampleDrainer_Middleware() {
 	fmt.Println(rr.Code)
 	// Output:
 	// 200
+}
+
+func ExampleRunHooks() {
+	hooks := []shutdown.Hook{
+		{Name: "close-db", Fn: func(ctx context.Context) error {
+			fmt.Println("closing database")
+			return nil
+		}},
+		{Name: "flush-cache", Fn: func(ctx context.Context) error {
+			fmt.Println("flushing cache")
+			return nil
+		}},
+	}
+
+	err := shutdown.RunHooks(context.Background(), nil, hooks)
+	fmt.Println("error:", err)
+	// Output:
+	// closing database
+	// flushing cache
+	// error: <nil>
+}
+
+func ExampleConfig_AddHook() {
+	cfg := &shutdown.Config{}
+	cfg.AddHook("close-db", func(ctx context.Context) error {
+		return nil
+	}).AddHook("flush-cache", func(ctx context.Context) error {
+		return nil
+	})
+
+	fmt.Println("hooks registered:", len(cfg.OnShutdown))
+	// Output:
+	// hooks registered: 2
 }

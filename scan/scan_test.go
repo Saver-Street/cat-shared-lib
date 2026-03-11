@@ -59,12 +59,9 @@ func TestRows_MultipleRows(t *testing.T) {
 	if len(items) != 2 {
 		t.Fatalf("got %d items, want 2", len(items))
 	}
-	if items[0].Name != "a" || items[1].Name != "b" {
-		t.Errorf("got %v, want a,b", items)
-	}
-	if !rows.closed {
-		t.Error("rows not closed")
-	}
+	testkit.AssertEqual(t, items[0].Name, "a")
+	testkit.AssertEqual(t, items[1].Name, "b")
+	testkit.AssertTrue(t, rows.closed)
 }
 
 func TestRows_Empty(t *testing.T) {
@@ -79,17 +76,13 @@ func TestRows_Empty(t *testing.T) {
 func TestRows_ScanError(t *testing.T) {
 	rows := &mockRows{data: [][]any{{"a", "1"}}, scanErr: errors.New("scan fail")}
 	_, err := Rows[item](rows, scanItem)
-	if err == nil || err.Error() != "scan fail" {
-		t.Errorf("got err %v, want scan fail", err)
-	}
+	testkit.AssertErrorContains(t, err, "scan fail")
 }
 
 func TestRows_IterError(t *testing.T) {
 	rows := &mockRows{data: [][]any{}, iterErr: errors.New("iter fail")}
 	_, err := Rows[item](rows, scanItem)
-	if err == nil || err.Error() != "iter fail" {
-		t.Errorf("got err %v, want iter fail", err)
-	}
+	testkit.AssertErrorContains(t, err, "iter fail")
 }
 
 // mockRow implements SingleRowScanner for testing.
@@ -117,17 +110,14 @@ func TestRow_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Name != "hello" || result.Val != "world" {
-		t.Errorf("got %+v, want {hello world}", result)
-	}
+	testkit.AssertEqual(t, result.Name, "hello")
+	testkit.AssertEqual(t, result.Val, "world")
 }
 
 func TestRow_Error(t *testing.T) {
 	row := &mockRow{err: errors.New("no rows")}
 	_, err := Row[item](row, scanItem)
-	if err == nil || err.Error() != "no rows" {
-		t.Errorf("got err %v, want no rows", err)
-	}
+	testkit.AssertErrorContains(t, err, "no rows")
 }
 
 func TestRows_LargeDataSet(t *testing.T) {
@@ -140,9 +130,7 @@ func TestRows_LargeDataSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 100 {
-		t.Fatalf("got %d items, want 100", len(items))
-	}
+	testkit.AssertLen(t, items, 100)
 }
 
 func TestRows_SingleRow(t *testing.T) {
@@ -154,9 +142,7 @@ func TestRows_SingleRow(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("got %d items, want 1", len(items))
 	}
-	if items[0].Name != "only" {
-		t.Errorf("got %q, want only", items[0].Name)
-	}
+	testkit.AssertEqual(t, items[0].Name, "only")
 }
 
 func BenchmarkRows(b *testing.B) {
@@ -237,64 +223,49 @@ func TestRows_DifferentGenericType(t *testing.T) {
 	if len(items) != 2 {
 		t.Fatalf("got %d items, want 2", len(items))
 	}
-	if items[0].ID != 1 || items[1].ID != 2 {
-		t.Errorf("got IDs %d,%d, want 1,2", items[0].ID, items[1].ID)
-	}
+	testkit.AssertEqual(t, items[0].ID, 1)
+	testkit.AssertEqual(t, items[1].ID, 2)
 }
 
 func TestRow_DifferentGenericType(t *testing.T) {
 	row := &mockRow{data: []any{"hello", "world"}}
 	// Reuse item type but verify zero-value on error
 	_, err := Row[item](&mockRow{err: errors.New("fail")}, scanItem)
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 	// Success with mockRow
 	result, err := Row[item](row, scanItem)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Name != "hello" {
-		t.Errorf("got %q, want hello", result.Name)
-	}
+	testkit.AssertEqual(t, result.Name, "hello")
 }
 
 func TestRows_CloseCalledOnScanError(t *testing.T) {
 	rows := &mockRows{data: [][]any{{"a", "1"}}, scanErr: errors.New("scan fail")}
 	Rows[item](rows, scanItem)
-	if !rows.closed {
-		t.Error("rows should be closed even after scan error")
-	}
+	testkit.AssertTrue(t, rows.closed)
 }
 
 func TestRows_NilRows(t *testing.T) {
 	_, err := Rows[item](nil, scanItem)
-	if err == nil || err.Error() != "scan.Rows: rows must not be nil" {
-		t.Errorf("got err %v, want nil rows error", err)
-	}
+	testkit.AssertErrorContains(t, err, "rows must not be nil")
 }
 
 func TestRows_NilScanFn(t *testing.T) {
 	rows := &mockRows{data: [][]any{}}
 	_, err := Rows[item](rows, nil)
-	if err == nil || err.Error() != "scan.Rows: scanFn must not be nil" {
-		t.Errorf("got err %v, want nil scanFn error", err)
-	}
+	testkit.AssertErrorContains(t, err, "scanFn must not be nil")
 }
 
 func TestRow_NilRow(t *testing.T) {
 	_, err := Row[item](nil, scanItem)
-	if err == nil || err.Error() != "scan.Row: row must not be nil" {
-		t.Errorf("got err %v, want nil row error", err)
-	}
+	testkit.AssertErrorContains(t, err, "row must not be nil")
 }
 
 func TestRow_NilScanFn(t *testing.T) {
 	row := &mockRow{data: []any{"hello", "world"}}
 	_, err := Row[item](row, nil)
-	if err == nil || err.Error() != "scan.Row: scanFn must not be nil" {
-		t.Errorf("got err %v, want nil scanFn error", err)
-	}
+	testkit.AssertErrorContains(t, err, "scanFn must not be nil")
 }
 
 func TestFirst_Success(t *testing.T) {
@@ -303,52 +274,38 @@ func TestFirst_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Name != "first" {
-		t.Errorf("got %q, want first", result.Name)
-	}
-	if !rows.closed {
-		t.Error("rows should be closed after First")
-	}
+	testkit.AssertEqual(t, result.Name, "first")
+	testkit.AssertTrue(t, rows.closed)
 }
 
 func TestFirst_Empty(t *testing.T) {
 	rows := &mockRows{data: [][]any{}}
 	_, err := First[item](rows, scanItem)
-	if err == nil {
-		t.Fatal("expected error for empty rows")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertErrorIs(t, err, ErrNoRows)
 }
 
 func TestFirst_NilRows(t *testing.T) {
 	_, err := First[item](nil, scanItem)
-	if err == nil || err.Error() != "scan.First: rows must not be nil" {
-		t.Errorf("got err %v, want nil rows error", err)
-	}
+	testkit.AssertErrorContains(t, err, "rows must not be nil")
 }
 
 func TestFirst_NilScanFn(t *testing.T) {
 	rows := &mockRows{data: [][]any{{"a", "b"}}}
 	_, err := First[item](rows, nil)
-	if err == nil || err.Error() != "scan.First: scanFn must not be nil" {
-		t.Errorf("got err %v, want nil scanFn error", err)
-	}
+	testkit.AssertErrorContains(t, err, "scanFn must not be nil")
 }
 
 func TestFirst_ScanError(t *testing.T) {
 	rows := &mockRows{data: [][]any{{"a", "1"}}, scanErr: errors.New("scan fail")}
 	_, err := First[item](rows, scanItem)
-	if err == nil || err.Error() != "scan fail" {
-		t.Errorf("got err %v, want scan fail", err)
-	}
+	testkit.AssertErrorContains(t, err, "scan fail")
 }
 
 func TestFirst_IterError(t *testing.T) {
 	rows := &mockRows{data: [][]any{}, iterErr: errors.New("iter fail")}
 	_, err := First[item](rows, scanItem)
-	if err == nil || err.Error() != "iter fail" {
-		t.Errorf("got err %v, want iter fail", err)
-	}
+	testkit.AssertErrorContains(t, err, "iter fail")
 }
 
 func TestRowsLimit_Basic(t *testing.T) {
@@ -380,31 +337,23 @@ func TestRowsLimit_NegativeLimit_ReturnsAll(t *testing.T) {
 
 func TestRowsLimit_NilRows(t *testing.T) {
 	_, err := RowsLimit[item](nil, scanItem, 5)
-	if err == nil {
-		t.Fatal("expected error for nil rows")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRowsLimit_NilScanFn(t *testing.T) {
 	rows := &mockRows{data: [][]any{{"a", "1"}}}
 	_, err := RowsLimit[item](rows, nil, 5)
-	if err == nil {
-		t.Fatal("expected error for nil scanFn")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRowsLimit_IterError(t *testing.T) {
 	rows := &mockRows{data: [][]any{}, iterErr: errors.New("iter fail")}
 	_, err := RowsLimit[item](rows, scanItem, 5)
-	if err == nil || err.Error() != "iter fail" {
-		t.Errorf("got err %v, want 'iter fail'", err)
-	}
+	testkit.AssertErrorContains(t, err, "iter fail")
 }
 
 func TestRowsLimit_ScanError(t *testing.T) {
 	rows := &mockRows{data: [][]any{{"a", "1"}}, scanErr: errors.New("scan fail")}
 	_, err := RowsLimit[item](rows, scanItem, 5)
-	if err == nil {
-		t.Fatal("expected scan error from RowsLimit")
-	}
+	testkit.AssertError(t, err)
 }

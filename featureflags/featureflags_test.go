@@ -113,9 +113,7 @@ func TestListValue(t *testing.T) {
 	m.Register("regions", "", "Regions")
 
 	list := m.ListValue("regions", ",")
-	if len(list) != 3 {
-		t.Fatalf("expected 3 items, got %d", len(list))
-	}
+	testkit.RequireLen(t, list, 3)
 	testkit.AssertEqual(t, list[0], "us-east")
 	testkit.AssertEqual(t, list[1], "eu-west")
 	testkit.AssertEqual(t, list[2], "ap-south")

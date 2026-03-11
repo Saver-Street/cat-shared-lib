@@ -54,9 +54,7 @@ func TestRows_MultipleRows(t *testing.T) {
 	rows := &mockRows{data: [][]any{{"a", "1"}, {"b", "2"}}}
 	items, err := Rows[item](rows, scanItem)
 	testkit.RequireNoError(t, err)
-	if len(items) != 2 {
-		t.Fatalf("got %d items, want 2", len(items))
-	}
+	testkit.RequireLen(t, items, 2)
 	testkit.AssertEqual(t, items[0].Name, "a")
 	testkit.AssertEqual(t, items[1].Name, "b")
 	testkit.AssertTrue(t, rows.closed)
@@ -129,9 +127,7 @@ func TestRows_SingleRow(t *testing.T) {
 	rows := &mockRows{data: [][]any{{"only", "one"}}}
 	items, err := Rows[item](rows, scanItem)
 	testkit.RequireNoError(t, err)
-	if len(items) != 1 {
-		t.Fatalf("got %d items, want 1", len(items))
-	}
+	testkit.RequireLen(t, items, 1)
 	testkit.AssertEqual(t, items[0].Name, "only")
 }
 
@@ -208,9 +204,7 @@ func TestRows_DifferentGenericType(t *testing.T) {
 		return []any{&it.ID, &it.Name}
 	})
 	testkit.RequireNoError(t, err)
-	if len(items) != 2 {
-		t.Fatalf("got %d items, want 2", len(items))
-	}
+	testkit.RequireLen(t, items, 2)
 	testkit.AssertEqual(t, items[0].ID, 1)
 	testkit.AssertEqual(t, items[1].ID, 2)
 }

@@ -198,9 +198,7 @@ func TestOnStateChange_Callback(t *testing.T) {
 
 	_ = cb.Execute(func() error { return errors.New("fail") })
 
-	if len(transitions) != 1 {
-		t.Fatalf("expected 1 transition, got %d", len(transitions))
-	}
+	testkit.RequireLen(t, transitions, 1)
 	testkit.AssertEqual(t, transitions[0].from, StateClosed)
 	testkit.AssertEqual(t, transitions[0].to, StateOpen)
 }
@@ -344,9 +342,7 @@ func TestFullLifecycle(t *testing.T) {
 	}
 
 	expected := []string{"closed→open", "open→half-open", "half-open→closed"}
-	if len(transitions) != len(expected) {
-		t.Fatalf("transitions = %v, want %v", transitions, expected)
-	}
+	testkit.RequireEqual(t, len(transitions), len(expected))
 	for i, tr := range transitions {
 		testkit.AssertEqual(t, tr, expected[i])
 	}

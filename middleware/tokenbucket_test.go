@@ -90,9 +90,7 @@ func TestTokenBucket_Middleware_RateLimited(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("first request: got %d, want 200", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 
 	rr = httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)

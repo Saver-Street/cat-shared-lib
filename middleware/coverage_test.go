@@ -190,12 +190,10 @@ func TestRateLimiter_Cleanup_RemovesStaleEntries(t *testing.T) {
 func TestRateLimiter_WindowResetsAfterDuration(t *testing.T) {
 	rl := newTestRL(1)
 	defer rl.Stop()
-	if code := doRequest(rl, "12.0.0.1"); code != http.StatusOK {
-		t.Fatalf("first request: %d", code)
-	}
-	if code := doRequest(rl, "12.0.0.1"); code != http.StatusTooManyRequests {
-		t.Fatalf("second request (over limit): %d", code)
-	}
+	code := doRequest(rl, "12.0.0.1")
+	testkit.RequireEqual(t, code, http.StatusOK)
+	code = doRequest(rl, "12.0.0.1")
+	testkit.RequireEqual(t, code, http.StatusTooManyRequests)
 	time.Sleep(150 * time.Millisecond) // wait for window to expire
 	testkit.AssertEqual(t, doRequest(rl, "12.0.0.1"), http.StatusOK)
 }

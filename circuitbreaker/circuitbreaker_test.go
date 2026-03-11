@@ -102,9 +102,7 @@ func TestHalfOpen_TransitionAfterTimeout(t *testing.T) {
 
 	// trip the breaker
 	_ = cb.Execute(func() error { return errors.New("fail") })
-	if cb.State() != StateOpen {
-		t.Fatalf("State() = %v, want %v", cb.State(), StateOpen)
-	}
+	testkit.RequireEqual(t, cb.State(), StateOpen)
 
 	// advance time past reset timeout
 	now = now.Add(200 * time.Millisecond)
@@ -241,9 +239,7 @@ func TestReset(t *testing.T) {
 	cb := New("test", WithFailureThreshold(1))
 	_ = cb.Execute(func() error { return errors.New("fail") })
 
-	if cb.State() != StateOpen {
-		t.Fatalf("State() = %v, want %v", cb.State(), StateOpen)
-	}
+	testkit.RequireEqual(t, cb.State(), StateOpen)
 
 	cb.Reset()
 	testkit.AssertEqual(t, cb.State(), StateClosed)
@@ -325,21 +321,15 @@ func TestFullLifecycle(t *testing.T) {
 	// 1. closed → open (2 failures)
 	_ = cb.Execute(func() error { return errors.New("err") })
 	_ = cb.Execute(func() error { return errors.New("err") })
-	if cb.State() != StateOpen {
-		t.Fatalf("step 1: State() = %v, want open", cb.State())
-	}
+	testkit.RequireEqual(t, cb.State(), StateOpen)
 
 	// 2. open → half-open (timeout)
 	now = now.Add(100 * time.Millisecond)
-	if cb.State() != StateHalfOpen {
-		t.Fatalf("step 2: State() = %v, want half-open", cb.State())
-	}
+	testkit.RequireEqual(t, cb.State(), StateHalfOpen)
 
 	// 3. half-open → closed (success)
 	_ = cb.Execute(func() error { return nil })
-	if cb.State() != StateClosed {
-		t.Fatalf("step 3: State() = %v, want closed", cb.State())
-	}
+	testkit.RequireEqual(t, cb.State(), StateClosed)
 
 	expected := []string{"closed→open", "open→half-open", "half-open→closed"}
 	testkit.RequireEqual(t, len(transitions), len(expected))

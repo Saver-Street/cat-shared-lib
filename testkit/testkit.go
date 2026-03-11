@@ -197,6 +197,14 @@ func AssertContains(t T, s, substr string) {
 	}
 }
 
+// AssertNotContains fails if s contains substr.
+func AssertNotContains(t T, s, substr string) {
+	t.Helper()
+	if strings.Contains(s, substr) {
+		t.Errorf("testkit: %q should not contain %q", s, substr)
+	}
+}
+
 // AssertNotNil fails the test if v is nil.
 func AssertNotNil(t T, v any) {
 	t.Helper()

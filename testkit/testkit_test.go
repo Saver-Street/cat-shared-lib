@@ -213,6 +213,20 @@ func TestAssertContains_Fail(t *testing.T) {
 	}
 }
 
+// ---- AssertNotContains tests ----
+
+func TestAssertNotContains_Pass(t *testing.T) {
+	AssertNotContains(t, "hello world", "bye")
+}
+
+func TestAssertNotContains_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertNotContains(mock, "hello world", "world")
+	if !mock.errored {
+		t.Error("expected Errorf when substr is present")
+	}
+}
+
 // ---- AssertNotNil tests ----
 
 func TestAssertNotNil_Pass(t *testing.T) {

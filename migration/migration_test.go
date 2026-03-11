@@ -141,9 +141,7 @@ func TestInit_ExecError(t *testing.T) {
 	}}
 	r := newRunner(db)
 	err := r.Init(context.Background())
-	if err == nil || !containsStr(err.Error(), "init table") {
-		t.Fatalf("expected init table error, got %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "init table")
 }
 
 // ---- Migrate tests ----
@@ -169,9 +167,7 @@ func TestMigrate_AllNew(t *testing.T) {
 	if err := r.Migrate(context.Background(), testMigrations); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(txs) != 2 {
-		t.Errorf("expected 2 transactions, got %d", len(txs))
-	}
+	testkit.AssertLen(t, txs, 2)
 }
 
 func TestMigrate_AlreadyApplied(t *testing.T) {
@@ -193,9 +189,7 @@ func TestMigrate_AlreadyApplied(t *testing.T) {
 	if err := r.Migrate(context.Background(), testMigrations); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if txStarted {
-		t.Error("no transactions expected when all migrations are applied")
-	}
+	testkit.AssertFalse(t, txStarted)
 }
 
 func TestMigrate_DuplicateID(t *testing.T) {
@@ -211,9 +205,7 @@ func TestMigrate_InitError(t *testing.T) {
 		return pgconn.CommandTag{}, errors.New("db down")
 	}}
 	r := newRunner(db)
-	if err := r.Migrate(context.Background(), testMigrations); err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, r.Migrate(context.Background(), testMigrations))
 }
 
 func TestMigrate_QueryError(t *testing.T) {
@@ -229,9 +221,7 @@ func TestMigrate_QueryError(t *testing.T) {
 	}
 	r := newRunner(db)
 	err := r.Migrate(context.Background(), testMigrations)
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMigrate_ApplyError(t *testing.T) {
@@ -244,9 +234,7 @@ func TestMigrate_ApplyError(t *testing.T) {
 	}
 	r := newRunner(db)
 	err := r.Migrate(context.Background(), testMigrations)
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMigrate_BeginError(t *testing.T) {
@@ -257,9 +245,7 @@ func TestMigrate_BeginError(t *testing.T) {
 	}
 	r := newRunner(db)
 	err := r.Migrate(context.Background(), testMigrations)
-	if err == nil {
-		t.Fatal("expected error from Begin")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMigrate_CommitError(t *testing.T) {
@@ -270,9 +256,7 @@ func TestMigrate_CommitError(t *testing.T) {
 	}
 	r := newRunner(db)
 	err := r.Migrate(context.Background(), testMigrations)
-	if err == nil {
-		t.Fatal("expected commit error")
-	}
+	testkit.AssertError(t, err)
 }
 
 // ---- Rollback tests ----
@@ -305,9 +289,7 @@ func TestRollback_LastOne(t *testing.T) {
 	if err := r.Rollback(context.Background(), testMigrations, 1); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(txs) != 1 {
-		t.Errorf("expected 1 tx, got %d", len(txs))
-	}
+	testkit.AssertLen(t, txs, 1)
 }
 
 func TestRollback_All(t *testing.T) {
@@ -329,9 +311,7 @@ func TestRollback_All(t *testing.T) {
 	if err := r.Rollback(context.Background(), testMigrations, 0); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if txCount != 2 {
-		t.Errorf("expected 2 rollback txs, got %d", txCount)
-	}
+	testkit.AssertEqual(t, txCount, 2)
 }
 
 func TestRollback_MissingMigration(t *testing.T) {
@@ -343,9 +323,7 @@ func TestRollback_MissingMigration(t *testing.T) {
 	}
 	r := newRunner(db)
 	err := r.Rollback(context.Background(), testMigrations, 0)
-	if err == nil {
-		t.Fatal("expected error for missing migration ID")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRollback_NoDownSQL(t *testing.T) {
@@ -358,9 +336,7 @@ func TestRollback_NoDownSQL(t *testing.T) {
 	r := newRunner(db)
 	noDown := []Migration{{ID: 1, Name: "m1", Up: "CREATE TABLE x(id INT)", Down: ""}}
 	err := r.Rollback(context.Background(), noDown, 0)
-	if err == nil || !containsStr(err.Error(), "no Down SQL") {
-		t.Fatalf("expected 'no Down SQL' error, got %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "no Down SQL")
 }
 
 func TestRollback_InitError(t *testing.T) {
@@ -368,9 +344,7 @@ func TestRollback_InitError(t *testing.T) {
 		return pgconn.CommandTag{}, errors.New("db down")
 	}}
 	r := newRunner(db)
-	if err := r.Rollback(context.Background(), testMigrations, 1); err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, r.Rollback(context.Background(), testMigrations, 1))
 }
 
 // ---- Applied/Status tests ----
@@ -389,9 +363,10 @@ func TestApplied_OK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(records) != 1 || records[0].ID != 1 {
-		t.Errorf("unexpected records: %v", records)
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(records))
 	}
+	testkit.AssertEqual(t, records[0].ID, 1)
 }
 
 func TestApplied_ScanError(t *testing.T) {
@@ -405,9 +380,7 @@ func TestApplied_ScanError(t *testing.T) {
 	}
 	r := newRunner(db)
 	_, err := r.Applied(context.Background())
-	if err == nil {
-		t.Fatal("expected scan error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestApplied_RowsErr(t *testing.T) {
@@ -418,9 +391,7 @@ func TestApplied_RowsErr(t *testing.T) {
 	}
 	r := newRunner(db)
 	_, err := r.Applied(context.Background())
-	if err == nil {
-		t.Fatal("expected rows error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestStatus_OK(t *testing.T) {
@@ -435,12 +406,8 @@ func TestStatus_OK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !status[1] {
-		t.Error("expected migration 1 to be applied")
-	}
-	if status[2] {
-		t.Error("expected migration 2 to be unapplied")
-	}
+	testkit.AssertTrue(t, status[1])
+	testkit.AssertFalse(t, status[2])
 }
 
 // ---- Pure unit tests (no DB) ----
@@ -449,13 +416,9 @@ func TestSortedCopy(t *testing.T) {
 	in := []Migration{{ID: 3, Name: "c"}, {ID: 1, Name: "a"}, {ID: 2, Name: "b"}}
 	out := sortedCopy(in)
 	for i, want := range []int{1, 2, 3} {
-		if out[i].ID != want {
-			t.Errorf("position %d: got %d, want %d", i, out[i].ID, want)
-		}
+		testkit.AssertEqual(t, out[i].ID, want)
 	}
-	if in[0].ID != 3 {
-		t.Error("sortedCopy must not modify original")
-	}
+	testkit.AssertEqual(t, in[0].ID, 3)
 }
 
 func TestValidateIDs_OK(t *testing.T) {
@@ -478,15 +441,13 @@ func TestValidateIDs_Empty(t *testing.T) {
 func TestRecord_Fields(t *testing.T) {
 	now := time.Now()
 	r := Record{ID: 1, Name: "init", AppliedAt: now}
-	if r.ID != 1 || r.Name != "init" || !r.AppliedAt.Equal(now) {
-		t.Error("Record field assignment failed")
-	}
+	testkit.AssertEqual(t, r.ID, 1)
+	testkit.AssertEqual(t, r.Name, "init")
+	testkit.AssertTrue(t, r.AppliedAt.Equal(now))
 }
 
 func TestSortedCopy_Empty(t *testing.T) {
-	if len(sortedCopy(nil)) != 0 {
-		t.Error("expected empty")
-	}
+	testkit.AssertLen(t, sortedCopy(nil), 0)
 }
 
 func TestSortStability(t *testing.T) {
@@ -495,22 +456,16 @@ func TestSortStability(t *testing.T) {
 		migs[i] = Migration{ID: 10 - i}
 	}
 	sorted := sortedCopy(migs)
-	if !sort.SliceIsSorted(sorted, func(i, j int) bool { return sorted[i].ID < sorted[j].ID }) {
-		t.Error("sortedCopy result is not sorted")
-	}
+	testkit.AssertTrue(t, sort.SliceIsSorted(sorted, func(i, j int) bool { return sorted[i].ID < sorted[j].ID }))
 }
 
 func TestDefaultTable(t *testing.T) {
-	if DefaultTable != "schema_migrations" {
-		t.Errorf("unexpected DefaultTable %q", DefaultTable)
-	}
+	testkit.AssertEqual(t, DefaultTable, "schema_migrations")
 }
 
 func TestNewWithTable(t *testing.T) {
 	r := NewWithDB(&mockDB{}, "custom_migrations")
-	if r.table != "custom_migrations" {
-		t.Errorf("expected custom_migrations, got %q", r.table)
-	}
+	testkit.AssertEqual(t, r.table, "custom_migrations")
 }
 
 func TestApplied_QueryError(t *testing.T) {
@@ -526,9 +481,7 @@ func TestApplied_QueryError(t *testing.T) {
 	}
 	r := newRunner(db)
 	_, err := r.Applied(context.Background())
-	if err == nil {
-		t.Fatal("expected query error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRollback_QueryError(t *testing.T) {
@@ -539,9 +492,7 @@ func TestRollback_QueryError(t *testing.T) {
 	}
 	r := newRunner(db)
 	err := r.Rollback(context.Background(), testMigrations, 1)
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRollback_RollbackExecError(t *testing.T) {
@@ -558,9 +509,7 @@ func TestRollback_RollbackExecError(t *testing.T) {
 	}
 	r := newRunner(db)
 	err := r.Rollback(context.Background(), testMigrations, 1)
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestStatus_InitError(t *testing.T) {
@@ -569,9 +518,7 @@ func TestStatus_InitError(t *testing.T) {
 	}}
 	r := newRunner(db)
 	_, err := r.Status(context.Background(), testMigrations)
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestStatus_QueryError(t *testing.T) {
@@ -582,9 +529,7 @@ func TestStatus_QueryError(t *testing.T) {
 	}
 	r := newRunner(db)
 	_, err := r.Status(context.Background(), testMigrations)
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMigrate_PartiallyApplied(t *testing.T) {
@@ -603,36 +548,17 @@ func TestMigrate_PartiallyApplied(t *testing.T) {
 	if err := r.Migrate(context.Background(), testMigrations); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if txCount != 1 {
-		t.Errorf("expected 1 transaction (only migration 2), got %d", txCount)
-	}
-}
-
-// helper
-func containsStr(s, substr string) bool {
-	return s != "" && len(s) >= len(substr) &&
-		func() bool {
-			for i := 0; i <= len(s)-len(substr); i++ {
-				if s[i:i+len(substr)] == substr {
-					return true
-				}
-			}
-			return false
-		}()
+	testkit.AssertEqual(t, txCount, 1)
 }
 
 func TestNew(t *testing.T) {
 	r := New(nil)
-	if r.table != DefaultTable {
-		t.Errorf("expected table %q, got %q", DefaultTable, r.table)
-	}
+	testkit.AssertEqual(t, r.table, DefaultTable)
 }
 
 func TestNewWithTable_Wrapper(t *testing.T) {
 	r := NewWithTable(nil, "my_migrations")
-	if r.table != "my_migrations" {
-		t.Errorf("expected table %q, got %q", "my_migrations", r.table)
-	}
+	testkit.AssertEqual(t, r.table, "my_migrations")
 }
 
 func TestApplied_InitError(t *testing.T) {
@@ -643,7 +569,5 @@ func TestApplied_InitError(t *testing.T) {
 	}
 	r := newRunner(db)
 	_, err := r.Applied(context.Background())
-	if err == nil {
-		t.Fatal("expected init error to propagate")
-	}
+	testkit.AssertError(t, err)
 }

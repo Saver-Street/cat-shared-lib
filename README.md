@@ -88,6 +88,7 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 | `contracts` | Shared service interfaces (Service, Handler, HealthCheck, StandardError) | 100% |
 | `servicetest` | Integration test helpers: HTTP test server, mock Querier, fixture loader | 100% |
 | `pubsub` | Typed, in-process publish/subscribe event bus | 100% |
+| `worker` | Bounded, context-aware worker pool for concurrent job processing | 100% |
 
 ---
 

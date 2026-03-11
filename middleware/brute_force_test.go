@@ -3,6 +3,8 @@ package middleware
 import (
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func newTestBF(max int) *BruteForceGuard {
@@ -16,9 +18,7 @@ func newTestBF(max int) *BruteForceGuard {
 func TestBruteForce_NotBlockedInitially(t *testing.T) {
 	g := newTestBF(3)
 	defer g.Stop()
-	if g.IsBlocked("1.1.1.1") {
-		t.Error("IP should not be blocked initially")
-	}
+	testkit.AssertFalse(t, g.IsBlocked("1.1.1.1"))
 }
 
 func TestBruteForce_BlocksAfterMaxFailures(t *testing.T) {
@@ -28,12 +28,8 @@ func TestBruteForce_BlocksAfterMaxFailures(t *testing.T) {
 	g.RecordFailure(ip)
 	g.RecordFailure(ip)
 	blocked := g.RecordFailure(ip)
-	if !blocked {
-		t.Error("3rd failure should have triggered block")
-	}
-	if !g.IsBlocked(ip) {
-		t.Error("IP should be blocked after max failures")
-	}
+	testkit.AssertTrue(t, blocked)
+	testkit.AssertTrue(t, g.IsBlocked(ip))
 }
 
 func TestBruteForce_ResetClearsBlock(t *testing.T) {
@@ -43,9 +39,7 @@ func TestBruteForce_ResetClearsBlock(t *testing.T) {
 	g.RecordFailure(ip)
 	g.RecordFailure(ip)
 	g.Reset(ip)
-	if g.IsBlocked(ip) {
-		t.Error("IP should not be blocked after Reset")
-	}
+	testkit.AssertFalse(t, g.IsBlocked(ip))
 }
 
 func TestBruteForce_UnblocksAfterDuration(t *testing.T) {
@@ -57,9 +51,7 @@ func TestBruteForce_UnblocksAfterDuration(t *testing.T) {
 		t.Fatal("should be blocked after 1 failure (maxFailures=1)")
 	}
 	time.Sleep(150 * time.Millisecond)
-	if g.IsBlocked(ip) {
-		t.Error("should be unblocked after blockDuration expires")
-	}
+	testkit.AssertFalse(t, g.IsBlocked(ip))
 }
 
 func TestBruteForce_IndependentIPs(t *testing.T) {
@@ -67,10 +59,6 @@ func TestBruteForce_IndependentIPs(t *testing.T) {
 	defer g.Stop()
 	g.RecordFailure("5.5.5.5")
 	g.RecordFailure("5.5.5.5")
-	if !g.IsBlocked("5.5.5.5") {
-		t.Error("5.5.5.5 should be blocked")
-	}
-	if g.IsBlocked("6.6.6.6") {
-		t.Error("6.6.6.6 should not be blocked")
-	}
+	testkit.AssertTrue(t, g.IsBlocked("5.5.5.5"))
+	testkit.AssertFalse(t, g.IsBlocked("6.6.6.6"))
 }

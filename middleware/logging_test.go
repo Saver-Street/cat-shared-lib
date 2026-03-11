@@ -89,9 +89,7 @@ func TestLogging_NilLogger(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("got status %d, want 200", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusOK)
 }
 
 func TestLogging_DefaultStatusCode(t *testing.T) {
@@ -115,12 +113,8 @@ func TestStatusWriter_WriteHeader(t *testing.T) {
 	sw := &statusWriter{ResponseWriter: rr, code: http.StatusOK}
 	sw.WriteHeader(http.StatusCreated)
 
-	if sw.code != http.StatusCreated {
-		t.Errorf("got code %d, want 201", sw.code)
-	}
-	if rr.Code != http.StatusCreated {
-		t.Errorf("underlying recorder got %d, want 201", rr.Code)
-	}
+	testkit.AssertEqual(t, sw.code, http.StatusCreated)
+	testkit.AssertEqual(t, rr.Code, http.StatusCreated)
 }
 
 func TestLogging_NoRequestIDOrUserID(t *testing.T) {
@@ -147,9 +141,7 @@ func TestLogging_ContextPropagation(t *testing.T) {
 	type testKey string
 	handler := Logging(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		val, _ := r.Context().Value(testKey("k")).(string)
-		if val != "v" {
-			t.Errorf("context value lost: got %q", val)
-		}
+		testkit.AssertEqual(t, val, "v")
 		w.WriteHeader(http.StatusOK)
 	}))
 

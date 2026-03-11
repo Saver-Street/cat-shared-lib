@@ -5,31 +5,25 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestTokenBucket_DefaultConfig(t *testing.T) {
 	tbl := NewTokenBucketLimiter(TokenBucketConfig{})
 	defer tbl.Stop()
 
-	if tbl.config.Rate != 10 {
-		t.Errorf("default rate = %f, want 10", tbl.config.Rate)
-	}
-	if tbl.config.Burst != 20 {
-		t.Errorf("default burst = %d, want 20", tbl.config.Burst)
-	}
-	if tbl.config.CleanupInterval != 5*time.Minute {
-		t.Errorf("default cleanup = %v, want 5m", tbl.config.CleanupInterval)
-	}
+	testkit.AssertEqual(t, tbl.config.Rate, float64(10))
+	testkit.AssertEqual(t, tbl.config.Burst, 20)
+	testkit.AssertEqual(t, tbl.config.CleanupInterval, 5*time.Minute)
 }
 
 func TestTokenBucket_AllowWithinBurst(t *testing.T) {
 	tbl := NewTokenBucketLimiter(TokenBucketConfig{Rate: 10, Burst: 5})
 	defer tbl.Stop()
 
-	for i := range 5 {
-		if !tbl.Allow("1.2.3.4") {
-			t.Errorf("request %d should be allowed within burst", i+1)
-		}
+	for range 5 {
+		testkit.AssertTrue(t, tbl.Allow("1.2.3.4"))
 	}
 }
 
@@ -41,9 +35,7 @@ func TestTokenBucket_DenyOverBurst(t *testing.T) {
 		tbl.Allow("1.2.3.4")
 	}
 
-	if tbl.Allow("1.2.3.4") {
-		t.Error("4th request should be denied after burst of 3")
-	}
+	testkit.AssertFalse(t, tbl.Allow("1.2.3.4"))
 }
 
 func TestTokenBucket_RefillsOverTime(t *testing.T) {
@@ -53,30 +45,20 @@ func TestTokenBucket_RefillsOverTime(t *testing.T) {
 	tbl.Allow("1.2.3.4")
 	tbl.Allow("1.2.3.4")
 
-	if tbl.Allow("1.2.3.4") {
-		t.Error("should be denied before refill")
-	}
+	testkit.AssertFalse(t, tbl.Allow("1.2.3.4"))
 
 	time.Sleep(50 * time.Millisecond) // 100 tokens/s * 0.05s = 5 tokens
 
-	if !tbl.Allow("1.2.3.4") {
-		t.Error("should be allowed after refill")
-	}
+	testkit.AssertTrue(t, tbl.Allow("1.2.3.4"))
 }
 
 func TestTokenBucket_PerIP(t *testing.T) {
 	tbl := NewTokenBucketLimiter(TokenBucketConfig{Rate: 1, Burst: 1})
 	defer tbl.Stop()
 
-	if !tbl.Allow("1.1.1.1") {
-		t.Error("first IP first request should be allowed")
-	}
-	if !tbl.Allow("2.2.2.2") {
-		t.Error("second IP first request should be allowed")
-	}
-	if tbl.Allow("1.1.1.1") {
-		t.Error("first IP second request should be denied")
-	}
+	testkit.AssertTrue(t, tbl.Allow("1.1.1.1"))
+	testkit.AssertTrue(t, tbl.Allow("2.2.2.2"))
+	testkit.AssertFalse(t, tbl.Allow("1.1.1.1"))
 }
 
 func TestTokenBucket_Middleware_OK(t *testing.T) {
@@ -92,9 +74,7 @@ func TestTokenBucket_Middleware_OK(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("got %d, want 200", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusOK)
 }
 
 func TestTokenBucket_Middleware_RateLimited(t *testing.T) {
@@ -116,9 +96,7 @@ func TestTokenBucket_Middleware_RateLimited(t *testing.T) {
 
 	rr = httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusTooManyRequests {
-		t.Errorf("second request: got %d, want 429", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusTooManyRequests)
 }
 
 func TestTokenBucket_Middleware_ExemptPath(t *testing.T) {
@@ -140,9 +118,7 @@ func TestTokenBucket_Middleware_ExemptPath(t *testing.T) {
 	req.RemoteAddr = "7.7.7.7:1234"
 	rr = httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Errorf("exempt path got %d, want 200", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusOK)
 }
 
 func TestTokenBucket_Cleanup(t *testing.T) {
@@ -162,9 +138,7 @@ func TestTokenBucket_Cleanup(t *testing.T) {
 	_, exists := tbl.buckets["old-ip"]
 	tbl.mu.Unlock()
 
-	if exists {
-		t.Error("stale entry should be cleaned up")
-	}
+	testkit.AssertFalse(t, exists)
 }
 
 func TestTokenBucket_StopIdempotent(t *testing.T) {

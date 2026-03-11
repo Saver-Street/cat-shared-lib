@@ -41,9 +41,7 @@ func TestLookupCandidateID_Found(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id != "cand-abc" {
-		t.Errorf("LookupCandidateID = %q, want cand-abc", id)
-	}
+	testkit.AssertEqual(t, id, "cand-abc")
 }
 
 func TestLookupCandidateID_NotFound(t *testing.T) {
@@ -55,9 +53,7 @@ func TestLookupCandidateID_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing candidate")
 	}
-	if id != "" {
-		t.Errorf("id = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, id, "")
 	testkit.AssertErrorContains(t, err, "candidate profile not found for user user-missing")
 }
 
@@ -71,9 +67,7 @@ func TestLookupCandidateID_DBError(t *testing.T) {
 		t.Fatal("expected error")
 	}
 	testkit.AssertErrorContains(t, err, "connection failed")
-	if id != "" {
-		t.Errorf("id = %q, want empty on error", id)
-	}
+	testkit.AssertEqual(t, id, "")
 }
 
 func TestLookupCandidateID_QuerySQL(t *testing.T) {
@@ -89,12 +83,9 @@ func TestLookupCandidateID_QuerySQL(t *testing.T) {
 	}}
 
 	LookupCandidateID(context.Background(), db, "user-42")
-	if capturedSQL != "SELECT id FROM candidate_profiles WHERE user_id = $1" {
-		t.Errorf("unexpected SQL: %s", capturedSQL)
-	}
-	if len(capturedArgs) != 1 || capturedArgs[0] != "user-42" {
-		t.Errorf("unexpected args: %v", capturedArgs)
-	}
+	testkit.AssertEqual(t, capturedSQL, "SELECT id FROM candidate_profiles WHERE user_id = $1")
+	testkit.AssertLen(t, capturedArgs, 1)
+	testkit.AssertEqual(t, capturedArgs[0], "user-42")
 }
 
 // --- ResolveCandidate with DB tests ---
@@ -114,9 +105,7 @@ func TestResolveCandidate_UserID_LookupSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id != "cand-from-db" {
-		t.Errorf("ResolveCandidate = %q, want cand-from-db", id)
-	}
+	testkit.AssertEqual(t, id, "cand-from-db")
 }
 
 func TestResolveCandidate_UserID_LookupNotFound(t *testing.T) {
@@ -131,9 +120,7 @@ func TestResolveCandidate_UserID_LookupNotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing candidate")
 	}
-	if id != "" {
-		t.Errorf("id = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, id, "")
 }
 
 func TestResolveCandidate_UserID_DBError(t *testing.T) {
@@ -167,12 +154,8 @@ func TestResolveCandidate_ExtCandidateIDTakesPriorityOverDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id != "ext-cand-1" {
-		t.Errorf("id = %q, want ext-cand-1", id)
-	}
-	if dbCalled {
-		t.Error("DB should not be called when ext candidate ID is present")
-	}
+	testkit.AssertEqual(t, id, "ext-cand-1")
+	testkit.AssertFalse(t, dbCalled)
 }
 
 func BenchmarkLookupCandidateID(b *testing.B) {

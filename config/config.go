@@ -398,3 +398,14 @@ panic(fmt.Sprintf("config: %s is required", key))
 }
 return v
 }
+
+// MustStringSlice is like StringSliceRequired but panics if the variable is
+// unset, empty, or contains no non-empty elements. Intended for application
+// startup.
+func MustStringSlice(key string) []string {
+v, err := StringSliceRequired(key)
+if err != nil {
+panic(err)
+}
+return v
+}

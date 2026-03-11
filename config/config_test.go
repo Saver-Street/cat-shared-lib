@@ -585,3 +585,19 @@ func TestMustAddr_PanicsOnInvalid(t *testing.T) {
 t.Setenv("TEST_ADDR", "not-an-addr")
 testkit.AssertPanics(t, func() { MustAddr("TEST_ADDR") })
 }
+
+func TestMustStringSlice_Valid(t *testing.T) {
+t.Setenv("TEST_SLICE", "a,b,c")
+got := MustStringSlice("TEST_SLICE")
+testkit.AssertLen(t, got, 3)
+testkit.AssertEqual(t, got[0], "a")
+}
+
+func TestMustStringSlice_PanicsOnMissing(t *testing.T) {
+testkit.AssertPanics(t, func() { MustStringSlice("MISSING_SLICE") })
+}
+
+func TestMustStringSlice_PanicsOnEmpty(t *testing.T) {
+t.Setenv("TEST_SLICE", "")
+testkit.AssertPanics(t, func() { MustStringSlice("TEST_SLICE") })
+}

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestUser_JSONRoundTrip(t *testing.T) {
@@ -25,9 +27,7 @@ func TestUser_JSONRoundTrip(t *testing.T) {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if got != u {
-		t.Errorf("round trip mismatch:\n got %+v\nwant %+v", got, u)
-	}
+	testkit.AssertEqual(t, got, u)
 }
 
 func TestUser_JSONFieldNames(t *testing.T) {
@@ -55,12 +55,10 @@ func TestUser_JSONFieldNames(t *testing.T) {
 
 func TestUser_ZeroValue(t *testing.T) {
 	var u User
-	if u.ID != "" || u.Email != "" || u.Role != "" {
-		t.Error("zero-value User should have empty string fields")
-	}
-	if !u.CreatedAt.IsZero() {
-		t.Error("zero-value CreatedAt should be zero time")
-	}
+	testkit.AssertEqual(t, u.ID, "")
+	testkit.AssertEqual(t, u.Email, "")
+	testkit.AssertEqual(t, u.Role, "")
+	testkit.AssertTrue(t, u.CreatedAt.IsZero())
 }
 
 func TestCandidateProfile_JSONRoundTrip(t *testing.T) {
@@ -82,9 +80,7 @@ func TestCandidateProfile_JSONRoundTrip(t *testing.T) {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if got != cp {
-		t.Errorf("round trip mismatch:\n got %+v\nwant %+v", got, cp)
-	}
+	testkit.AssertEqual(t, got, cp)
 }
 
 func TestCandidateProfile_JSONFieldNames(t *testing.T) {
@@ -105,9 +101,9 @@ func TestCandidateProfile_JSONFieldNames(t *testing.T) {
 
 func TestCandidateProfile_ZeroValue(t *testing.T) {
 	var cp CandidateProfile
-	if cp.ID != "" || cp.UserID != "" || cp.FirstName != "" {
-		t.Error("zero-value CandidateProfile should have empty string fields")
-	}
+	testkit.AssertEqual(t, cp.ID, "")
+	testkit.AssertEqual(t, cp.UserID, "")
+	testkit.AssertEqual(t, cp.FirstName, "")
 }
 
 func BenchmarkUserJSON(b *testing.B) {
@@ -146,30 +142,18 @@ func TestUser_IsAdmin(t *testing.T) {
 	admin := User{Role: "admin"}
 	user := User{Role: "user"}
 	anon := User{}
-	if !admin.IsAdmin() {
-		t.Error("IsAdmin() should return true for role=admin")
-	}
-	if user.IsAdmin() {
-		t.Error("IsAdmin() should return false for role=user")
-	}
-	if anon.IsAdmin() {
-		t.Error("IsAdmin() should return false for empty role")
-	}
+	testkit.AssertTrue(t, admin.IsAdmin())
+	testkit.AssertFalse(t, user.IsAdmin())
+	testkit.AssertFalse(t, anon.IsAdmin())
 }
 
 func TestUser_IsActive(t *testing.T) {
 	active := User{SubscriptionStatus: "active"}
 	inactive := User{SubscriptionStatus: "past_due"}
 	zero := User{}
-	if !active.IsActive() {
-		t.Error("IsActive() should return true for status=active")
-	}
-	if inactive.IsActive() {
-		t.Error("IsActive() should return false for status=past_due")
-	}
-	if zero.IsActive() {
-		t.Error("IsActive() should return false for empty status")
-	}
+	testkit.AssertTrue(t, active.IsActive())
+	testkit.AssertFalse(t, inactive.IsActive())
+	testkit.AssertFalse(t, zero.IsActive())
 }
 
 func TestCandidateProfile_FullName(t *testing.T) {
@@ -183,9 +167,7 @@ func TestCandidateProfile_FullName(t *testing.T) {
 	}
 	for _, tc := range tests {
 		cp := CandidateProfile{FirstName: tc.first, LastName: tc.last}
-		if got := cp.FullName(); got != tc.want {
-			t.Errorf("FullName(%q, %q) = %q, want %q", tc.first, tc.last, got, tc.want)
-		}
+		testkit.AssertEqual(t, cp.FullName(), tc.want)
 	}
 }
 
@@ -201,9 +183,7 @@ func TestUser_IsTrialing(t *testing.T) {
 	}
 	for _, tc := range cases {
 		u := User{SubscriptionStatus: tc.status}
-		if got := u.IsTrialing(); got != tc.want {
-			t.Errorf("IsTrialing(%q) = %v, want %v", tc.status, got, tc.want)
-		}
+		testkit.AssertEqual(t, u.IsTrialing(), tc.want)
 	}
 }
 
@@ -220,8 +200,6 @@ func TestUser_HasAccess(t *testing.T) {
 	}
 	for _, tc := range cases {
 		u := User{SubscriptionStatus: tc.status}
-		if got := u.HasAccess(); got != tc.want {
-			t.Errorf("HasAccess(%q) = %v, want %v", tc.status, got, tc.want)
-		}
+		testkit.AssertEqual(t, u.HasAccess(), tc.want)
 	}
 }

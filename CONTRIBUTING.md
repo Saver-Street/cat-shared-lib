@@ -25,6 +25,7 @@ make cover-html      # Generate HTML coverage report
 make check-coverage  # Verify all packages meet 95% threshold
 make bench           # Run all benchmarks
 make fuzz            # Run all fuzz tests (5s smoke run per target)
+make ci              # Run full CI pipeline (lint + race tests + coverage)
 ```
 
 ### Package Structure

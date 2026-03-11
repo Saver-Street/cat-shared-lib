@@ -1,4 +1,4 @@
-.PHONY: test test-v test-race lint cover cover-html check-coverage bench fuzz clean help
+.PHONY: test test-v test-race lint cover cover-html check-coverage bench fuzz ci clean help
 
 .DEFAULT_GOAL := help
 
@@ -40,6 +40,8 @@ clean: ## Remove build artifacts
 
 bench: ## Run all benchmarks
 	go test ./... -bench=. -benchmem -count=1 -run=^$$ -timeout 120s
+
+ci: lint test-race check-coverage ## Run full CI pipeline (lint + race tests + coverage check)
 
 fuzz: ## Run all fuzz tests (short smoke run per target)
 	@echo "Running fuzz tests (5s per target)..."

@@ -117,9 +117,7 @@ func TestResolveCandidate_UserID_LookupNotFound(t *testing.T) {
 	r = r.WithContext(middleware.SetUserID(r.Context(), "user-no-profile"))
 
 	id, err := ResolveCandidate(r, db)
-	if err == nil {
-		t.Fatal("expected error for missing candidate")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertEqual(t, id, "")
 }
 
@@ -132,9 +130,7 @@ func TestResolveCandidate_UserID_DBError(t *testing.T) {
 	r = r.WithContext(middleware.SetUserID(r.Context(), "user-err"))
 
 	_, err := ResolveCandidate(r, db)
-	if err == nil {
-		t.Fatal("expected error from DB")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestResolveCandidate_ExtCandidateIDTakesPriorityOverDB(t *testing.T) {

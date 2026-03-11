@@ -102,9 +102,7 @@ func TestGetUserTierAndUsage_UserNotFound(t *testing.T) {
 	}}
 
 	tier, count, err := GetUserTierAndUsage(context.Background(), db, "nonexistent")
-	if err == nil {
-		t.Fatal("expected error for nonexistent user")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertEqual(t, tier, "free")
 	testkit.AssertEqual(t, count, 0)
 }
@@ -117,9 +115,7 @@ func TestGetUserTierAndUsage_DBError(t *testing.T) {
 	}}
 
 	tier, _, err := GetUserTierAndUsage(context.Background(), db, "user-x")
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertEqual(t, tier, "free")
 }
 
@@ -170,9 +166,7 @@ func TestGetUserTier_PropagatesError(t *testing.T) {
 	}}
 
 	tier, err := GetUserTier(context.Background(), db, "user-6")
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertEqual(t, tier, "free")
 }
 
@@ -184,9 +178,7 @@ func TestGetUserTierAndUsage_EmptyUserID(t *testing.T) {
 	}}
 
 	tier, count, err := GetUserTierAndUsage(context.Background(), db, "")
-	if err == nil {
-		t.Fatal("expected error for empty user ID")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertEqual(t, tier, "free")
 	testkit.AssertEqual(t, count, 0)
 }

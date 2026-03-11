@@ -106,9 +106,7 @@ func TestListenAndServe_BadAddr(t *testing.T) {
 
 	select {
 	case err := <-done:
-		if err == nil {
-			t.Fatal("expected error for occupied port")
-		}
+		testkit.AssertError(t, err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for error")
 	}
@@ -164,9 +162,7 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 
 	select {
 	case err := <-done:
-		if err == nil {
-			t.Fatal("expected shutdown timeout error, got nil")
-		}
+		testkit.AssertError(t, err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for shutdown")
 	}

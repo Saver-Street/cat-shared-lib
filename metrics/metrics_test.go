@@ -345,3 +345,28 @@ func BenchmarkHistogram_Observe(b *testing.B) {
 		h.Observe(0.1)
 	}
 }
+
+func TestCounter_WithLabels_ConcurrentFirstAccess(t *testing.T) {
+	labels := map[string]string{"method": "GET", "path": "/api"}
+
+	// Run many iterations to reliably hit the double-checked locking path:
+	// goroutine A creates the key while goroutine B waits for the write lock,
+	// then B finds the key already present at line 119.
+	for i := 0; i < 200; i++ {
+		c := NewCounter("race_test", "test")
+		ready := make(chan struct{})
+		var wg sync.WaitGroup
+
+		for g := 0; g < 8; g++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-ready
+				c.WithLabels(labels).Add(1)
+			}()
+		}
+
+		close(ready) // release all goroutines simultaneously
+		wg.Wait()
+	}
+}

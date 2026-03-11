@@ -479,3 +479,25 @@ func TestRedactURL_Empty(t *testing.T) {
 got := RedactURL("")
 testkit.AssertEqual(t, got, "")
 }
+
+func TestSanitizeFilename(t *testing.T) {
+tests := []struct {
+name   string
+input  string
+expect string
+}{
+{"simple", "report.pdf", "report.pdf"},
+{"path traversal", "../../etc/passwd", "passwd"},
+{"windows path", `C:\Users\evil\doc.txt`, "doc.txt"},
+{"unix path", "/var/uploads/file.txt", "file.txt"},
+{"dotdot only", "..", "unnamed"},
+{"dot only", ".", "unnamed"},
+{"empty", "", "unnamed"},
+{"null bytes", "file\x00.txt", "file.txt"},
+}
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+testkit.AssertEqual(t, SanitizeFilename(tt.input), tt.expect)
+})
+}
+}

@@ -53,9 +53,7 @@ func TestRegister_Success(t *testing.T) {
 		ID:      "b-1",
 		Addr:    "http://billing-1:8080",
 	})
-	if err != nil {
-		t.Fatalf("Register() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	services := r.Services()
 	if len(services) != 1 {
@@ -102,9 +100,7 @@ func TestDeregister(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "2", Addr: "http://b:8080"})
 
 	err := r.Deregister("svc", "1")
-	if err != nil {
-		t.Fatalf("Deregister() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	all, _ := r.ResolveAll("svc")
 	if len(all) != 1 {
@@ -141,9 +137,7 @@ func TestResolve_RoundRobin(t *testing.T) {
 	addrs := make([]string, 6)
 	for i := range 6 {
 		inst, err := r.Resolve("svc")
-		if err != nil {
-			t.Fatalf("Resolve() error = %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		addrs[i] = inst.Addr
 	}
 
@@ -163,9 +157,7 @@ func TestResolve_SkipsUnhealthy(t *testing.T) {
 	// Should only resolve 1 and 3
 	for range 4 {
 		inst, err := r.Resolve("svc")
-		if err != nil {
-			t.Fatalf("Resolve() error = %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		testkit.AssertNotEqual(t, inst.Addr, "http://b")
 	}
 }
@@ -196,9 +188,7 @@ func TestResolveAll(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "2", Addr: "http://b", Status: StatusUnhealthy})
 
 	all, err := r.ResolveAll("svc")
-	if err != nil {
-		t.Fatalf("ResolveAll() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertLen(t, all, 2)
 }
 
@@ -209,9 +199,7 @@ func TestResolveHealthy(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "3", Addr: "http://c"})
 
 	healthy, err := r.ResolveHealthy("svc")
-	if err != nil {
-		t.Fatalf("ResolveHealthy() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertLen(t, healthy, 2)
 }
 
@@ -228,9 +216,7 @@ func TestSetStatus(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a"})
 
 	err := r.SetStatus("svc", "1", StatusUnhealthy)
-	if err != nil {
-		t.Fatalf("SetStatus() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	all, _ := r.ResolveAll("svc")
 	testkit.AssertEqual(t, all[0].Status, StatusUnhealthy)
@@ -275,9 +261,7 @@ func TestHeartbeat(t *testing.T) {
 
 	now = now.Add(5 * time.Minute)
 	err := r.Heartbeat("svc", "1")
-	if err != nil {
-		t.Fatalf("Heartbeat() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	all, _ := r.ResolveAll("svc")
 	testkit.AssertTrue(t, all[0].LastSeen.Equal(now))
@@ -326,9 +310,7 @@ func TestRegisterStatic(t *testing.T) {
 		{Service: "billing", ID: "b-2", Addr: "http://billing-2:8080"},
 		{Service: "auth", ID: "a-1", Addr: "http://auth-1:8080"},
 	})
-	if err != nil {
-		t.Fatalf("RegisterStatic() error = %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	services := r.Services()
 	testkit.AssertLen(t, services, 2)

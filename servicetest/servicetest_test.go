@@ -24,9 +24,7 @@ func TestHTTPTestServer_BasicRoute(t *testing.T) {
 	})
 
 	resp, err := http.Get(s.URL + "/ping") //nolint:noctx
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	defer resp.Body.Close()
 
 	testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
@@ -41,9 +39,7 @@ func TestHTTPTestServer_MethodNotAllowed(t *testing.T) {
 	})
 
 	resp, err := http.Post(s.URL+"/only-get", "application/json", nil) //nolint:noctx
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	defer resp.Body.Close()
 
 	testkit.AssertEqual(t, resp.StatusCode, http.StatusMethodNotAllowed)
@@ -53,9 +49,7 @@ func TestHTTPTestServer_NotFound(t *testing.T) {
 	s := NewHTTPTestServer(t)
 
 	resp, err := http.Get(s.URL + "/nonexistent") //nolint:noctx
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	defer resp.Body.Close()
 
 	testkit.AssertEqual(t, resp.StatusCode, http.StatusNotFound)
@@ -68,9 +62,7 @@ func TestHTTPTestServer_Fallback(t *testing.T) {
 	})
 
 	resp, err := http.Get(s.URL + "/anything") //nolint:noctx
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	defer resp.Body.Close()
 
 	testkit.AssertEqual(t, resp.StatusCode, http.StatusTeapot)
@@ -85,9 +77,7 @@ func TestHTTPTestServer_WildcardMethod(t *testing.T) {
 	for _, method := range []string{"GET", "POST", "DELETE"} {
 		req, _ := http.NewRequestWithContext(context.Background(), method, s.URL+"/any", nil)
 		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
+		testkit.RequireNoError(t, err)
 		resp.Body.Close()
 		testkit.AssertEqual(t, resp.StatusCode, http.StatusAccepted)
 	}
@@ -99,9 +89,7 @@ func TestHTTPTestServer_HandleJSON(t *testing.T) {
 	s.HandleJSON("GET", "/json", http.StatusOK, payload)
 
 	resp, err := http.Get(s.URL + "/json") //nolint:noctx
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	defer resp.Body.Close()
 
 	testkit.AssertEqual(t, resp.Header.Get("Content-Type"), "application/json")
@@ -123,9 +111,7 @@ func TestHTTPTestServer_RecordsRequests(t *testing.T) {
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, s.URL+"/data", body)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	resp.Body.Close()
 
 	if s.RequestCount() != 1 {
@@ -177,9 +163,7 @@ func TestHTTPTestServer_Reset(t *testing.T) {
 
 	// Route should be gone after reset.
 	resp2, err := http.Get(s.URL + "/before") //nolint:noctx
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	resp2.Body.Close()
 	testkit.AssertEqual(t, resp2.StatusCode, http.StatusNotFound)
 }
@@ -359,9 +343,7 @@ func TestFixtures_RegisterAndLoad(t *testing.T) {
 	f.Register("user", []byte(`{"id":"u1","name":"Alice"}`))
 
 	b, err := f.Load("user")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, string(b), `{"id":"u1","name":"Alice"}`)
 }
 

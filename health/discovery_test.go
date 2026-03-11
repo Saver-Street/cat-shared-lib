@@ -120,6 +120,21 @@ func TestServiceDiscoveryChecker_NoInstances(t *testing.T) {
 	}
 }
 
+func TestServiceDiscoveryChecker_InvalidInstanceAddr(t *testing.T) {
+	reg := discovery.NewRegistry()
+	// Control character in the address makes http.NewRequestWithContext fail.
+	_ = reg.Register(discovery.Instance{Service: "billing", ID: "b-1", Addr: "http://\x7f"})
+
+	checker := ServiceDiscoveryChecker("billing", ServiceDiscoveryCheckerConfig{
+		Registry: reg,
+	})
+
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Fatal("Check() = nil, want error for invalid instance address")
+	}
+}
+
 func TestServiceDiscoveryChecker_ConnectionRefused(t *testing.T) {
 	reg := discovery.NewRegistry()
 	_ = reg.Register(discovery.Instance{

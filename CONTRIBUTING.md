@@ -16,39 +16,66 @@ go test ./...
 
 ### Build & Test
 ```bash
-make test       # Run unit tests
-make test-v     # Run tests (verbose)
-make test-race  # Run tests with race detector
-make lint       # Run linters (go vet + staticcheck)
-make cover      # Generate coverage report
+make test            # Run unit tests
+make test-v          # Run tests (verbose)
+make test-race       # Run tests with race detector
+make lint            # Run linters (go vet + staticcheck)
+make cover           # Generate coverage report
+make check-coverage  # Verify all packages meet 95% threshold
 ```
 
 ### Package Structure
 ```
-entitlements/   # Subscription tier limits + DirectDB queries
-flags/          # Feature flag DirectDB reads
-identity/       # Candidate resolution + context getters
-middleware/     # JWT context, rate limiting, brute-force protection
-request/        # HTTP request parsing, URL param extraction
-response/       # JSON response helpers
-sanitize/       # Filename sanitization, NilIfEmpty, IsDuplicateKey
-scan/           # Generic database row scanning
-security/       # Input validation, PII redaction
-types/          # Shared domain types (User, CandidateProfile, Pagination)
+apperror/        # Structured application errors with HTTP status codes
+cache/           # Generic in-memory cache with TTL and LRU eviction
+circuitbreaker/  # Circuit breaker for external service calls
+config/          # Configuration loading from environment variables
+contracts/       # Shared interfaces and types for service contracts
+cors/            # CORS middleware for HTTP servers
+crypto/          # Password hashing, HMAC, secure token generation
+database/        # PostgreSQL pool setup and transaction helpers
+discovery/       # Service discovery and health-check registration
+email/           # SMTP mailer with HTML/text template support
+entitlements/    # Subscription tier limits + DirectDB queries
+featureflags/    # Feature flag evaluation
+flags/           # Feature flag DirectDB reads
+health/          # Health-check HTTP handler and dependency checks
+httpclient/      # HTTP client with retries, backoff, circuit breaker
+identity/        # Candidate resolution + context getters
+metrics/         # Prometheus-style metrics (counters, histograms)
+middleware/      # JWT auth, rate limiting, logging, recovery
+migration/       # Lightweight database migration runner
+openapi/         # OpenAPI spec builder
+ratelimit/       # Sliding-window rate limiter
+request/         # HTTP request parsing, URL param extraction
+response/        # JSON response helpers
+retry/           # Retry with exponential backoff and jitter
+sanitize/        # Filename sanitization, NilIfEmpty, IsDuplicateKey
+scan/            # Generic database row scanning
+security/        # Input validation, PII redaction
+server/          # HTTP server with graceful shutdown defaults
+servicetest/     # Integration test helpers (HTTP, DB mocks, fixtures)
+shutdown/        # Graceful shutdown with signal handling and draining
+testkit/         # Assertion helpers and mock utilities for tests
+tracing/         # OpenTelemetry distributed tracing setup
+types/           # Shared domain types (User, CandidateProfile, Pagination)
+validation/      # Field validation (email, UUID, phone, URL)
 ```
 
 ### Key Design Principles
 - **Querier interface**: DB functions accept `Querier` (pool, conn, or tx)
-- **100% test coverage**: All packages maintain 100% coverage
+- **95% test coverage**: Enforced by `make check-coverage`; target 100% where feasible
 - **No HTTP calls**: DirectDB only in Phase C — no service-to-service HTTP
 - **Boolean flags**: Stored as plain-text (`"true"` / `"false"`)
 
 ### Adding a Package
 1. Create directory with descriptive name
 2. Add package with exported types/functions
-3. Write comprehensive tests (target 100% coverage)
-4. Update README.md package table
-5. Tag new version after merge
+3. Add a `doc.go` with a package-level godoc comment
+4. Write comprehensive tests (target 100% coverage)
+5. Add `example_test.go` with runnable godoc examples
+6. Update README.md package table
+7. Tag new version after merge
 
 ### Code Style
 - Follow standard Go conventions (`gofmt`, `go vet`)

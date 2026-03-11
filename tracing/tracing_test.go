@@ -82,6 +82,40 @@ func TestProvider_Shutdown(t *testing.T) {
 	testkit.AssertNoError(t, tp.Shutdown(context.Background()))
 }
 
+func TestNewProvider_RatioSampler(t *testing.T) {
+	tp, err := NewProvider(context.Background(), Config{
+		ServiceName: "svc",
+		Exporter:    ExporterNoop,
+		SampleRate:  0.5,
+	})
+	testkit.RequireNoError(t, err)
+	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
+	testkit.AssertNotNil(t, tp)
+}
+
+func TestNewProvider_FullSampler(t *testing.T) {
+	tp, err := NewProvider(context.Background(), Config{
+		ServiceName: "svc",
+		Exporter:    ExporterNoop,
+		SampleRate:  1.0,
+	})
+	testkit.RequireNoError(t, err)
+	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
+	testkit.AssertNotNil(t, tp)
+}
+
+func TestNewProvider_WithVersion(t *testing.T) {
+	tp, err := NewProvider(context.Background(), Config{
+		ServiceName:    "svc",
+		Exporter:       ExporterNoop,
+		ServiceVersion: "1.2.3",
+		Environment:    "test",
+	})
+	testkit.RequireNoError(t, err)
+	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
+	testkit.AssertNotNil(t, tp)
+}
+
 // ---- Span helpers ----
 
 func TestStart(t *testing.T) {

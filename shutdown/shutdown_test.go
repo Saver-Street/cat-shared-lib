@@ -328,3 +328,69 @@ func TestWaitForSignal(t *testing.T) {
 		t.Error("expected signal log message")
 	}
 }
+
+func TestListenAndServe_ShutdownTimeout(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	ln.Close()
+
+	// Handler that blocks longer than the shutdown timeout.
+	reqStarted := make(chan struct{})
+	mux := http.NewServeMux()
+	mux.HandleFunc("/slow", func(w http.ResponseWriter, r *http.Request) {
+		close(reqStarted)
+		time.Sleep(5 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	srv := &http.Server{Addr: addr, Handler: mux}
+	cfg := Config{
+		Timeout: 1 * time.Millisecond, // very short timeout to force shutdown error
+		Signals: []os.Signal{syscall.SIGUSR1},
+		Logger:  logger,
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- ListenAndServe(srv, cfg)
+	}()
+
+	// Wait for server to start.
+	for i := 0; i < 50; i++ {
+		conn, err := net.Dial("tcp", addr)
+		if err == nil {
+			conn.Close()
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	// Start a long-running request to keep the server busy.
+	go http.Get("http://" + addr + "/slow") //nolint:errcheck
+
+	// Wait for the request to be in-flight.
+	<-reqStarted
+
+	// Send shutdown signal.
+	p, _ := os.FindProcess(os.Getpid())
+	p.Signal(syscall.SIGUSR1)
+
+	select {
+	case err := <-errCh:
+		if err == nil {
+			t.Error("expected shutdown timeout error, got nil")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("test timed out")
+	}
+
+	if !bytes.Contains(buf.Bytes(), []byte("server shutdown error")) {
+		t.Error("expected shutdown error in logs")
+	}
+}

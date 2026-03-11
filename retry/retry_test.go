@@ -260,6 +260,50 @@ func TestDo_ContextCancelledBeforeAttempt_WithPreviousError(t *testing.T) {
 	}
 }
 
+func TestCalcDelay_NegativeInitialDelay(t *testing.T) {
+	// Call calcDelay directly (bypassing defaults) with a negative InitialDelay
+	// to exercise the defensive delay < 0 guard.
+	cfg := Config{
+		InitialDelay:   -1,
+		Multiplier:     1.0,
+		MaxDelay:       time.Second,
+		JitterFraction: 0,
+	}
+	d := calcDelay(cfg, 0)
+	if d != 0 {
+		t.Errorf("expected 0 for negative delay, got %v", d)
+	}
+}
+
+func TestDo_ContextExpiredBetweenAttempts(t *testing.T) {
+	// Exercise the path where ctx.Err() is checked at the top of a loop
+	// iteration with a non-nil lastErr from a previous attempt.
+	// With nanosecond delays, the timer and ctx.Done() race in the select;
+	// repeating gives the timer a chance to win so we reach the ctx.Err()
+	// check at the top of the next iteration.
+	for i := 0; i < 200; i++ {
+		ctx, cancel := context.WithCancel(context.Background())
+		calls := 0
+		err := Do(ctx, Config{
+			MaxAttempts:  3,
+			InitialDelay: time.Nanosecond,
+			MaxDelay:     time.Nanosecond,
+		}, func(ctx context.Context) error {
+			calls++
+			if calls == 2 {
+				cancel()
+			}
+			return errTemp
+		})
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if !errors.Is(err, errTemp) {
+			t.Errorf("iteration %d: expected errTemp in error, got %v", i, err)
+		}
+	}
+}
+
 func BenchmarkDo_NoRetry(b *testing.B) {
 	ctx := context.Background()
 	cfg := Config{MaxAttempts: 1}

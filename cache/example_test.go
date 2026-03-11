@@ -40,3 +40,24 @@ func ExampleCache_Delete() {
 	// Output:
 	// false
 }
+
+func ExampleCache_Len() {
+	c := cache.New[string, int](cache.Config{DefaultTTL: time.Minute})
+	defer c.Stop()
+
+	c.Set("a", 1)
+	c.Set("b", 2)
+	fmt.Println(c.Len())
+	// Output: 2
+}
+
+func ExampleCache_Clear() {
+	c := cache.New[string, int](cache.Config{DefaultTTL: time.Minute})
+	defer c.Stop()
+
+	c.Set("x", 10)
+	c.Set("y", 20)
+	c.Clear()
+	fmt.Println(c.Len())
+	// Output: 0
+}

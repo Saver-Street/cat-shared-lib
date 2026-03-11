@@ -99,6 +99,37 @@ func AssertNil(t T, v any) {
 	}
 }
 
+// AssertTrue fails the test if v is false.
+func AssertTrue(t T, v bool) {
+	t.Helper()
+	if !v {
+		t.Errorf("testkit: expected true, got false")
+	}
+}
+
+// AssertFalse fails the test if v is true.
+func AssertFalse(t T, v bool) {
+	t.Helper()
+	if v {
+		t.Errorf("testkit: expected false, got true")
+	}
+}
+
+// AssertLen fails the test if the length of v does not equal want.
+// v must be a slice, map, string, or channel.
+func AssertLen(t T, v any, want int) {
+	t.Helper()
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Slice, reflect.Map, reflect.String, reflect.Chan, reflect.Array:
+		if rv.Len() != want {
+			t.Errorf("testkit: expected length %d, got %d", want, rv.Len())
+		}
+	default:
+		t.Fatalf("testkit: AssertLen: unsupported type %T", v)
+	}
+}
+
 // AssertNoError fails the test if err != nil.
 func AssertNoError(t T, err error) {
 	t.Helper()

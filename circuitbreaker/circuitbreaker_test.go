@@ -11,24 +11,12 @@ import (
 
 func TestNew_Defaults(t *testing.T) {
 	cb := New("test")
-	if cb.Name() != "test" {
-		t.Errorf("Name() = %q, want %q", cb.Name(), "test")
-	}
-	if cb.State() != StateClosed {
-		t.Errorf("State() = %v, want %v", cb.State(), StateClosed)
-	}
-	if cb.opts.FailureThreshold != 5 {
-		t.Errorf("FailureThreshold = %d, want 5", cb.opts.FailureThreshold)
-	}
-	if cb.opts.SuccessThreshold != 2 {
-		t.Errorf("SuccessThreshold = %d, want 2", cb.opts.SuccessThreshold)
-	}
-	if cb.opts.MaxHalfOpenRequests != 1 {
-		t.Errorf("MaxHalfOpenRequests = %d, want 1", cb.opts.MaxHalfOpenRequests)
-	}
-	if cb.opts.ResetTimeout != 60*time.Second {
-		t.Errorf("ResetTimeout = %v, want 60s", cb.opts.ResetTimeout)
-	}
+	testkit.AssertEqual(t, cb.Name(), "test")
+	testkit.AssertEqual(t, cb.State(), StateClosed)
+	testkit.AssertEqual(t, cb.opts.FailureThreshold, uint32(5))
+	testkit.AssertEqual(t, cb.opts.SuccessThreshold, uint32(2))
+	testkit.AssertEqual(t, cb.opts.MaxHalfOpenRequests, uint32(1))
+	testkit.AssertEqual(t, cb.opts.ResetTimeout, 60*time.Second)
 }
 
 func TestNew_WithOptions(t *testing.T) {
@@ -38,18 +26,10 @@ func TestNew_WithOptions(t *testing.T) {
 		WithMaxHalfOpenRequests(2),
 		WithResetTimeout(10*time.Second),
 	)
-	if cb.opts.FailureThreshold != 3 {
-		t.Errorf("FailureThreshold = %d, want 3", cb.opts.FailureThreshold)
-	}
-	if cb.opts.SuccessThreshold != 1 {
-		t.Errorf("SuccessThreshold = %d, want 1", cb.opts.SuccessThreshold)
-	}
-	if cb.opts.MaxHalfOpenRequests != 2 {
-		t.Errorf("MaxHalfOpenRequests = %d, want 2", cb.opts.MaxHalfOpenRequests)
-	}
-	if cb.opts.ResetTimeout != 10*time.Second {
-		t.Errorf("ResetTimeout = %v, want 10s", cb.opts.ResetTimeout)
-	}
+	testkit.AssertEqual(t, cb.opts.FailureThreshold, uint32(3))
+	testkit.AssertEqual(t, cb.opts.SuccessThreshold, uint32(1))
+	testkit.AssertEqual(t, cb.opts.MaxHalfOpenRequests, uint32(2))
+	testkit.AssertEqual(t, cb.opts.ResetTimeout, 10*time.Second)
 }
 
 func TestState_String(t *testing.T) {
@@ -63,9 +43,7 @@ func TestState_String(t *testing.T) {
 		{State(99), "unknown(99)"},
 	}
 	for _, tt := range tests {
-		if got := tt.state.String(); got != tt.want {
-			t.Errorf("State(%d).String() = %q, want %q", tt.state, got, tt.want)
-		}
+		testkit.AssertEqual(t, tt.state.String(), tt.want)
 	}
 }
 
@@ -76,12 +54,8 @@ func TestExecute_Success(t *testing.T) {
 		t.Fatalf("Execute() = %v, want nil", err)
 	}
 	c := cb.Counts()
-	if c.TotalSuccesses != 1 {
-		t.Errorf("TotalSuccesses = %d, want 1", c.TotalSuccesses)
-	}
-	if c.ConsecutiveSuccesses != 1 {
-		t.Errorf("ConsecutiveSuccesses = %d, want 1", c.ConsecutiveSuccesses)
-	}
+	testkit.AssertEqual(t, c.TotalSuccesses, uint32(1))
+	testkit.AssertEqual(t, c.ConsecutiveSuccesses, uint32(1))
 }
 
 func TestExecute_Failure(t *testing.T) {
@@ -90,12 +64,8 @@ func TestExecute_Failure(t *testing.T) {
 	err := cb.Execute(func() error { return testErr })
 	testkit.AssertErrorIs(t, err, testErr)
 	c := cb.Counts()
-	if c.TotalFailures != 1 {
-		t.Errorf("TotalFailures = %d, want 1", c.TotalFailures)
-	}
-	if c.ConsecutiveFailures != 1 {
-		t.Errorf("ConsecutiveFailures = %d, want 1", c.ConsecutiveFailures)
-	}
+	testkit.AssertEqual(t, c.TotalFailures, uint32(1))
+	testkit.AssertEqual(t, c.ConsecutiveFailures, uint32(1))
 }
 
 func TestTrip_AfterConsecutiveFailures(t *testing.T) {
@@ -106,9 +76,7 @@ func TestTrip_AfterConsecutiveFailures(t *testing.T) {
 		_ = cb.Execute(fail)
 	}
 
-	if cb.State() != StateOpen {
-		t.Errorf("State() = %v, want %v after 3 failures", cb.State(), StateOpen)
-	}
+	testkit.AssertEqual(t, cb.State(), StateOpen)
 
 	// subsequent calls should be rejected
 	err := cb.Execute(func() error { return nil })
@@ -126,9 +94,7 @@ func TestTrip_SuccessResetsConsecutiveFailures(t *testing.T) {
 	_ = cb.Execute(fail)
 	_ = cb.Execute(fail)
 
-	if cb.State() != StateClosed {
-		t.Errorf("State() = %v, want %v (success should reset consecutive failures)", cb.State(), StateClosed)
-	}
+	testkit.AssertEqual(t, cb.State(), StateClosed)
 }
 
 func TestHalfOpen_TransitionAfterTimeout(t *testing.T) {
@@ -144,9 +110,7 @@ func TestHalfOpen_TransitionAfterTimeout(t *testing.T) {
 
 	// advance time past reset timeout
 	now = now.Add(200 * time.Millisecond)
-	if cb.State() != StateHalfOpen {
-		t.Errorf("State() = %v, want %v after timeout", cb.State(), StateHalfOpen)
-	}
+	testkit.AssertEqual(t, cb.State(), StateHalfOpen)
 }
 
 func TestHalfOpen_SuccessCloses(t *testing.T) {
@@ -169,9 +133,7 @@ func TestHalfOpen_SuccessCloses(t *testing.T) {
 	_ = cb.Execute(func() error { return nil })
 	_ = cb.Execute(func() error { return nil })
 
-	if cb.State() != StateClosed {
-		t.Errorf("State() = %v, want %v after successes in half-open", cb.State(), StateClosed)
-	}
+	testkit.AssertEqual(t, cb.State(), StateClosed)
 }
 
 func TestHalfOpen_FailureReopens(t *testing.T) {
@@ -191,9 +153,7 @@ func TestHalfOpen_FailureReopens(t *testing.T) {
 	// failure in half-open re-opens
 	_ = cb.Execute(func() error { return errors.New("still broken") })
 
-	if cb.State() != StateOpen {
-		t.Errorf("State() = %v, want %v after failure in half-open", cb.State(), StateOpen)
-	}
+	testkit.AssertEqual(t, cb.State(), StateOpen)
 }
 
 func TestHalfOpen_TooManyRequests(t *testing.T) {
@@ -243,10 +203,8 @@ func TestOnStateChange_Callback(t *testing.T) {
 	if len(transitions) != 1 {
 		t.Fatalf("expected 1 transition, got %d", len(transitions))
 	}
-	if transitions[0].from != StateClosed || transitions[0].to != StateOpen {
-		t.Errorf("transition = %v→%v, want closed→open",
-			transitions[0].from.String(), transitions[0].to.String())
-	}
+	testkit.AssertEqual(t, transitions[0].from, StateClosed)
+	testkit.AssertEqual(t, transitions[0].to, StateOpen)
 }
 
 func TestReadyToTrip_Custom(t *testing.T) {
@@ -263,9 +221,7 @@ func TestReadyToTrip_Custom(t *testing.T) {
 	_ = cb.Execute(func() error { return nil })
 	_ = cb.Execute(func() error { return errors.New("fail") })
 
-	if cb.State() != StateOpen {
-		t.Errorf("State() = %v, want %v with custom ReadyToTrip", cb.State(), StateOpen)
-	}
+	testkit.AssertEqual(t, cb.State(), StateOpen)
 }
 
 func TestIsSuccessful_Custom(t *testing.T) {
@@ -280,13 +236,9 @@ func TestIsSuccessful_Custom(t *testing.T) {
 	// errExpected should be treated as success
 	err := cb.Execute(func() error { return errExpected })
 	testkit.AssertErrorIs(t, err, errExpected)
-	if cb.State() != StateClosed {
-		t.Errorf("State() = %v, want %v (expected error treated as success)", cb.State(), StateClosed)
-	}
+	testkit.AssertEqual(t, cb.State(), StateClosed)
 	c := cb.Counts()
-	if c.ConsecutiveSuccesses != 1 {
-		t.Errorf("ConsecutiveSuccesses = %d, want 1", c.ConsecutiveSuccesses)
-	}
+	testkit.AssertEqual(t, c.ConsecutiveSuccesses, uint32(1))
 }
 
 func TestReset(t *testing.T) {
@@ -298,13 +250,9 @@ func TestReset(t *testing.T) {
 	}
 
 	cb.Reset()
-	if cb.State() != StateClosed {
-		t.Errorf("State() = %v, want %v after Reset()", cb.State(), StateClosed)
-	}
+	testkit.AssertEqual(t, cb.State(), StateClosed)
 	c := cb.Counts()
-	if c.Requests != 0 {
-		t.Errorf("Requests = %d, want 0 after Reset()", c.Requests)
-	}
+	testkit.AssertEqual(t, c.Requests, uint32(0))
 }
 
 func TestExecute_Panic(t *testing.T) {
@@ -317,9 +265,7 @@ func TestExecute_Panic(t *testing.T) {
 
 		// panic should count as failure
 		c := cb.Counts()
-		if c.TotalFailures != 1 {
-			t.Errorf("TotalFailures = %d, want 1 after panic", c.TotalFailures)
-		}
+		testkit.AssertEqual(t, c.TotalFailures, uint32(1))
 	}()
 
 	_ = cb.Execute(func() error {
@@ -350,9 +296,7 @@ func TestConcurrentAccess(t *testing.T) {
 	wg.Wait()
 
 	c := cb.Counts()
-	if c.Requests != goroutines*iterations {
-		t.Errorf("Requests = %d, want %d", c.Requests, goroutines*iterations)
-	}
+	testkit.AssertEqual(t, c.Requests, uint32(goroutines*iterations))
 }
 
 func TestCounts_Reset(t *testing.T) {
@@ -361,14 +305,12 @@ func TestCounts_Reset(t *testing.T) {
 	c.onSuccess()
 	c.onFailure()
 
-	if c.Requests != 3 {
-		t.Errorf("Requests = %d, want 3", c.Requests)
-	}
+	testkit.AssertEqual(t, c.Requests, uint32(3))
 
 	c.reset()
-	if c.Requests != 0 || c.TotalSuccesses != 0 || c.TotalFailures != 0 {
-		t.Error("reset() did not zero all fields")
-	}
+	testkit.AssertEqual(t, c.Requests, uint32(0))
+	testkit.AssertEqual(t, c.TotalSuccesses, uint32(0))
+	testkit.AssertEqual(t, c.TotalFailures, uint32(0))
 }
 
 func TestFullLifecycle(t *testing.T) {
@@ -408,9 +350,7 @@ func TestFullLifecycle(t *testing.T) {
 		t.Fatalf("transitions = %v, want %v", transitions, expected)
 	}
 	for i, tr := range transitions {
-		if tr != expected[i] {
-			t.Errorf("transitions[%d] = %q, want %q", i, tr, expected[i])
-		}
+		testkit.AssertEqual(t, tr, expected[i])
 	}
 }
 
@@ -424,10 +364,6 @@ func TestSetState_SameState_Noop(t *testing.T) {
 	countsAfter := cb.counts
 	cb.mu.Unlock()
 
-	if stateBefore != stateAfter {
-		t.Errorf("state changed: %v → %v", stateBefore, stateAfter)
-	}
-	if countsBefore != countsAfter {
-		t.Error("counts were reset despite no state change")
-	}
+	testkit.AssertEqual(t, stateAfter, stateBefore)
+	testkit.AssertEqual(t, countsAfter, countsBefore)
 }

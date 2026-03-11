@@ -10,6 +10,9 @@ import (
 	"net/http"
 )
 
+// Compile-time interface compliance check.
+var _ error = (*Error)(nil)
+
 // Code is a machine-readable error code string.
 type Code string
 

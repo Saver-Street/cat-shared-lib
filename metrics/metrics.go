@@ -28,6 +28,13 @@ type Metric interface {
 	Write() string
 }
 
+// Compile-time interface compliance checks.
+var (
+	_ Metric = (*Counter)(nil)
+	_ Metric = (*Gauge)(nil)
+	_ Metric = (*Histogram)(nil)
+)
+
 // NewRegistry creates a new metric registry.
 func NewRegistry() *Registry {
 	return &Registry{

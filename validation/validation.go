@@ -201,3 +201,16 @@ func Slug(field, value string) error {
 	}
 	return nil
 }
+
+// NoWhitespace validates that value contains no whitespace characters.
+// The value is not trimmed — leading, trailing, and embedded whitespace
+// all cause a validation error. Useful for usernames, API keys, and slugs.
+func NoWhitespace(field, value string) error {
+if value == "" {
+return &ValidationError{Field: field, Message: field + " is required"}
+}
+if strings.ContainsAny(value, " \t\n\r") {
+return &ValidationError{Field: field, Message: field + " must not contain whitespace"}
+}
+return nil
+}

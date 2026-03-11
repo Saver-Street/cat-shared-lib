@@ -289,3 +289,27 @@ testkit.AssertContains(t, err.Error(), "exactly 2 characters")
 func TestExactLength_Trimmed(t *testing.T) {
 testkit.AssertNoError(t, ExactLength("pin", "  1234  ", 4))
 }
+
+func TestNoWhitespace_Valid(t *testing.T) {
+testkit.AssertNoError(t, NoWhitespace("username", "alice_123"))
+}
+
+func TestNoWhitespace_Space(t *testing.T) {
+err := NoWhitespace("username", "alice bob")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "must not contain whitespace")
+}
+
+func TestNoWhitespace_Tab(t *testing.T) {
+testkit.AssertError(t, NoWhitespace("key", "abc\tdef"))
+}
+
+func TestNoWhitespace_Empty(t *testing.T) {
+err := NoWhitespace("username", "")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "is required")
+}
+
+func TestNoWhitespace_Newline(t *testing.T) {
+testkit.AssertError(t, NoWhitespace("token", "abc\ndef"))
+}

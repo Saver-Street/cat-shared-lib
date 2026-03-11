@@ -121,7 +121,7 @@ func (d *fuzzDB) Exec(_ context.Context, _ string, _ ...any) (pgconn.CommandTag,
 func (d *fuzzDB) Query(_ context.Context, _ string, _ ...any) (pgx.Rows, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	var records []Record
+	records := make([]Record, 0, len(d.applied))
 	for id := range d.applied {
 		records = append(records, Record{ID: id, Name: "m", AppliedAt: time.Now()})
 	}

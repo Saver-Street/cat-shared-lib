@@ -638,3 +638,33 @@ func TestOptionalQueryFloat_Zero(t *testing.T) {
 q := url.Values{"price": {"0"}}
 testkit.AssertEqual(t, OptionalQueryFloat(q, "price", 10.0), 0.0)
 }
+
+func TestOptionalQueryBool_True(t *testing.T) {
+for _, v := range []string{"true", "1", "yes", "TRUE", "Yes"} {
+q := url.Values{"active": {v}}
+got := OptionalQueryBool(q, "active")
+testkit.RequireNotNil(t, got)
+testkit.AssertTrue(t, *got)
+}
+}
+
+func TestOptionalQueryBool_False(t *testing.T) {
+for _, v := range []string{"false", "0", "no", "FALSE", "No"} {
+q := url.Values{"active": {v}}
+got := OptionalQueryBool(q, "active")
+testkit.RequireNotNil(t, got)
+testkit.AssertFalse(t, *got)
+}
+}
+
+func TestOptionalQueryBool_Absent(t *testing.T) {
+q := url.Values{}
+got := OptionalQueryBool(q, "active")
+testkit.AssertNil(t, got)
+}
+
+func TestOptionalQueryBool_Unrecognised(t *testing.T) {
+q := url.Values{"active": {"maybe"}}
+got := OptionalQueryBool(q, "active")
+testkit.AssertNil(t, got)
+}

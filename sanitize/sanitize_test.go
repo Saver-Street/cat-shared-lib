@@ -374,3 +374,35 @@ func TestStripHTML_Script(t *testing.T) {
 func TestStripHTML_OnlyTags(t *testing.T) {
 	testkit.AssertEqual(t, StripHTML("<p></p>"), "")
 }
+
+func TestMask_CreditCard(t *testing.T) {
+	testkit.AssertEqual(t, Mask("4111111111111111", 4), "************1111")
+}
+
+func TestMask_ShortString(t *testing.T) {
+	testkit.AssertEqual(t, Mask("abc", 4), "abc")
+}
+
+func TestMask_ExactLength(t *testing.T) {
+	testkit.AssertEqual(t, Mask("abcd", 4), "abcd")
+}
+
+func TestMask_Empty(t *testing.T) {
+	testkit.AssertEqual(t, Mask("", 4), "")
+}
+
+func TestMask_ZeroVisible(t *testing.T) {
+	testkit.AssertEqual(t, Mask("secret", 0), "******")
+}
+
+func TestMask_NegativeVisible(t *testing.T) {
+	testkit.AssertEqual(t, Mask("key", -1), "***")
+}
+
+func TestMask_SingleChar(t *testing.T) {
+	testkit.AssertEqual(t, Mask("x", 0), "*")
+}
+
+func TestMask_APIKey(t *testing.T) {
+	testkit.AssertEqual(t, Mask("sk-abc123def456", 6), "*********def456")
+}

@@ -436,3 +436,18 @@ func TestRedirect_MovedPermanently(t *testing.T) {
 	testkit.AssertEqual(t, w.Code, http.StatusMovedPermanently)
 	testkit.AssertEqual(t, w.Header().Get("Location"), "https://example.com/new")
 }
+
+func TestText(t *testing.T) {
+	w := httptest.NewRecorder()
+	Text(w, http.StatusOK, "hello world")
+	testkit.AssertEqual(t, w.Code, http.StatusOK)
+	testkit.AssertEqual(t, w.Header().Get("Content-Type"), "text/plain; charset=utf-8")
+	testkit.AssertEqual(t, w.Body.String(), "hello world")
+}
+
+func TestText_CustomStatus(t *testing.T) {
+	w := httptest.NewRecorder()
+	Text(w, http.StatusAccepted, "processing")
+	testkit.AssertEqual(t, w.Code, http.StatusAccepted)
+	testkit.AssertEqual(t, w.Body.String(), "processing")
+}

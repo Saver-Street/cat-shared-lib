@@ -114,3 +114,12 @@ func calcDelay(cfg Config, attempt int) time.Duration {
 func Simple(ctx context.Context, maxAttempts int, fn func(ctx context.Context) error) error {
 	return Do(ctx, Config{MaxAttempts: maxAttempts}, fn)
 }
+
+// WithTimeout retries fn with the given config but limits the total elapsed
+// time to timeout. It derives a child context with the deadline and delegates
+// to Do.
+func WithTimeout(ctx context.Context, timeout time.Duration, cfg Config, fn func(ctx context.Context) error) error {
+ctx, cancel := context.WithTimeout(ctx, timeout)
+defer cancel()
+return Do(ctx, cfg, fn)
+}

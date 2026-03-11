@@ -24,9 +24,7 @@ func TestContainsSuspiciousInput_SQL(t *testing.T) {
 		{"   ", false},
 	}
 	for _, tt := range tests {
-		if got := ContainsSuspiciousInput(tt.input); got != tt.want {
-			t.Errorf("ContainsSuspiciousInput(%q) = %v, want %v", tt.input, got, tt.want)
-		}
+		testkit.AssertEqual(t, ContainsSuspiciousInput(tt.input), tt.want)
 	}
 }
 
@@ -47,46 +45,34 @@ func TestContainsSuspiciousInput_XSS(t *testing.T) {
 		{"click here", false},
 	}
 	for _, tt := range tests {
-		if got := ContainsSuspiciousInput(tt.input); got != tt.want {
-			t.Errorf("ContainsSuspiciousInput(%q) = %v, want %v", tt.input, got, tt.want)
-		}
+		testkit.AssertEqual(t, ContainsSuspiciousInput(tt.input), tt.want)
 	}
 }
 
 func TestRedactPII_Email(t *testing.T) {
 	data := map[string]any{"msg": "Contact john@example.com"}
 	result := RedactPII(data)
-	if result["msg"] != "Contact [EMAIL_REDACTED]" {
-		t.Errorf("got %v", result["msg"])
-	}
+	testkit.AssertEqual(t, result["msg"], "Contact [EMAIL_REDACTED]")
 }
 
 func TestRedactPII_Phone(t *testing.T) {
 	data := map[string]any{"msg": "Call 555-123-4567"}
 	result := RedactPII(data)
 	got := result["msg"].(string)
-	if got == "Call 555-123-4567" {
-		t.Error("phone number not redacted")
-	}
+	testkit.AssertNotEqual(t, got, "Call 555-123-4567")
 }
 
 func TestRedactPII_SSN(t *testing.T) {
 	data := map[string]any{"msg": "SSN: 123-45-6789"}
 	result := RedactPII(data)
-	if result["msg"] != "SSN: [SSN_REDACTED]" {
-		t.Errorf("got %v", result["msg"])
-	}
+	testkit.AssertEqual(t, result["msg"], "SSN: [SSN_REDACTED]")
 }
 
 func TestRedactPII_FieldName(t *testing.T) {
 	data := map[string]any{"email": "test@test.com", "name": "John"}
 	result := RedactPII(data)
-	if result["email"] != "[REDACTED]" {
-		t.Errorf("email field not redacted: %v", result["email"])
-	}
-	if result["name"] != "John" {
-		t.Errorf("name field should not be redacted: %v", result["name"])
-	}
+	testkit.AssertEqual(t, result["email"], "[REDACTED]")
+	testkit.AssertEqual(t, result["name"], "John")
 }
 
 func TestRedactPII_Nested(t *testing.T) {
@@ -98,9 +84,7 @@ func TestRedactPII_Nested(t *testing.T) {
 	}
 	result := RedactPII(data)
 	nested := result["user"].(map[string]any)
-	if nested["email"] != "[REDACTED]" {
-		t.Errorf("nested email not redacted: %v", nested["email"])
-	}
+	testkit.AssertEqual(t, nested["email"], "[REDACTED]")
 }
 
 func TestRedactPII_Array(t *testing.T) {
@@ -109,20 +93,14 @@ func TestRedactPII_Array(t *testing.T) {
 	}
 	result := RedactPII(data)
 	items := result["items"].([]any)
-	if items[0] == "user@test.com" {
-		t.Error("email in array not redacted")
-	}
-	if items[1] != "plain text" {
-		t.Errorf("plain text changed: %v", items[1])
-	}
+	testkit.AssertNotEqual(t, items[0], "user@test.com")
+	testkit.AssertEqual(t, items[1], "plain text")
 }
 
 func TestRedactPII_NonString(t *testing.T) {
 	data := map[string]any{"count": 42}
 	result := RedactPII(data)
-	if result["count"] != 42 {
-		t.Errorf("int value changed: %v", result["count"])
-	}
+	testkit.AssertEqual(t, result["count"], 42)
 }
 
 func TestRedactPII_Empty(t *testing.T) {
@@ -135,9 +113,7 @@ func TestRedactPII_CaseInsensitiveField(t *testing.T) {
 	result := RedactPII(data)
 	// "Password" has capital P, but piiFields has "password" lowercase
 	// The code checks both the original key and lowercase
-	if result["Password"] != "[REDACTED]" {
-		t.Errorf("Password field not redacted: %v", result["Password"])
-	}
+	testkit.AssertEqual(t, result["Password"], "[REDACTED]")
 }
 
 func TestContainsSuspiciousInput_MixedCase(t *testing.T) {
@@ -152,9 +128,7 @@ func TestContainsSuspiciousInput_MixedCase(t *testing.T) {
 		{"OnClIcK=doEvil()", true},
 	}
 	for _, tt := range tests {
-		if got := ContainsSuspiciousInput(tt.input); got != tt.want {
-			t.Errorf("ContainsSuspiciousInput(%q) = %v, want %v", tt.input, got, tt.want)
-		}
+		testkit.AssertEqual(t, ContainsSuspiciousInput(tt.input), tt.want)
 	}
 }
 
@@ -173,12 +147,8 @@ func TestRedactPII_DeeplyNested(t *testing.T) {
 	l1 := result["level1"].(map[string]any)
 	l2 := l1["level2"].(map[string]any)
 	l3 := l2["level3"].(map[string]any)
-	if l3["email"] != "[REDACTED]" {
-		t.Errorf("deeply nested email not redacted: %v", l3["email"])
-	}
-	if l3["safe"] != "visible" {
-		t.Errorf("safe field changed: %v", l3["safe"])
-	}
+	testkit.AssertEqual(t, l3["email"], "[REDACTED]")
+	testkit.AssertEqual(t, l3["safe"], "visible")
 }
 
 func TestRedactPII_PhoneFormats(t *testing.T) {
@@ -196,9 +166,7 @@ func TestRedactPII_PhoneFormats(t *testing.T) {
 		data := map[string]any{"msg": tt.input}
 		result := RedactPII(data)
 		got := result["msg"].(string)
-		if got == tt.input {
-			t.Errorf("%s: phone not redacted in %q", tt.name, tt.input)
-		}
+		testkit.AssertNotEqual(t, got, tt.input)
 	}
 }
 
@@ -209,15 +177,9 @@ func TestRedactPII_BoolAndNilValues(t *testing.T) {
 		"empty":  nil,
 	}
 	result := RedactPII(data)
-	if result["active"] != true {
-		t.Errorf("bool changed: %v", result["active"])
-	}
-	if result["score"] != 3.14 {
-		t.Errorf("float changed: %v", result["score"])
-	}
-	if result["empty"] != nil {
-		t.Errorf("nil changed: %v", result["empty"])
-	}
+	testkit.AssertEqual(t, result["active"], true)
+	testkit.AssertEqual(t, result["score"], 3.14)
+	testkit.AssertNil(t, result["empty"])
 }
 
 func TestRedactPII_ArrayOfMaps(t *testing.T) {
@@ -229,11 +191,9 @@ func TestRedactPII_ArrayOfMaps(t *testing.T) {
 	}
 	result := RedactPII(data)
 	users := result["users"].([]any)
-	for i, u := range users {
+	for _, u := range users {
 		m := u.(map[string]any)
-		if m["email"] != "[REDACTED]" {
-			t.Errorf("users[%d].email not redacted: %v", i, m["email"])
-		}
+		testkit.AssertEqual(t, m["email"], "[REDACTED]")
 	}
 }
 
@@ -247,17 +207,13 @@ func TestContainsSuspiciousInput_SafeInputs(t *testing.T) {
 		"Delete this draft",
 	}
 	for _, s := range safe {
-		if ContainsSuspiciousInput(s) {
-			t.Errorf("safe input flagged: %q", s)
-		}
+		testkit.AssertFalse(t, ContainsSuspiciousInput(s))
 	}
 }
 
 func TestRedactPII_NilMap(t *testing.T) {
 	result := RedactPII(nil)
-	if result == nil {
-		t.Error("RedactPII(nil) should return non-nil empty map")
-	}
+	testkit.AssertNotNil(t, result)
 	testkit.AssertLen(t, result, 0)
 }
 
@@ -270,9 +226,7 @@ func TestRedactPII_AllPIIFieldNames(t *testing.T) {
 	for _, field := range fields {
 		data := map[string]any{field: "sensitive-value"}
 		result := RedactPII(data)
-		if result[field] != "[REDACTED]" {
-			t.Errorf("field %q not redacted: got %v", field, result[field])
-		}
+		testkit.AssertEqual(t, result[field], "[REDACTED]")
 	}
 }
 
@@ -284,18 +238,10 @@ func TestRedactPII_NonPIIFieldPassthrough(t *testing.T) {
 		"flag":      false,
 	}
 	result := RedactPII(data)
-	if result["status"] != "active" {
-		t.Errorf("status changed: %v", result["status"])
-	}
-	if result["count"] != int64(99) {
-		t.Errorf("count changed: %v", result["count"])
-	}
-	if result["threshold"] != 0.5 {
-		t.Errorf("threshold changed: %v", result["threshold"])
-	}
-	if result["flag"] != false {
-		t.Errorf("flag changed: %v", result["flag"])
-	}
+	testkit.AssertEqual(t, result["status"], "active")
+	testkit.AssertEqual(t, result["count"], int64(99))
+	testkit.AssertEqual(t, result["threshold"], 0.5)
+	testkit.AssertEqual(t, result["flag"], false)
 }
 
 func TestRedactPII_EmptyArray(t *testing.T) {
@@ -311,21 +257,11 @@ func TestRedactPII_MixedArrayTypes(t *testing.T) {
 	}
 	result := RedactPII(data)
 	items := result["mixed"].([]any)
-	if items[0] == "user@test.com" {
-		t.Error("email in array not redacted")
-	}
-	if items[1] != 42 {
-		t.Errorf("int changed: %v", items[1])
-	}
-	if items[2] != true {
-		t.Errorf("bool changed: %v", items[2])
-	}
-	if items[3] != nil {
-		t.Errorf("nil changed: %v", items[3])
-	}
-	if items[4] != "clean text" {
-		t.Errorf("clean text changed: %v", items[4])
-	}
+	testkit.AssertNotEqual(t, items[0], "user@test.com")
+	testkit.AssertEqual(t, items[1], 42)
+	testkit.AssertEqual(t, items[2], true)
+	testkit.AssertNil(t, items[3])
+	testkit.AssertEqual(t, items[4], "clean text")
 }
 
 func TestContainsSuspiciousInput_AllPatterns(t *testing.T) {
@@ -350,9 +286,7 @@ func TestContainsSuspiciousInput_AllPatterns(t *testing.T) {
 		{"data URI", "data: text/html,payload"},
 	}
 	for _, tt := range tests {
-		if !ContainsSuspiciousInput(tt.input) {
-			t.Errorf("pattern %q not detected in %q", tt.name, tt.input)
-		}
+		testkit.AssertTrue(t, ContainsSuspiciousInput(tt.input))
 	}
 }
 
@@ -408,56 +342,40 @@ func TestRedactPII_DeepNesting_Truncated(t *testing.T) {
 		}
 		return false
 	}
-	if !traverse(result, 0) {
-		t.Error("expected [TRUNCATED] sentinel in deeply nested RedactPII output")
-	}
+	testkit.AssertTrue(t, traverse(result, 0))
 }
 
 func TestTruncateForLog_Basic(t *testing.T) {
 	got := TruncateForLog("hello world", 5)
-	if got != "hello" {
-		t.Errorf("got %q, want %q", got, "hello")
-	}
+	testkit.AssertEqual(t, got, "hello")
 }
 
 func TestTruncateForLog_UnderLimit(t *testing.T) {
 	got := TruncateForLog("hi", 100)
-	if got != "hi" {
-		t.Errorf("got %q, want %q", got, "hi")
-	}
+	testkit.AssertEqual(t, got, "hi")
 }
 
 func TestTruncateForLog_StripControlChars(t *testing.T) {
 	// \n, \r, \t are control characters and should be stripped
 	got := TruncateForLog("a\nb\rc", 10)
-	if got != "abc" {
-		t.Errorf("got %q, want %q", got, "abc")
-	}
+	testkit.AssertEqual(t, got, "abc")
 }
 
 func TestTruncateForLog_ZeroMaxLen(t *testing.T) {
-	if got := TruncateForLog("hello", 0); got != "" {
-		t.Errorf("got %q, want empty string", got)
-	}
+	testkit.AssertEqual(t, TruncateForLog("hello", 0), "")
 }
 
 func TestTruncateForLog_NegativeMaxLen(t *testing.T) {
-	if got := TruncateForLog("hello", -1); got != "" {
-		t.Errorf("got %q, want empty string", got)
-	}
+	testkit.AssertEqual(t, TruncateForLog("hello", -1), "")
 }
 
 func TestTruncateForLog_Empty(t *testing.T) {
-	if got := TruncateForLog("", 10); got != "" {
-		t.Errorf("got %q, want empty string", got)
-	}
+	testkit.AssertEqual(t, TruncateForLog("", 10), "")
 }
 
 func TestTruncateForLog_Unicode(t *testing.T) {
 	got := TruncateForLog("héllo", 3)
-	if got != "hél" {
-		t.Errorf("got %q, want %q", got, "hél")
-	}
+	testkit.AssertEqual(t, got, "hél")
 }
 
 func BenchmarkTruncateForLog(b *testing.B) {

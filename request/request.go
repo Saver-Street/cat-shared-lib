@@ -286,3 +286,26 @@ return mediaType
 func IsJSON(r *http.Request) bool {
 return ContentType(r) == "application/json"
 }
+
+// ClientIP extracts the client IP address from the request. It checks the
+// X-Forwarded-For and X-Real-IP headers first (using the left-most entry
+// in X-Forwarded-For), then falls back to the remote address from the
+// connection. The returned value has any port stripped.
+func ClientIP(r *http.Request) string {
+if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+// X-Forwarded-For may contain a comma-separated list; take the first.
+if i := strings.IndexByte(xff, ','); i > 0 {
+return strings.TrimSpace(xff[:i])
+}
+return strings.TrimSpace(xff)
+}
+if xri := r.Header.Get("X-Real-IP"); xri != "" {
+return strings.TrimSpace(xri)
+}
+// Strip port from RemoteAddr (e.g. "192.168.1.1:12345").
+addr := r.RemoteAddr
+if i := strings.LastIndex(addr, ":"); i > 0 {
+return addr[:i]
+}
+return addr
+}

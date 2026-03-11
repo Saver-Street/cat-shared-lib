@@ -4,6 +4,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -108,6 +109,7 @@ func WithTx(ctx context.Context, pool Pool, fn TxFunc) error {
 	if err := fn(tx); err != nil {
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			slog.Error("database: rollback failed", "error", rbErr)
+			return errors.Join(err, fmt.Errorf("database: rollback: %w", rbErr))
 		}
 		return err
 	}

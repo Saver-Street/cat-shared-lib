@@ -73,6 +73,9 @@ type Service interface {
 	Handler
 }
 
+// Compile-time interface compliance check.
+var _ error = (*StandardError)(nil)
+
 // StandardError is the canonical JSON error body returned by all microservices.
 // Every non-2xx HTTP response body MUST be serialisable to this type.
 type StandardError struct {

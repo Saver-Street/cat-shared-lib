@@ -564,3 +564,35 @@ r := httptest.NewRequest("POST", "/", nil)
 r.Header.Set("Content-Type", "text/html")
 testkit.AssertFalse(t, IsJSON(r))
 }
+
+func TestClientIP_XForwardedFor(t *testing.T) {
+r := httptest.NewRequest(http.MethodGet, "/", nil)
+r.Header.Set("X-Forwarded-For", "203.0.113.1, 70.41.3.18, 150.172.238.178")
+testkit.AssertEqual(t, ClientIP(r), "203.0.113.1")
+}
+
+func TestClientIP_XForwardedFor_Single(t *testing.T) {
+r := httptest.NewRequest(http.MethodGet, "/", nil)
+r.Header.Set("X-Forwarded-For", "10.0.0.1")
+testkit.AssertEqual(t, ClientIP(r), "10.0.0.1")
+}
+
+func TestClientIP_XRealIP(t *testing.T) {
+r := httptest.NewRequest(http.MethodGet, "/", nil)
+r.Header.Set("X-Real-IP", "192.168.1.100")
+testkit.AssertEqual(t, ClientIP(r), "192.168.1.100")
+}
+
+func TestClientIP_RemoteAddr(t *testing.T) {
+r := httptest.NewRequest(http.MethodGet, "/", nil)
+r.RemoteAddr = "10.0.0.5:54321"
+testkit.AssertEqual(t, ClientIP(r), "10.0.0.5")
+}
+
+func TestClientIP_XForwardedFor_Priority(t *testing.T) {
+r := httptest.NewRequest(http.MethodGet, "/", nil)
+r.Header.Set("X-Forwarded-For", "1.1.1.1")
+r.Header.Set("X-Real-IP", "2.2.2.2")
+r.RemoteAddr = "3.3.3.3:9999"
+testkit.AssertEqual(t, ClientIP(r), "1.1.1.1")
+}

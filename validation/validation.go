@@ -5,6 +5,7 @@ package validation
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -313,6 +314,14 @@ for _, b := range blocked {
 if value == b {
 return fmt.Errorf("%s must not be %q", field, value)
 }
+}
+return nil
+}
+
+// JSON validates that s is syntactically valid JSON.
+func JSON(s string) error {
+if !json.Valid([]byte(s)) {
+return fmt.Errorf("invalid JSON")
 }
 return nil
 }

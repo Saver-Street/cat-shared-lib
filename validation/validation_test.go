@@ -475,3 +475,19 @@ testkit.AssertContains(t, err.Error(), "admin")
 func TestNotOneOf_Empty(t *testing.T) {
 testkit.AssertNoError(t, NotOneOf("username", "anything", []string{}))
 }
+
+func TestJSON_Valid(t *testing.T) {
+testkit.AssertNoError(t, JSON(`{"key":"val"}`))
+testkit.AssertNoError(t, JSON(`[1,2,3]`))
+testkit.AssertNoError(t, JSON(`"hello"`))
+testkit.AssertNoError(t, JSON(`42`))
+testkit.AssertNoError(t, JSON(`true`))
+testkit.AssertNoError(t, JSON(`null`))
+}
+
+func TestJSON_Invalid(t *testing.T) {
+testkit.AssertError(t, JSON(`{bad}`))
+testkit.AssertError(t, JSON(`not json`))
+testkit.AssertError(t, JSON(``))
+testkit.AssertErrorContains(t, JSON(`{`), "invalid JSON")
+}

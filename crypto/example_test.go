@@ -34,3 +34,51 @@ func ExampleEqual() {
 	// true
 	// false
 }
+
+func ExampleHashPassword() {
+	hash, err := crypto.HashPassword("my-secure-password")
+	fmt.Println(err)
+	fmt.Println(len(hash) > 0)
+	// Output:
+	// <nil>
+	// true
+}
+
+func ExampleCheckPassword() {
+	hash, _ := crypto.HashPassword("correct-password")
+	fmt.Println(crypto.CheckPassword("correct-password", hash))
+	fmt.Println(crypto.CheckPassword("wrong-password", hash) != nil)
+	// Output:
+	// <nil>
+	// true
+}
+
+func ExampleGenerateHexToken() {
+	token, err := crypto.GenerateHexToken(16)
+	fmt.Println(err)
+	fmt.Println(len(token))
+	// Output:
+	// <nil>
+	// 32
+}
+
+func ExampleVerifyHMACSHA256() {
+	key := []byte("secret")
+	msg := []byte("data")
+	sig := crypto.HMACSHA256(key, msg)
+
+	fmt.Println(crypto.VerifyHMACSHA256(key, msg, sig))
+	fmt.Println(crypto.VerifyHMACSHA256(key, msg, "badsig"))
+	// Output:
+	// true
+	// false
+}
+
+func ExampleNeedsRehash() {
+	hash, _ := crypto.HashPasswordWithCost("pw", 10)
+	fmt.Println(crypto.NeedsRehash(hash, 10))
+	fmt.Println(crypto.NeedsRehash(hash, 12))
+	// Output:
+	// false
+	// true
+}

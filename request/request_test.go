@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -595,4 +596,25 @@ r.Header.Set("X-Forwarded-For", "1.1.1.1")
 r.Header.Set("X-Real-IP", "2.2.2.2")
 r.RemoteAddr = "3.3.3.3:9999"
 testkit.AssertEqual(t, ClientIP(r), "1.1.1.1")
+}
+
+func TestParseJSONBody(t *testing.T) {
+type payload struct {
+Name string `json:"name"`
+Age  int    `json:"age"`
+}
+body := strings.NewReader(`{"name":"Alice","age":30}`)
+r := httptest.NewRequest(http.MethodPost, "/", body)
+got, err := ParseJSONBody[payload](r)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, got.Name, "Alice")
+testkit.AssertEqual(t, got.Age, 30)
+}
+
+func TestParseJSONBody_Invalid(t *testing.T) {
+body := strings.NewReader(`{invalid`)
+r := httptest.NewRequest(http.MethodPost, "/", body)
+_, err := ParseJSONBody[map[string]string](r)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "invalid JSON body")
 }

@@ -235,3 +235,21 @@ return "", fmt.Errorf("config: %s: URL must have a host", key)
 }
 return v, nil
 }
+
+// Port reads a TCP port number from the named environment variable. It
+// validates that the value is between 1 and 65535. If the variable is
+// unset or empty, defaultVal is returned.
+func Port(key string, defaultVal int) (int, error) {
+v := strings.TrimSpace(os.Getenv(key))
+if v == "" {
+return defaultVal, nil
+}
+p, err := strconv.Atoi(v)
+if err != nil {
+return 0, fmt.Errorf("config: %s: invalid port number: %w", key, err)
+}
+if p < 1 || p > 65535 {
+return 0, fmt.Errorf("config: %s: port must be between 1 and 65535, got %d", key, p)
+}
+return p, nil
+}

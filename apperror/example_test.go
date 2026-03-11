@@ -46,3 +46,49 @@ func ExampleBadRequest() {
 	// 400
 	// BAD_REQUEST
 }
+
+func ExampleUnauthorized() {
+	err := apperror.Unauthorized("invalid credentials")
+	fmt.Println(err.HTTPStatus)
+	fmt.Println(err.Code)
+	// Output:
+	// 401
+	// UNAUTHORIZED
+}
+
+func ExampleForbidden() {
+	err := apperror.Forbidden("insufficient permissions")
+	fmt.Println(err.HTTPStatus)
+	fmt.Println(err.Code)
+	// Output:
+	// 403
+	// FORBIDDEN
+}
+
+func ExampleConflict() {
+	err := apperror.Conflict("email already registered")
+	fmt.Println(err.HTTPStatus)
+	fmt.Println(err.Code)
+	// Output:
+	// 409
+	// CONFLICT
+}
+
+func ExampleHTTPStatus() {
+	err := apperror.NotFound("user not found")
+	fmt.Println(apperror.HTTPStatus(err))
+
+	fmt.Println(apperror.HTTPStatus(errors.New("generic error")))
+	// Output:
+	// 404
+	// 500
+}
+
+func ExampleIsCode() {
+	err := apperror.NotFound("user not found")
+	fmt.Println(apperror.IsCode(err, apperror.CodeNotFound))
+	fmt.Println(apperror.IsCode(err, apperror.CodeConflict))
+	// Output:
+	// true
+	// false
+}

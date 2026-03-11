@@ -154,3 +154,18 @@ func HashSHA256(data []byte) string {
 	h := sha256.Sum256(data)
 	return hex.EncodeToString(h[:])
 }
+
+const alphanumChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+// RandomString generates a cryptographically random alphanumeric string of
+// the given length. It panics if the system's random source fails.
+func RandomString(length int) string {
+	b := make([]byte, length)
+	if _, err := io.ReadFull(rand.Reader, b); err != nil {
+		panic("crypto: failed to read random bytes: " + err.Error())
+	}
+	for i := range b {
+		b[i] = alphanumChars[int(b[i])%len(alphanumChars)]
+	}
+	return string(b)
+}

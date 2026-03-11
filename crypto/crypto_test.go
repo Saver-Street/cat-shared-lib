@@ -1,7 +1,6 @@
 package crypto
 
 import (
-	"errors"
 	"strings"
 	"testing"
 
@@ -23,9 +22,7 @@ func TestHashPassword_Basic(t *testing.T) {
 
 func TestHashPassword_Empty(t *testing.T) {
 	_, err := HashPassword("")
-	if !errors.Is(err, ErrEmptyPassword) {
-		t.Fatalf("expected ErrEmptyPassword, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrEmptyPassword)
 }
 
 func TestHashPasswordWithCost(t *testing.T) {
@@ -49,17 +46,13 @@ func TestCheckPassword_Match(t *testing.T) {
 func TestCheckPassword_Mismatch(t *testing.T) {
 	hash, _ := HashPasswordWithCost("correct", 4)
 	err := CheckPassword("wrong", hash)
-	if !errors.Is(err, ErrInvalidToken) {
-		t.Fatalf("expected ErrInvalidToken, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrInvalidToken)
 }
 
 func TestCheckPassword_Empty(t *testing.T) {
 	hash, _ := HashPasswordWithCost("correct", 4)
 	err := CheckPassword("", hash)
-	if !errors.Is(err, ErrEmptyPassword) {
-		t.Fatalf("expected ErrEmptyPassword, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrEmptyPassword)
 }
 
 func TestCheckPassword_BadHash(t *testing.T) {

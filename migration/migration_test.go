@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -202,9 +203,7 @@ func TestMigrate_DuplicateID(t *testing.T) {
 	r := newRunner(db)
 	dups := []Migration{{ID: 1, Name: "a"}, {ID: 1, Name: "b"}}
 	err := r.Migrate(context.Background(), dups)
-	if !errors.Is(err, ErrDuplicateID) {
-		t.Fatalf("expected ErrDuplicateID, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrDuplicateID)
 }
 
 func TestMigrate_InitError(t *testing.T) {
@@ -467,9 +466,7 @@ func TestValidateIDs_OK(t *testing.T) {
 
 func TestValidateIDs_Duplicate(t *testing.T) {
 	err := validateIDs([]Migration{{ID: 1}, {ID: 2}, {ID: 2}})
-	if !errors.Is(err, ErrDuplicateID) {
-		t.Fatalf("expected ErrDuplicateID, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrDuplicateID)
 }
 
 func TestValidateIDs_Empty(t *testing.T) {

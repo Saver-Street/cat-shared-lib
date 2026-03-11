@@ -317,9 +317,7 @@ func TestFirst_Empty(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty rows")
 	}
-	if !errors.Is(err, ErrNoRows) {
-		t.Errorf("got %v, want errors.Is(err, ErrNoRows) == true", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrNoRows)
 }
 
 func TestFirst_NilRows(t *testing.T) {

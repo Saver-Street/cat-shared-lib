@@ -5,11 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 // helper to create a valid HS256 token
@@ -347,9 +348,7 @@ func TestValidateJWT_BadSignatureBase64(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	_, err := validateJWT(req, []byte("secret"), "", time.Now())
-	if !errors.Is(err, ErrSignatureFail) {
-		t.Errorf("expected ErrSignatureFail, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrSignatureFail)
 }
 
 func TestValidateJWT_InvalidHeaderJSON(t *testing.T) {
@@ -361,9 +360,7 @@ func TestValidateJWT_InvalidHeaderJSON(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	_, err := validateJWT(req, []byte("secret"), "", time.Now())
-	if !errors.Is(err, ErrInvalidToken) {
-		t.Errorf("expected ErrInvalidToken, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrInvalidToken)
 }
 
 func TestValidateJWT_InvalidPayloadJSON(t *testing.T) {
@@ -380,9 +377,7 @@ func TestValidateJWT_InvalidPayloadJSON(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	_, err := validateJWT(req, secret, "", time.Now())
-	if !errors.Is(err, ErrInvalidToken) {
-		t.Errorf("expected ErrInvalidToken, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrInvalidToken)
 }
 
 func signPayload(input string, secret []byte) (string, error) {
@@ -435,7 +430,5 @@ func TestValidateJWT_InvalidPayloadBase64(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	_, err := validateJWT(req, secret, "", time.Now())
-	if !errors.Is(err, ErrInvalidToken) {
-		t.Errorf("expected ErrInvalidToken, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrInvalidToken)
 }

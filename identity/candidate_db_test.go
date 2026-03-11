@@ -58,13 +58,7 @@ func TestLookupCandidateID_NotFound(t *testing.T) {
 	if id != "" {
 		t.Errorf("id = %q, want empty", id)
 	}
-	if !errors.Is(err, nil) {
-		// The error wraps the message, not pgx.ErrNoRows
-		expected := "identity: candidate profile not found for user user-missing"
-		if err.Error() != expected {
-			t.Errorf("error = %q, want %q", err.Error(), expected)
-		}
-	}
+	testkit.AssertErrorContains(t, err, "candidate profile not found for user user-missing")
 }
 
 func TestLookupCandidateID_DBError(t *testing.T) {

@@ -289,9 +289,7 @@ func TestDBTestHelper_QueryRow_ScanError(t *testing.T) {
 	row := db.QueryRow(context.Background(), "SELECT 1")
 	var v string
 	err := row.Scan(&v)
-	if !errors.Is(err, scanErr) {
-		t.Errorf("expected scan error, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, scanErr)
 }
 
 func TestDBTestHelper_QueryCount(t *testing.T) {

@@ -1,8 +1,3 @@
-// Package logging provides structured logging helpers built on log/slog.
-//
-// It offers opinionated constructors for creating pre-configured loggers,
-// context-based attribute propagation, and common attribute builders
-// for use across services in the cat-shared-lib ecosystem.
 package logging
 
 import (

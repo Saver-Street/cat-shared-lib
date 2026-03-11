@@ -1,6 +1,3 @@
-// Package sorting provides helpers for parsing, validating, and applying
-// sort parameters in list endpoints. It supports multi-field sorting with
-// safe SQL ORDER BY clause generation.
 package sorting
 
 import (

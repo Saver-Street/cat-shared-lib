@@ -68,9 +68,7 @@ func TestGetLimitsForTier_CaseSensitive(t *testing.T) {
 func TestTierLimits_JSONRoundTrip(t *testing.T) {
 	limits := GetLimitsForTier("pro")
 	data, err := json.Marshal(limits)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	var got TierLimits
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)

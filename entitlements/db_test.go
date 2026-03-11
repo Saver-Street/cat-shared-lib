@@ -50,9 +50,7 @@ func TestGetUserTierAndUsage_ActiveProUser(t *testing.T) {
 	}}
 
 	tier, count, err := GetUserTierAndUsage(context.Background(), db, "user-1")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, tier, "pro")
 	testkit.AssertEqual(t, count, 42)
 }
@@ -72,9 +70,7 @@ func TestGetUserTierAndUsage_PastDueDowngradesToFree(t *testing.T) {
 	}}
 
 	tier, count, err := GetUserTierAndUsage(context.Background(), db, "user-2")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, tier, "free")
 	testkit.AssertEqual(t, count, 5)
 }
@@ -93,9 +89,7 @@ func TestGetUserTierAndUsage_NilStatus(t *testing.T) {
 	}}
 
 	tier, count, err := GetUserTierAndUsage(context.Background(), db, "user-3")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, tier, "starter")
 	testkit.AssertEqual(t, count, 10)
 }
@@ -143,9 +137,7 @@ func TestGetUserTierAndUsage_AppCountQueryFails(t *testing.T) {
 	}}
 
 	tier, count, err := GetUserTierAndUsage(context.Background(), db, "user-4")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, tier, "pro")
 	// count defaults to 0 when the app count query fails (error is swallowed)
 	testkit.AssertEqual(t, count, 0)
@@ -166,9 +158,7 @@ func TestGetUserTier_ReturnsOnlyTier(t *testing.T) {
 	}}
 
 	tier, err := GetUserTier(context.Background(), db, "user-5")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, tier, "concierge")
 }
 
@@ -258,8 +248,6 @@ func TestGetUserTierAndUsage_NonPastDueStatus(t *testing.T) {
 	}}
 
 	tier, _, err := GetUserTierAndUsage(context.Background(), db, "user-7")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, tier, "pro")
 }

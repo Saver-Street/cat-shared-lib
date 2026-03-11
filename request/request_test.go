@@ -147,6 +147,33 @@ func TestRequireURLParamInt_MaxInt(t *testing.T) {
 	testkit.AssertEqual(t, n, int64(9223372036854775807))
 }
 
+func TestRequireUUIDParam_Valid(t *testing.T) {
+	r := httptest.NewRequest("GET", "/test", nil)
+	val, err := RequireUUIDParam(r, "id", mockParamFn(map[string]string{"id": "550e8400-e29b-41d4-a716-446655440000"}))
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, val, "550e8400-e29b-41d4-a716-446655440000")
+}
+
+func TestRequireUUIDParam_Invalid(t *testing.T) {
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireUUIDParam(r, "id", mockParamFn(map[string]string{"id": "not-a-uuid"}))
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "must be a valid UUID")
+}
+
+func TestRequireUUIDParam_Missing(t *testing.T) {
+	r := httptest.NewRequest("GET", "/test", nil)
+	_, err := RequireUUIDParam(r, "id", mockParamFn(map[string]string{}))
+	testkit.AssertError(t, err)
+}
+
+func TestRequireUUIDParam_UpperCase(t *testing.T) {
+	r := httptest.NewRequest("GET", "/test", nil)
+	val, err := RequireUUIDParam(r, "id", mockParamFn(map[string]string{"id": "550E8400-E29B-41D4-A716-446655440000"}))
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, val, "550E8400-E29B-41D4-A716-446655440000")
+}
+
 func TestRequireURLParamInt_Overflow(t *testing.T) {
 	r := httptest.NewRequest("GET", "/test", nil)
 	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "99999999999999999999"}))

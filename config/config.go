@@ -385,3 +385,16 @@ panic(fmt.Sprintf("config: %s is required", key))
 }
 return v
 }
+
+// MustAddr is like Addr but panics if the variable is unset or the value is
+// not a valid host:port address. Intended for use during application startup.
+func MustAddr(key string) string {
+v, err := Addr(key, "")
+if err != nil {
+panic(err)
+}
+if v == "" {
+panic(fmt.Sprintf("config: %s is required", key))
+}
+return v
+}

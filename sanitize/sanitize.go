@@ -312,3 +312,14 @@ b.WriteString(string(runes))
 }
 return b.String()
 }
+
+// MapKeys applies a transform function to every key in the map, returning a
+// new map with transformed keys and original values. If two keys collide
+// after transformation, the last value wins.
+func MapKeys[V any](m map[string]V, transform func(string) string) map[string]V {
+out := make(map[string]V, len(m))
+for k, v := range m {
+out[transform(k)] = v
+}
+return out
+}

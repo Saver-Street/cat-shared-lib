@@ -571,3 +571,19 @@ testkit.AssertEqual(t, SnakeToCamel(tt.in), tt.want)
 })
 }
 }
+
+func TestMapKeys(t *testing.T) {
+m := map[string]int{
+"Hello": 1,
+"WORLD": 2,
+}
+got := MapKeys(m, strings.ToLower)
+testkit.AssertEqual(t, got["hello"], 1)
+testkit.AssertEqual(t, got["world"], 2)
+testkit.AssertLen(t, got, 2)
+}
+
+func TestMapKeys_Empty(t *testing.T) {
+got := MapKeys(map[string]int{}, strings.ToUpper)
+testkit.AssertLen(t, got, 0)
+}

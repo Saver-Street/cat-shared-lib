@@ -32,10 +32,10 @@ func TestCreated_Status201(t *testing.T) {
 }
 
 func TestError_BodyHasErrorKey(t *testing.T) {
-	w := httptest.NewRecorder()
+		w := httptest.NewRecorder()
 	Error(w, http.StatusBadRequest, "bad input")
 	var body map[string]string
-	_ = json.Unmarshal(w.Body.Bytes(), &body)
+	testkit.AssertJSON(t, w.Body.Bytes(), &body)
 	testkit.AssertEqual(t, body["error"], "bad input")
 }
 
@@ -106,9 +106,7 @@ func TestOK_WithComplexData(t *testing.T) {
 	OK(w, data)
 	testkit.AssertStatus(t, w, http.StatusOK)
 	var got map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	testkit.AssertJSON(t, w.Body.Bytes(), &got)
 	testkit.AssertEqual(t, got["count"].(float64), float64(2))
 }
 
@@ -131,7 +129,7 @@ func TestInternalError_WithRealError(t *testing.T) {
 	InternalError(w, "operation failed", fmt.Errorf("connection refused"))
 	testkit.AssertStatus(t, w, http.StatusInternalServerError)
 	var body map[string]string
-	json.Unmarshal(w.Body.Bytes(), &body)
+	testkit.AssertJSON(t, w.Body.Bytes(), &body)
 	testkit.AssertEqual(t, body["error"], "Internal server error")
 }
 
@@ -160,7 +158,7 @@ func TestBadRequest_Status400(t *testing.T) {
 	BadRequest(w, "invalid input")
 	testkit.AssertStatus(t, w, http.StatusBadRequest)
 	var body map[string]string
-	json.Unmarshal(w.Body.Bytes(), &body)
+	testkit.AssertJSON(t, w.Body.Bytes(), &body)
 	testkit.AssertEqual(t, body["error"], "invalid input")
 }
 

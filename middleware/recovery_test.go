@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,9 +34,7 @@ func TestRecovery_PanicString(t *testing.T) {
 	testkit.AssertStatus(t, rr, http.StatusInternalServerError)
 
 	var resp map[string]string
-	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	testkit.AssertJSON(t, rr.Body.Bytes(), &resp)
 	testkit.AssertEqual(t, resp["error"], "Internal server error")
 }
 

@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -245,4 +246,26 @@ func TestSlug_Empty(t *testing.T) {
 
 func TestSlug_Trimmed(t *testing.T) {
 	testkit.AssertNoError(t, Slug("slug", "  hello-world  "))
+}
+
+var alphanumRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+
+func TestMatch_Valid(t *testing.T) {
+	testkit.AssertNoError(t, Match("code", "ABC123", alphanumRe, "alphanumeric characters"))
+}
+
+func TestMatch_Invalid(t *testing.T) {
+	err := Match("code", "ABC-123", alphanumRe, "alphanumeric characters")
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "must match alphanumeric characters")
+}
+
+func TestMatch_Empty(t *testing.T) {
+	err := Match("code", "", alphanumRe, "alphanumeric characters")
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "is required")
+}
+
+func TestMatch_Trimmed(t *testing.T) {
+	testkit.AssertNoError(t, Match("code", "  ABC123  ", alphanumRe, "alphanumeric characters"))
 }

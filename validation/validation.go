@@ -22,6 +22,9 @@ var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 // dashes/spaces/dots between groups.
 var phoneRe = regexp.MustCompile(`^\+?[0-9][0-9\-\.\s]{5,14}[0-9]$`)
 
+// Compile-time interface compliance check.
+var _ error = (*ValidationError)(nil)
+
 // ValidationError holds a field name and a human-readable error message.
 type ValidationError struct {
 	Field   string `json:"field"`

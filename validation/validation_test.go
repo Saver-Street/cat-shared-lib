@@ -206,3 +206,43 @@ func TestURL_BadParse(t *testing.T) {
 	err := URL("url", "://")
 	testkit.AssertTrue(t, err != nil)
 }
+
+func TestSlug_Valid(t *testing.T) {
+	valid := []string{
+		"hello",
+		"hello-world",
+		"my-cool-project",
+		"abc123",
+		"a1-b2-c3",
+		"x",
+	}
+	for _, s := range valid {
+		testkit.AssertNoError(t, Slug("slug", s))
+	}
+}
+
+func TestSlug_Invalid(t *testing.T) {
+	invalid := []string{
+		"Hello",
+		"hello_world",
+		"hello world",
+		"-leading-hyphen",
+		"trailing-hyphen-",
+		"double--hyphen",
+		"UPPER",
+		"has.dot",
+		"has/slash",
+		"has@symbol",
+	}
+	for _, s := range invalid {
+		testkit.AssertError(t, Slug("slug", s))
+	}
+}
+
+func TestSlug_Empty(t *testing.T) {
+	testkit.AssertError(t, Slug("slug", ""))
+}
+
+func TestSlug_Trimmed(t *testing.T) {
+	testkit.AssertNoError(t, Slug("slug", "  hello-world  "))
+}

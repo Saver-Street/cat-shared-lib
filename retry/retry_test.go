@@ -18,12 +18,8 @@ func TestDo_SuccessOnFirstAttempt(t *testing.T) {
 		calls++
 		return nil
 	})
-	if err != nil {
-		t.Errorf("expected nil, got %v", err)
-	}
-	if calls != 1 {
-		t.Errorf("expected 1 call, got %d", calls)
-	}
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, calls, 1)
 }
 
 func TestDo_SuccessOnSecondAttempt(t *testing.T) {
@@ -35,12 +31,8 @@ func TestDo_SuccessOnSecondAttempt(t *testing.T) {
 		}
 		return nil
 	})
-	if err != nil {
-		t.Errorf("expected nil, got %v", err)
-	}
-	if calls != 2 {
-		t.Errorf("expected 2 calls, got %d", calls)
-	}
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, calls, 2)
 }
 
 func TestDo_AllAttemptsExhausted(t *testing.T) {
@@ -50,43 +42,27 @@ func TestDo_AllAttemptsExhausted(t *testing.T) {
 		return errTemp
 	})
 	testkit.AssertErrorIs(t, err, errTemp)
-	if calls != 3 {
-		t.Errorf("expected 3 calls, got %d", calls)
-	}
+	testkit.AssertEqual(t, calls, 3)
 }
 
 func TestDo_Defaults(t *testing.T) {
 	cfg := Config{}
 	cfg.defaults()
-	if cfg.MaxAttempts != 3 {
-		t.Errorf("expected 3 max attempts, got %d", cfg.MaxAttempts)
-	}
-	if cfg.InitialDelay != 500*time.Millisecond {
-		t.Errorf("expected 500ms initial delay, got %v", cfg.InitialDelay)
-	}
-	if cfg.MaxDelay != 30*time.Second {
-		t.Errorf("expected 30s max delay, got %v", cfg.MaxDelay)
-	}
-	if cfg.Multiplier != 2.0 {
-		t.Errorf("expected 2.0 multiplier, got %f", cfg.Multiplier)
-	}
-	if cfg.JitterFraction != 0 {
-		t.Errorf("expected JitterFraction = 0 after defaults(), got %f", cfg.JitterFraction)
-	}
+	testkit.AssertEqual(t, cfg.MaxAttempts, 3)
+	testkit.AssertEqual(t, cfg.InitialDelay, 500*time.Millisecond)
+	testkit.AssertEqual(t, cfg.MaxDelay, 30*time.Second)
+	testkit.AssertEqual(t, cfg.Multiplier, 2.0)
+	testkit.AssertEqual(t, cfg.JitterFraction, 0.0)
 }
 
 func TestDo_InvalidJitterFraction_DefaultsApplied(t *testing.T) {
 	cfg := Config{JitterFraction: -1}
 	cfg.defaults()
-	if cfg.JitterFraction != 0.25 {
-		t.Errorf("expected 0.25 jitter for negative input, got %f", cfg.JitterFraction)
-	}
+	testkit.AssertEqual(t, cfg.JitterFraction, 0.25)
 
 	cfg = Config{JitterFraction: 1.5}
 	cfg.defaults()
-	if cfg.JitterFraction != 0.25 {
-		t.Errorf("expected 0.25 jitter for >1 input, got %f", cfg.JitterFraction)
-	}
+	testkit.AssertEqual(t, cfg.JitterFraction, 0.25)
 }
 
 func TestDo_ContextCancelledBeforeFirstAttempt(t *testing.T) {
@@ -136,9 +112,7 @@ func TestDo_RetryIf_NonRetryableError(t *testing.T) {
 		return permanent
 	})
 
-	if calls != 1 {
-		t.Errorf("expected 1 call for non-retryable error, got %d", calls)
-	}
+	testkit.AssertEqual(t, calls, 1)
 	testkit.AssertErrorIs(t, err, permanent)
 }
 
@@ -157,9 +131,7 @@ func TestDo_RetryIf_RetryableError(t *testing.T) {
 		return retryable
 	})
 
-	if calls != 3 {
-		t.Errorf("expected 3 calls, got %d", calls)
-	}
+	testkit.AssertEqual(t, calls, 3)
 	testkit.AssertErrorIs(t, err, retryable)
 }
 
@@ -187,9 +159,7 @@ func TestCalcDelay_ExponentialBackoff(t *testing.T) {
 
 	for i, want := range expected {
 		got := calcDelay(cfg, i)
-		if got != want {
-			t.Errorf("attempt %d: expected %v, got %v", i, want, got)
-		}
+		testkit.AssertEqual(t, got, want)
 	}
 }
 
@@ -202,9 +172,7 @@ func TestCalcDelay_CappedAtMaxDelay(t *testing.T) {
 	}
 
 	got := calcDelay(cfg, 5) // Would be 100000s without cap.
-	if got != 5*time.Second {
-		t.Errorf("expected capped at 5s, got %v", got)
-	}
+	testkit.AssertEqual(t, got, 5*time.Second)
 }
 
 func TestCalcDelay_WithJitter(t *testing.T) {
@@ -225,9 +193,7 @@ func TestCalcDelay_WithJitter(t *testing.T) {
 			t.Errorf("delay out of jitter range: %v", d)
 		}
 	}
-	if len(seen) < 2 {
-		t.Error("jitter should produce variable delays")
-	}
+	testkit.AssertTrue(t, len(seen) >= 2)
 }
 
 func TestDo_ContextCancelledBeforeAttempt_WithPreviousError(t *testing.T) {
@@ -256,9 +222,7 @@ func TestCalcDelay_NegativeInitialDelay(t *testing.T) {
 		JitterFraction: 0,
 	}
 	d := calcDelay(cfg, 0)
-	if d != 0 {
-		t.Errorf("expected 0 for negative delay, got %v", d)
-	}
+	testkit.AssertEqual(t, d, time.Duration(0))
 }
 
 func TestDo_ContextExpiredBetweenAttempts(t *testing.T) {
@@ -292,7 +256,7 @@ func BenchmarkDo_NoRetry(b *testing.B) {
 	ctx := context.Background()
 	cfg := Config{MaxAttempts: 1}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		Do(ctx, cfg, func(ctx context.Context) error { return nil })
 	}
 }

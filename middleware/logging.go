@@ -49,6 +49,10 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 				attrs = append(attrs, slog.String("user_id", userID))
 			}
 
+			if corrID := GetCorrelationID(r); corrID != "" {
+				attrs = append(attrs, slog.String("correlation_id", corrID))
+			}
+
 			// Convert []slog.Attr to []any for LogAttrs
 			l.LogAttrs(r.Context(), slog.LevelInfo, "middleware: request completed", attrs...)
 		})

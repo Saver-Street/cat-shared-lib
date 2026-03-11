@@ -39,3 +39,22 @@ func ExampleDo_permanent() {
 	// Output:
 	// always fails
 }
+
+func ExampleDoWithStats() {
+	result := retry.DoWithStats(context.Background(), retry.Config{
+		MaxAttempts:  3,
+		InitialDelay: time.Millisecond,
+	}, func(_ context.Context) error {
+		return nil
+	})
+	fmt.Printf("ok=%t attempts=%d\n", result.OK(), result.Attempts)
+	// Output:
+	// ok=true attempts=1
+}
+
+func ExampleResult_OK() {
+	r := retry.Result{Attempts: 1}
+	fmt.Println(r.OK())
+	// Output:
+	// true
+}

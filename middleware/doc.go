@@ -12,6 +12,9 @@
 // [APIKey] validates a single API key from a request header, [APIKeyQuery]
 // from a query parameter, and [APIKeyMulti] accepts any of several keys.
 // All comparisons are constant-time to prevent timing attacks.
+// [CSRF] protects against cross-site request forgery using the double-submit
+// cookie pattern with configurable token headers, form fields, and cookie
+// attributes.  Retrieve the token in handlers via [GetCSRFToken].
 //
 // # Rate Limiting & Brute-Force Protection
 //

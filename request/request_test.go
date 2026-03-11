@@ -668,3 +668,25 @@ q := url.Values{"active": {"maybe"}}
 got := OptionalQueryBool(q, "active")
 testkit.AssertNil(t, got)
 }
+
+func TestRequireHeader_Present(t *testing.T) {
+req := httptest.NewRequest(http.MethodGet, "/", nil)
+req.Header.Set("X-Tenant-ID", "acme")
+v, err := RequireHeader(req, "X-Tenant-ID")
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, "acme")
+}
+
+func TestRequireHeader_Missing(t *testing.T) {
+req := httptest.NewRequest(http.MethodGet, "/", nil)
+_, err := RequireHeader(req, "X-Tenant-ID")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "X-Tenant-ID")
+}
+
+func TestRequireHeader_Empty(t *testing.T) {
+req := httptest.NewRequest(http.MethodGet, "/", nil)
+req.Header.Set("X-Tenant-ID", "  ")
+_, err := RequireHeader(req, "X-Tenant-ID")
+testkit.AssertError(t, err)
+}

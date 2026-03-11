@@ -359,3 +359,13 @@ default:
 return nil
 }
 }
+
+// RequireHeader extracts a required HTTP header value. It returns an error
+// if the header is missing or empty.
+func RequireHeader(r *http.Request, name string) (string, error) {
+v := strings.TrimSpace(r.Header.Get(name))
+if v == "" {
+return "", fmt.Errorf("missing required header: %s", name)
+}
+return v, nil
+}

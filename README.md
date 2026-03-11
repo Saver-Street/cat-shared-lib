@@ -53,20 +53,20 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 
 | Package | Description | Coverage |
 |---|---|---|
-| `middleware` | JWT auth (HS256), request ID, logging, recovery, rate limiting, brute-force | 99% |
+| `middleware` | JWT auth (HS256), request ID, logging, recovery, rate limiting, brute-force | 99.7% |
 | `config` | Env var parsing with defaults, validation, required checks | 100% |
-| `database` | PostgreSQL connection pool, transaction helpers | 96% |
+| `database` | PostgreSQL connection pool, transaction helpers | 96.6% |
 | `validation` | Email, UUID, phone, URL validators with clear error messages | 100% |
-| `cache` | Generic in-memory LRU cache with per-entry TTL | 97% |
+| `cache` | Generic in-memory LRU cache with per-entry TTL | 98% |
 | `retry` | Exponential backoff with jitter and context cancellation | 100% |
-| `crypto` | bcrypt password hashing, secure token generation, HMAC-SHA256 | 95% |
-| `email` | SMTP mailer with HTML/text template support | 92% |
-| `tracing` | OpenTelemetry distributed tracing setup and helpers | 98% |
+| `crypto` | bcrypt password hashing, secure token generation, HMAC-SHA256 | 100% |
+| `email` | SMTP mailer with HTML/text template support | 92.6% |
+| `tracing` | OpenTelemetry distributed tracing setup and helpers | 98.5% |
 | `migration` | Database migration runner with rollback support | 100% |
 | `response` | JSON response helpers, pagination headers | 100% |
 | `request` | HTTP request parsing, URL param extraction, pagination | 100% |
-| `health` | Standardized health check handlers with concurrent checkers | 99% |
-| `httpclient` | Resilient HTTP client with retries and circuit breaker | 98% |
+| `health` | Standardized health check handlers with concurrent checkers | 99.2% |
+| `httpclient` | Resilient HTTP client with retries and circuit breaker | 100% |
 | `apperror` | Standardized error types with HTTP status codes | 100% |
 | `circuitbreaker` | Circuit breaker pattern for resilient service calls | 100% |
 | `ratelimit` | Per-key sliding-window + token-bucket rate limiter | 100% |
@@ -76,7 +76,7 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 | `featureflags` | Environment-variable-based feature flags | 100% |
 | `flags` | Feature flag DirectDB reads (boolean/plain-text) | 100% |
 | `identity` | Candidate resolution + context getters | 100% |
-| `metrics` | Prometheus metrics helpers | 99% |
+| `metrics` | Prometheus metrics helpers | 100% |
 | `openapi` | OpenAPI/Swagger spec serving | 100% |
 | `sanitize` | Filename sanitization, NilIfEmpty, IsDuplicateKey, Deref | 100% |
 | `scan` | Generic database row scanning (Rows, Row, First) | 100% |

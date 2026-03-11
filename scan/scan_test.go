@@ -3,6 +3,8 @@ package scan
 import (
 	"errors"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 // mockRows implements RowScanner for testing.
@@ -71,9 +73,7 @@ func TestRows_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 0 {
-		t.Errorf("got %d items, want 0", len(items))
-	}
+	testkit.AssertLen(t, items, 0)
 }
 
 func TestRows_ScanError(t *testing.T) {
@@ -359,9 +359,7 @@ func TestRowsLimit_Basic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(got) != 2 {
-		t.Errorf("len = %d, want 2", len(got))
-	}
+	testkit.AssertLen(t, got, 2)
 }
 
 func TestRowsLimit_ZeroLimit_ReturnsAll(t *testing.T) {
@@ -370,9 +368,7 @@ func TestRowsLimit_ZeroLimit_ReturnsAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(got) != 3 {
-		t.Errorf("len = %d, want 3", len(got))
-	}
+	testkit.AssertLen(t, got, 3)
 }
 
 func TestRowsLimit_NegativeLimit_ReturnsAll(t *testing.T) {
@@ -381,9 +377,7 @@ func TestRowsLimit_NegativeLimit_ReturnsAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(got) != 1 {
-		t.Errorf("len = %d, want 1", len(got))
-	}
+	testkit.AssertLen(t, got, 1)
 }
 
 func TestRowsLimit_NilRows(t *testing.T) {

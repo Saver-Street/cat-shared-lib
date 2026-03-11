@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestNewSpec(t *testing.T) {
@@ -59,9 +61,7 @@ func TestSpec_AddPath_MultipleMethods(t *testing.T) {
 	s.AddPath("/users", "get", NewOperation("List"))
 	s.AddPath("/users", "post", NewOperation("Create"))
 
-	if len(s.Paths["/users"]) != 2 {
-		t.Errorf("expected 2 methods, got %d", len(s.Paths["/users"]))
-	}
+	testkit.AssertLen(t, s.Paths["/users"], 2)
 }
 
 func TestSpec_JSON(t *testing.T) {
@@ -159,9 +159,7 @@ func TestOperation_WithOperationID(t *testing.T) {
 
 func TestOperation_WithTags(t *testing.T) {
 	op := NewOperation("Test").WithTags("users", "admin")
-	if len(op.Tags) != 2 {
-		t.Errorf("expected 2 tags, got %d", len(op.Tags))
-	}
+	testkit.AssertLen(t, op.Tags, 2)
 }
 
 func TestOperation_WithDeprecated(t *testing.T) {
@@ -210,9 +208,7 @@ func TestOperation_AddResponse(t *testing.T) {
 		AddResponse("200", "Success", StringSchema()).
 		AddResponse("404", "Not found", nil)
 
-	if len(op.Responses) != 2 {
-		t.Errorf("expected 2 responses, got %d", len(op.Responses))
-	}
+	testkit.AssertLen(t, op.Responses, 2)
 	if op.Responses["200"].Content == nil {
 		t.Error("expected content for 200")
 	}
@@ -226,9 +222,7 @@ func TestOperation_WithSecurity(t *testing.T) {
 		WithSecurity("bearerAuth").
 		WithSecurity("oauth2", "read:users", "write:users")
 
-	if len(op.Security) != 2 {
-		t.Errorf("expected 2 security reqs, got %d", len(op.Security))
-	}
+	testkit.AssertLen(t, op.Security, 2)
 }
 
 func TestSchemaHelpers(t *testing.T) {

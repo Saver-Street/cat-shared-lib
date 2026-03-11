@@ -261,3 +261,33 @@ var multiSpace = regexp.MustCompile(`\s+`)
 func NormalizeWhitespace(s string) string {
 return strings.TrimSpace(multiSpace.ReplaceAllString(s, " "))
 }
+
+// CamelToSnake converts a camelCase or PascalCase string to snake_case.
+// Consecutive uppercase letters (e.g., "HTTPClient") are treated as a
+// single acronym ("http_client"). Empty input returns "".
+func CamelToSnake(s string) string {
+if s == "" {
+return ""
+}
+var b strings.Builder
+runes := []rune(s)
+for i, r := range runes {
+if unicode.IsUpper(r) {
+if i > 0 {
+prev := runes[i-1]
+// Insert underscore before an uppercase letter when the
+// previous character is lowercase, OR when the previous
+// character is uppercase and the next is lowercase (end
+// of an acronym like "HTTP" in "HTTPClient").
+if unicode.IsLower(prev) ||
+(unicode.IsUpper(prev) && i+1 < len(runes) && unicode.IsLower(runes[i+1])) {
+b.WriteRune('_')
+}
+}
+b.WriteRune(unicode.ToLower(r))
+} else {
+b.WriteRune(r)
+}
+}
+return b.String()
+}

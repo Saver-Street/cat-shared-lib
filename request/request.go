@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -82,6 +83,22 @@ func RequireURLParamInt(r *http.Request, key string, paramFn URLParamFunc) (int6
 		return 0, fmt.Errorf("URL parameter %q must be positive, got %d", key, n)
 	}
 	return n, nil
+}
+
+// uuidRe matches standard UUID v1–v5 (8-4-4-4-12 hex digits).
+var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+// RequireUUIDParam extracts a URL parameter and validates it as a UUID.
+// Returns an error if the parameter is empty, missing, or not a valid UUID.
+func RequireUUIDParam(r *http.Request, key string, paramFn URLParamFunc) (string, error) {
+	val, err := RequireURLParam(r, key, paramFn)
+	if err != nil {
+		return "", err
+	}
+	if !uuidRe.MatchString(val) {
+		return "", fmt.Errorf("URL parameter %q must be a valid UUID, got %q", key, val)
+	}
+	return val, nil
 }
 
 // RequireQueryParam returns the query parameter value for key.

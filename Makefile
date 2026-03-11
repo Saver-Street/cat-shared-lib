@@ -1,4 +1,4 @@
-.PHONY: test test-v test-race lint cover cover-html check-coverage bench clean help
+.PHONY: test test-v test-race lint cover cover-html check-coverage bench fuzz clean help
 
 .DEFAULT_GOAL := help
 
@@ -40,3 +40,16 @@ clean: ## Remove build artifacts
 
 bench: ## Run all benchmarks
 	go test ./... -bench=. -benchmem -count=1 -run=^$$ -timeout 120s
+
+fuzz: ## Run all fuzz tests (short smoke run per target)
+	@echo "Running fuzz tests (5s per target)..."
+	@failed=0; \
+	for pkg in $$(go list ./... 2>/dev/null); do \
+		for target in $$(go test $$pkg -list '^Fuzz' 2>/dev/null | grep '^Fuzz' || true); do \
+			echo "  $$pkg $$target"; \
+			go test $$pkg -fuzz="^$${target}$$" -fuzztime=5s -run='^$$' 2>&1 | tail -1; \
+			if [ $$? -ne 0 ]; then failed=$$((failed+1)); fi; \
+		done; \
+	done; \
+	if [ $$failed -ne 0 ]; then echo "FAIL: $$failed fuzz target(s) failed"; exit 1; fi; \
+	echo "OK: all fuzz targets passed"

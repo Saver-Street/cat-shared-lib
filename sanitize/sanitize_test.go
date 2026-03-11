@@ -684,3 +684,17 @@ func TestCompact_AllZeros(t *testing.T) {
 got := Compact([]string{"", ""})
 testkit.AssertLen(t, got, 0)
 }
+
+func TestContains_Found(t *testing.T) {
+testkit.AssertTrue(t, Contains([]string{"a", "b", "c"}, "b"))
+testkit.AssertTrue(t, Contains([]int{1, 2, 3}, 3))
+}
+
+func TestContains_NotFound(t *testing.T) {
+testkit.AssertFalse(t, Contains([]string{"a", "b"}, "z"))
+testkit.AssertFalse(t, Contains([]int{1, 2}, 5))
+}
+
+func TestContains_Empty(t *testing.T) {
+testkit.AssertFalse(t, Contains([]string{}, "a"))
+}

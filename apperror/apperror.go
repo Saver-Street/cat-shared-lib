@@ -42,6 +42,8 @@ type Error struct {
 	Message string `json:"message"`
 	// Err is the underlying error, if any. Not serialized to JSON.
 	Err error `json:"-"`
+	// Stack is the captured stack trace, if any. Not serialized to JSON.
+	Stack StackTrace `json:"-"`
 }
 
 // Error implements the error interface.

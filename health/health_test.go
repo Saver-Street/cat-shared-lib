@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestHandler_NoCheckers(t *testing.T) {
@@ -23,18 +25,10 @@ func TestHandler_NoCheckers(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&s); err != nil {
 		t.Fatal(err)
 	}
-	if s.Status != "ok" {
-		t.Errorf("expected status ok, got %s", s.Status)
-	}
-	if s.Service != "test-service" {
-		t.Errorf("expected service test-service, got %s", s.Service)
-	}
-	if s.Version != "v1.0.0" {
-		t.Errorf("expected version v1.0.0, got %s", s.Version)
-	}
-	if s.Checks != nil {
-		t.Errorf("expected nil checks, got %v", s.Checks)
-	}
+	testkit.AssertEqual(t, s.Status, "ok")
+	testkit.AssertEqual(t, s.Service, "test-service")
+	testkit.AssertEqual(t, s.Version, "v1.0.0")
+	testkit.AssertNil(t, s.Checks)
 }
 
 func TestHandler_AllHealthy(t *testing.T) {
@@ -51,15 +45,9 @@ func TestHandler_AllHealthy(t *testing.T) {
 
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
-	if s.Status != "ok" {
-		t.Errorf("expected ok, got %s", s.Status)
-	}
-	if s.Checks["db"] != "ok" {
-		t.Errorf("expected db ok, got %s", s.Checks["db"])
-	}
-	if s.Checks["cache"] != "ok" {
-		t.Errorf("expected cache ok, got %s", s.Checks["cache"])
-	}
+	testkit.AssertEqual(t, s.Status, "ok")
+	testkit.AssertEqual(t, s.Checks["db"], "ok")
+	testkit.AssertEqual(t, s.Checks["cache"], "ok")
 }
 
 func TestHandler_Degraded(t *testing.T) {
@@ -78,15 +66,9 @@ func TestHandler_Degraded(t *testing.T) {
 
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
-	if s.Status != "degraded" {
-		t.Errorf("expected degraded, got %s", s.Status)
-	}
-	if s.Checks["db"] != "ok" {
-		t.Errorf("expected db ok, got %s", s.Checks["db"])
-	}
-	if s.Checks["cache"] != "connection refused" {
-		t.Errorf("expected cache error, got %s", s.Checks["cache"])
-	}
+	testkit.AssertEqual(t, s.Status, "degraded")
+	testkit.AssertEqual(t, s.Checks["db"], "ok")
+	testkit.AssertEqual(t, s.Checks["cache"], "connection refused")
 }
 
 func TestHandler_ContentType(t *testing.T) {
@@ -95,28 +77,20 @@ func TestHandler_ContentType(t *testing.T) {
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
 	ct := rr.Header().Get("Content-Type")
-	if ct != "application/json" {
-		t.Errorf("expected application/json, got %s", ct)
-	}
+	testkit.AssertEqual(t, ct, "application/json")
 }
 
 func TestNewChecker(t *testing.T) {
 	c := NewChecker("test", func(ctx context.Context) error { return nil })
-	if c.Name() != "test" {
-		t.Errorf("expected name test, got %s", c.Name())
-	}
-	if err := c.Check(context.Background()); err != nil {
-		t.Errorf("expected nil error, got %v", err)
-	}
+	testkit.AssertEqual(t, c.Name(), "test")
+	testkit.AssertNoError(t, c.Check(context.Background()))
 }
 
 func TestNewChecker_Error(t *testing.T) {
 	c := NewChecker("fail", func(ctx context.Context) error {
 		return errors.New("down")
 	})
-	if err := c.Check(context.Background()); err == nil {
-		t.Error("expected error, got nil")
-	}
+	testkit.AssertError(t, c.Check(context.Background()))
 }
 
 func TestHandler_SlowChecker(t *testing.T) {
@@ -156,12 +130,8 @@ func TestHandler_MultipleUnhealthy(t *testing.T) {
 
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
-	if s.Checks["db"] != "timeout" {
-		t.Errorf("expected db timeout, got %s", s.Checks["db"])
-	}
-	if s.Checks["redis"] != "refused" {
-		t.Errorf("expected redis refused, got %s", s.Checks["redis"])
-	}
+	testkit.AssertEqual(t, s.Checks["db"], "timeout")
+	testkit.AssertEqual(t, s.Checks["redis"], "refused")
 }
 
 func TestHandler_ContextCancelled(t *testing.T) {
@@ -179,9 +149,7 @@ func TestHandler_ContextCancelled(t *testing.T) {
 
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
-	if s.Status != "degraded" {
-		t.Errorf("cancelled context should cause degraded, got %s", s.Status)
-	}
+	testkit.AssertEqual(t, s.Status, "degraded")
 }
 
 func TestHandler_SingleChecker(t *testing.T) {
@@ -195,9 +163,7 @@ func TestHandler_SingleChecker(t *testing.T) {
 	}
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
-	if s.Checks["single"] != "ok" {
-		t.Errorf("expected single=ok, got %s", s.Checks["single"])
-	}
+	testkit.AssertEqual(t, s.Checks["single"], "ok")
 }
 
 func BenchmarkHandler_NoCheckers(b *testing.B) {
@@ -268,33 +234,19 @@ func TestHandler_PanicChecker(t *testing.T) {
 	}
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
-	if s.Status != "degraded" {
-		t.Errorf("expected degraded, got %s", s.Status)
-	}
-	if s.Checks["db"] != "ok" {
-		t.Errorf("expected db ok, got %s", s.Checks["db"])
-	}
-	if s.Checks["panicker"] == "" {
-		t.Error("expected panicker to record an error, got empty string")
-	}
+	testkit.AssertEqual(t, s.Status, "degraded")
+	testkit.AssertEqual(t, s.Checks["db"], "ok")
+	testkit.AssertNotEqual(t, s.Checks["panicker"], "")
 }
 
 func TestStatus_IsHealthy(t *testing.T) {
-	if s := (Status{Status: "ok"}); !s.IsHealthy() {
-		t.Error("expected IsHealthy() true for status=ok")
-	}
-	if s := (Status{Status: "degraded"}); s.IsHealthy() {
-		t.Error("expected IsHealthy() false for status=degraded")
-	}
+	testkit.AssertTrue(t, (Status{Status: "ok"}).IsHealthy())
+	testkit.AssertFalse(t, (Status{Status: "degraded"}).IsHealthy())
 }
 
 func TestStatus_HasErrors(t *testing.T) {
-	if s := (Status{Status: "ok"}); s.HasErrors() {
-		t.Error("expected HasErrors() false for status=ok")
-	}
-	if s := (Status{Status: "degraded"}); !s.HasErrors() {
-		t.Error("expected HasErrors() true for status=degraded")
-	}
+	testkit.AssertFalse(t, (Status{Status: "ok"}).HasErrors())
+	testkit.AssertTrue(t, (Status{Status: "degraded"}).HasErrors())
 }
 
 func TestHandler_UptimePresent(t *testing.T) {
@@ -306,7 +258,5 @@ func TestHandler_UptimePresent(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&s); err != nil {
 		t.Fatal(err)
 	}
-	if s.Uptime == "" {
-		t.Error("expected uptime to be present")
-	}
+	testkit.AssertNotEqual(t, s.Uptime, "")
 }

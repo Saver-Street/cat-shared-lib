@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestHandler_ConcurrentRequests(t *testing.T) {
@@ -30,13 +32,9 @@ func TestHandler_ConcurrentRequests(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, r)
 			var status Status
-			if err := json.NewDecoder(w.Body).Decode(&status); err != nil {
-				t.Errorf("decode error: %v", err)
-				return
-			}
-			if status.Status != "ok" {
-				t.Errorf("status = %q, want ok", status.Status)
-			}
+			err := json.NewDecoder(w.Body).Decode(&status)
+			testkit.AssertNoError(t, err)
+			testkit.AssertEqual(t, status.Status, "ok")
 		}()
 	}
 	wg.Wait()
@@ -52,16 +50,12 @@ func TestHandler_DegradedChecker(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != 503 {
-		t.Errorf("status code = %d, want 503", w.Code)
-	}
+	testkit.AssertEqual(t, w.Code, 503)
 	var status Status
 	if err := json.NewDecoder(w.Body).Decode(&status); err != nil {
 		t.Fatalf("decode error: %v", err)
 	}
-	if status.Status != "degraded" {
-		t.Errorf("status = %q, want degraded", status.Status)
-	}
+	testkit.AssertEqual(t, status.Status, "degraded")
 }
 
 func FuzzHandler(f *testing.F) {
@@ -80,14 +74,8 @@ func FuzzHandler(f *testing.F) {
 		if err := json.NewDecoder(w.Body).Decode(&status); err != nil {
 			t.Fatalf("decode error: %v", err)
 		}
-		if status.Service != service {
-			t.Errorf("service = %q, want %q", status.Service, service)
-		}
-		if status.Version != version {
-			t.Errorf("version = %q, want %q", status.Version, version)
-		}
-		if status.Status != "ok" {
-			t.Errorf("status = %q, want ok (no checkers)", status.Status)
-		}
+		testkit.AssertEqual(t, status.Service, service)
+		testkit.AssertEqual(t, status.Version, version)
+		testkit.AssertEqual(t, status.Status, "ok")
 	})
 }

@@ -24,14 +24,9 @@ func TestHTTPChecker_Healthy(t *testing.T) {
 		URL:  srv.URL,
 	})
 
-	if checker.Name() != "remote-api" {
-		t.Errorf("Name() = %q, want remote-api", checker.Name())
-	}
+	testkit.AssertEqual(t, checker.Name(), "remote-api")
 
-	err := checker.Check(t.Context())
-	if err != nil {
-		t.Errorf("Check() error = %v", err)
-	}
+	testkit.AssertNoError(t, checker.Check(t.Context()))
 }
 
 func TestHTTPChecker_Unhealthy(t *testing.T) {
@@ -46,10 +41,7 @@ func TestHTTPChecker_Unhealthy(t *testing.T) {
 		URL:  srv.URL,
 	})
 
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for 503")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestHTTPChecker_CustomStatus(t *testing.T) {
@@ -64,10 +56,7 @@ func TestHTTPChecker_CustomStatus(t *testing.T) {
 		ExpectedStatus: http.StatusNoContent,
 	})
 
-	err := checker.Check(t.Context())
-	if err != nil {
-		t.Errorf("Check() error = %v, want nil for 204 with custom expected", err)
-	}
+	testkit.AssertNoError(t, checker.Check(t.Context()))
 }
 
 func TestHTTPChecker_ConnectionRefused(t *testing.T) {
@@ -76,10 +65,7 @@ func TestHTTPChecker_ConnectionRefused(t *testing.T) {
 		URL:  "http://127.0.0.1:1", // unlikely to be listening
 	})
 
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for connection refused")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestAggregateChecker_Healthy(t *testing.T) {
@@ -93,10 +79,7 @@ func TestAggregateChecker_Healthy(t *testing.T) {
 	defer srv.Close()
 
 	checker := AggregateChecker("downstream", srv.URL)
-	err := checker.Check(t.Context())
-	if err != nil {
-		t.Errorf("Check() error = %v", err)
-	}
+	testkit.AssertNoError(t, checker.Check(t.Context()))
 }
 
 func TestAggregateChecker_Degraded(t *testing.T) {
@@ -108,10 +91,7 @@ func TestAggregateChecker_Degraded(t *testing.T) {
 	defer srv.Close()
 
 	checker := AggregateChecker("downstream", srv.URL)
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for degraded downstream")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestAggregateChecker_NonOKStatus(t *testing.T) {
@@ -123,10 +103,7 @@ func TestAggregateChecker_NonOKStatus(t *testing.T) {
 	defer srv.Close()
 
 	checker := AggregateChecker("downstream", srv.URL)
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for non-ok status field")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestAggregateChecker_InvalidJSON(t *testing.T) {
@@ -138,18 +115,12 @@ func TestAggregateChecker_InvalidJSON(t *testing.T) {
 	defer srv.Close()
 
 	checker := AggregateChecker("downstream", srv.URL)
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for invalid JSON response")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestAggregateChecker_ConnectionRefused(t *testing.T) {
 	checker := AggregateChecker("down", "http://127.0.0.1:1")
-	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for connection refused")
-	}
+	testkit.AssertError(t, checker.Check(t.Context()))
 }
 
 func TestAggregateChecker_UnexpectedStatusCode(t *testing.T) {
@@ -161,9 +132,7 @@ func TestAggregateChecker_UnexpectedStatusCode(t *testing.T) {
 
 	checker := AggregateChecker("downstream", srv.URL)
 	err := checker.Check(t.Context())
-	if err == nil {
-		t.Error("Check() = nil, want error for 500 status")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertErrorContains(t, err, "returned 500")
 }
 
@@ -182,18 +151,12 @@ func TestHTTPChecker_InHandler(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rec.Code)
-	}
+	testkit.AssertEqual(t, rec.Code, http.StatusOK)
 
 	var status Status
 	_ = json.NewDecoder(rec.Body).Decode(&status)
-	if status.Status != "ok" {
-		t.Errorf("status = %q, want ok", status.Status)
-	}
-	if status.Checks["billing"] != "ok" {
-		t.Errorf("checks[billing] = %q, want ok", status.Checks["billing"])
-	}
+	testkit.AssertEqual(t, status.Status, "ok")
+	testkit.AssertEqual(t, status.Checks["billing"], "ok")
 }
 
 func TestHTTPChecker_DegradedInHandler(t *testing.T) {
@@ -210,15 +173,11 @@ func TestHTTPChecker_DegradedInHandler(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
-	if rec.Code != http.StatusServiceUnavailable {
-		t.Errorf("status = %d, want 503", rec.Code)
-	}
+	testkit.AssertEqual(t, rec.Code, http.StatusServiceUnavailable)
 
 	var status Status
 	_ = json.NewDecoder(rec.Body).Decode(&status)
-	if status.Status != "degraded" {
-		t.Errorf("status = %q, want degraded", status.Status)
-	}
+	testkit.AssertEqual(t, status.Status, "degraded")
 }
 
 func TestHTTPChecker_InvalidURL(t *testing.T) {

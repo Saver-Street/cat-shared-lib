@@ -735,3 +735,46 @@ func TestDoAttempt_ReadBodyError(t *testing.T) {
 	_, err := c.Get(context.Background(), srv.URL)
 	testkit.AssertError(t, err)
 }
+
+func TestPatch_WithBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testkit.AssertEqual(t, r.Method, http.MethodPatch)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"patched":true}`))
+	}))
+	defer srv.Close()
+
+	c := New()
+	resp, err := c.Patch(context.Background(), srv.URL, strings.NewReader(`{"name":"updated"}`))
+	testkit.RequireNoError(t, err)
+	testkit.AssertEqual(t, resp.StatusCode, 200)
+}
+
+func TestPatchJSON(t *testing.T) {
+	type req struct{ Name string }
+	type resp struct{ Patched bool }
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testkit.AssertEqual(t, r.Method, http.MethodPatch)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"Patched":true}`))
+	}))
+	defer srv.Close()
+
+	c := New()
+	var result resp
+	err := c.PatchJSON(context.Background(), srv.URL, req{Name: "test"}, &result)
+	testkit.RequireNoError(t, err)
+	testkit.AssertTrue(t, result.Patched)
+}
+
+func TestPatchJSON_NilTarget(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c := New()
+	err := c.PatchJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, nil)
+	testkit.RequireNoError(t, err)
+}

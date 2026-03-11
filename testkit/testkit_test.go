@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 // ---- T interface tests ----
@@ -905,4 +906,28 @@ mt := &mockT{}
 m := map[int]string{42: "answer"}
 AssertMapHasKey(mt, m, 42)
 AssertFalse(t, mt.errored)
+}
+
+func TestAssertWithin_Pass(t *testing.T) {
+m := &mockT{}
+AssertWithin(m, 50*time.Millisecond, 100*time.Millisecond)
+if m.errored {
+t.Fatal("expected no error for duration within bounds")
+}
+}
+
+func TestAssertWithin_Fail(t *testing.T) {
+m := &mockT{}
+AssertWithin(m, 200*time.Millisecond, 100*time.Millisecond)
+if !m.errored {
+t.Fatal("expected error for duration exceeding bounds")
+}
+}
+
+func TestAssertWithin_Equal(t *testing.T) {
+m := &mockT{}
+AssertWithin(m, 100*time.Millisecond, 100*time.Millisecond)
+if m.errored {
+t.Fatal("expected no error for duration equal to bound")
+}
 }

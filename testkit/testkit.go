@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -202,6 +203,32 @@ func AssertNotContains(t T, s, substr string) {
 	t.Helper()
 	if strings.Contains(s, substr) {
 		t.Errorf("testkit: %q should not contain %q", s, substr)
+	}
+}
+
+// AssertMatch fails unless s matches the regular expression pattern.
+func AssertMatch(t T, s, pattern string) {
+	t.Helper()
+	matched, err := regexp.MatchString(pattern, s)
+	if err != nil {
+		t.Fatalf("testkit: invalid regex %q: %v", pattern, err)
+		return
+	}
+	if !matched {
+		t.Errorf("testkit: %q does not match pattern %q", s, pattern)
+	}
+}
+
+// AssertNoMatch fails if s matches the regular expression pattern.
+func AssertNoMatch(t T, s, pattern string) {
+	t.Helper()
+	matched, err := regexp.MatchString(pattern, s)
+	if err != nil {
+		t.Fatalf("testkit: invalid regex %q: %v", pattern, err)
+		return
+	}
+	if matched {
+		t.Errorf("testkit: %q should not match pattern %q", s, pattern)
 	}
 }
 

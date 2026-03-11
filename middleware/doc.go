@@ -16,6 +16,13 @@
 // cookie pattern with configurable token headers, form fields, and cookie
 // attributes.  Retrieve the token in handlers via [GetCSRFToken].
 //
+// # CORS
+//
+// [CORS] adds Cross-Origin Resource Sharing headers to responses.  Configure
+// allowed origins, methods, headers, credentials, and preflight cache duration
+// via [CORSConfig].  Preflight OPTIONS requests receive a 204 No Content
+// response with the appropriate headers.
+//
 // # Rate Limiting & Brute-Force Protection
 //
 // [NewRateLimiter] implements a sliding-window rate limiter keyed by client IP.

@@ -612,3 +612,26 @@ words := []string{"hello", "", "world", "", "go"}
 nonEmpty := Filter(words, func(s string) bool { return s != "" })
 testkit.AssertLen(t, nonEmpty, 3)
 }
+
+func TestUnique_Strings(t *testing.T) {
+got := Unique([]string{"a", "b", "a", "c", "b"})
+testkit.AssertLen(t, got, 3)
+testkit.AssertEqual(t, got[0], "a")
+testkit.AssertEqual(t, got[1], "b")
+testkit.AssertEqual(t, got[2], "c")
+}
+
+func TestUnique_Ints(t *testing.T) {
+got := Unique([]int{1, 2, 3, 2, 1})
+testkit.AssertLen(t, got, 3)
+}
+
+func TestUnique_Empty(t *testing.T) {
+got := Unique([]string{})
+testkit.AssertLen(t, got, 0)
+}
+
+func TestUnique_NoDuplicates(t *testing.T) {
+got := Unique([]int{1, 2, 3})
+testkit.AssertLen(t, got, 3)
+}

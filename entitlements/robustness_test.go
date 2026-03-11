@@ -82,9 +82,7 @@ func FuzzGetUserTier(f *testing.F) {
 		}}
 		// Must not panic
 		tier, err := GetUserTier(context.Background(), db, userID)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		testkit.AssertEqual(t, tier, "pro")
 	})
 }

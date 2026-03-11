@@ -83,9 +83,7 @@ func mockParamFn(params map[string]string) URLParamFunc {
 func TestRequireURLParam_Present(t *testing.T) {
 	r := httptest.NewRequest("GET", "/test", nil)
 	val, err := RequireURLParam(r, "id", mockParamFn(map[string]string{"id": "42"}))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, val, "42")
 }
 
@@ -109,9 +107,7 @@ func TestRequireURLParam_Empty(t *testing.T) {
 func TestRequireURLParamInt_ValidInt(t *testing.T) {
 	r := httptest.NewRequest("GET", "/test", nil)
 	n, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "123"}))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, n, int64(123))
 }
 
@@ -152,9 +148,7 @@ func TestRequireURLParamInt_Missing(t *testing.T) {
 func TestRequireURLParamInt_MaxInt(t *testing.T) {
 	r := httptest.NewRequest("GET", "/test", nil)
 	n, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "9223372036854775807"}))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, n, int64(9223372036854775807))
 }
 
@@ -222,9 +216,7 @@ func TestParsePagination_ZeroMaxLimitCapsCorrectly(t *testing.T) {
 func TestRequireQueryParam_Present(t *testing.T) {
 	q := url.Values{"filter": {"active"}}
 	got, err := RequireQueryParam(q, "filter")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, got, "active")
 }
 
@@ -321,9 +313,7 @@ func TestOptionalQueryInt_Negative(t *testing.T) {
 func TestRequireQueryParamInt_Valid(t *testing.T) {
 	q := url.Values{"id": {"123"}}
 	n, err := RequireQueryParamInt(q, "id")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, n, int64(123))
 }
 
@@ -367,9 +357,7 @@ func TestParseCommaSeparated_Single(t *testing.T) {
 }
 func TestParseCommaSeparatedInts_Valid(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{"ids": {"1,2,3"}}, "ids")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertLen(t, got, 3)
 	testkit.AssertEqual(t, got[0], int64(1))
 	testkit.AssertEqual(t, got[1], int64(2))
@@ -377,9 +365,7 @@ func TestParseCommaSeparatedInts_Valid(t *testing.T) {
 }
 func TestParseCommaSeparatedInts_Absent(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{}, "ids")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertNil(t, got)
 }
 func TestParseCommaSeparatedInts_Invalid(t *testing.T) {
@@ -390,9 +376,7 @@ func TestParseCommaSeparatedInts_Invalid(t *testing.T) {
 }
 func TestParseCommaSeparatedInts_Negative(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{"ids": {"-1,0,2"}}, "ids")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, got[0], int64(-1))
 	testkit.AssertEqual(t, got[1], int64(0))
 	testkit.AssertEqual(t, got[2], int64(2))

@@ -233,3 +233,46 @@ func ExampleRequireRole() {
 	// 403
 	// 200
 }
+
+func ExampleSetSubscriptionTier() {
+	ctx := middleware.SetSubscriptionTier(context.Background(), "pro")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetSubscriptionTier(r))
+	// Output:
+	// pro
+}
+
+func ExampleSetSubscriptionStatus() {
+	ctx := middleware.SetSubscriptionStatus(context.Background(), "active")
+	r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+	fmt.Println(middleware.GetSubscriptionStatus(r))
+	// Output:
+	// active
+}
+
+func ExampleRequireSubscriptionTier() {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	handler := middleware.RequireSubscriptionTier("pro")(inner)
+
+	// No subscription tier → 403
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/premium", nil)
+	ctx := middleware.SetUserID(r.Context(), "u1")
+	r = r.WithContext(ctx)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+
+	// Correct tier → 200
+	w = httptest.NewRecorder()
+	r = httptest.NewRequest("GET", "/premium", nil)
+	ctx = middleware.SetUserID(r.Context(), "u1")
+	ctx = middleware.SetSubscriptionTier(ctx, "pro")
+	r = r.WithContext(ctx)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+	// Output:
+	// 403
+	// 200
+}

@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -112,6 +113,130 @@ func MustString(key string) string {
 		panic(err)
 	}
 	return v
+}
+
+// Float64 reads an environment variable as a float64 or returns the default value.
+func Float64(key string, defaultVal float64) float64 {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return defaultVal
+	}
+	return f
+}
+
+// MustFloat64 reads a float64 environment variable and panics if unset or unparseable.
+func MustFloat64(key string) float64 {
+	v := os.Getenv(key)
+	if v == "" {
+		panic(fmt.Sprintf("config: required environment variable %s is not set", key))
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		panic(fmt.Sprintf("config: %s is not a valid float64: %s", key, v))
+	}
+	return f
+}
+
+// FilePath reads an environment variable and validates that the file exists.
+// Returns the default if the variable is unset. Returns an error if the file
+// does not exist or is a directory.
+func FilePath(key, defaultVal string) (string, error) {
+	v := os.Getenv(key)
+	if v == "" {
+		v = defaultVal
+	}
+	if v == "" {
+		return "", nil
+	}
+	info, err := os.Stat(v)
+	if err != nil {
+		return "", fmt.Errorf("config: %s: file %q does not exist", key, v)
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("config: %s: %q is a directory, not a file", key, v)
+	}
+	return v, nil
+}
+
+// DirPath reads an environment variable and validates that the directory exists.
+// Returns the default if the variable is unset. Returns an error if the path
+// does not exist or is not a directory.
+func DirPath(key, defaultVal string) (string, error) {
+	v := os.Getenv(key)
+	if v == "" {
+		v = defaultVal
+	}
+	if v == "" {
+		return "", nil
+	}
+	info, err := os.Stat(v)
+	if err != nil {
+		return "", fmt.Errorf("config: %s: directory %q does not exist", key, v)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("config: %s: %q is not a directory", key, v)
+	}
+	return v, nil
+}
+
+// Prefix returns a scoped set of config helpers that prepend a prefix to every
+// environment variable key. This is useful for namespacing configuration, e.g.
+// Prefix("DB_") turns calls like Get("HOST") into lookups of "DB_HOST".
+type Prefix string
+
+// String reads prefix+key or returns the default value.
+func (p Prefix) String(key, defaultVal string) string {
+	return String(string(p)+key, defaultVal)
+}
+
+// Int reads prefix+key as an int or returns the default value.
+func (p Prefix) Int(key string, defaultVal int) int {
+	return Int(string(p)+key, defaultVal)
+}
+
+// Bool reads prefix+key as a bool or returns the default value.
+func (p Prefix) Bool(key string, defaultVal bool) bool {
+	return Bool(string(p)+key, defaultVal)
+}
+
+// Duration reads prefix+key as a time.Duration or returns the default value.
+func (p Prefix) Duration(key string, defaultVal time.Duration) time.Duration {
+	return Duration(string(p)+key, defaultVal)
+}
+
+// MustString reads prefix+key and panics if unset.
+func (p Prefix) MustString(key string) string {
+	return MustString(string(p) + key)
+}
+
+// Summary returns a sorted key-value map of the given environment variable
+// names and their current values. Keys containing "SECRET", "PASSWORD",
+// "TOKEN", or "KEY" (case-insensitive) have their values masked. This is
+// intended for logging configuration at startup.
+func Summary(keys ...string) map[string]string {
+	m := make(map[string]string, len(keys))
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := os.Getenv(k)
+		if v == "" {
+			m[k] = "(unset)"
+			continue
+		}
+		upper := strings.ToUpper(k)
+		if strings.Contains(upper, "SECRET") ||
+			strings.Contains(upper, "PASSWORD") ||
+			strings.Contains(upper, "TOKEN") ||
+			strings.Contains(upper, "KEY") {
+			m[k] = "****"
+		} else {
+			m[k] = v
+		}
+	}
+	return m
 }
 
 // MustInt reads a required environment variable as an int.
@@ -220,80 +345,80 @@ func StringMap(key string, defaultVal map[string]string) map[string]string {
 // a well-formed absolute URL with an http or https scheme, and returns it.
 // If the variable is unset or empty, defaultVal is returned.
 func URL(key string, defaultVal string) (string, error) {
-v := strings.TrimSpace(os.Getenv(key))
-if v == "" {
-return defaultVal, nil
-}
-u, err := url.Parse(v)
-if err != nil {
-return "", fmt.Errorf("config: %s: invalid URL: %w", key, err)
-}
-if u.Scheme != "http" && u.Scheme != "https" {
-return "", fmt.Errorf("config: %s: URL must use http or https scheme", key)
-}
-if u.Host == "" {
-return "", fmt.Errorf("config: %s: URL must have a host", key)
-}
-return v, nil
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return defaultVal, nil
+	}
+	u, err := url.Parse(v)
+	if err != nil {
+		return "", fmt.Errorf("config: %s: invalid URL: %w", key, err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return "", fmt.Errorf("config: %s: URL must use http or https scheme", key)
+	}
+	if u.Host == "" {
+		return "", fmt.Errorf("config: %s: URL must have a host", key)
+	}
+	return v, nil
 }
 
 // Port reads a TCP port number from the named environment variable. It
 // validates that the value is between 1 and 65535. If the variable is
 // unset or empty, defaultVal is returned.
 func Port(key string, defaultVal int) (int, error) {
-v := strings.TrimSpace(os.Getenv(key))
-if v == "" {
-return defaultVal, nil
-}
-p, err := strconv.Atoi(v)
-if err != nil {
-return 0, fmt.Errorf("config: %s: invalid port number: %w", key, err)
-}
-if p < 1 || p > 65535 {
-return 0, fmt.Errorf("config: %s: port must be between 1 and 65535, got %d", key, p)
-}
-return p, nil
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return defaultVal, nil
+	}
+	p, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("config: %s: invalid port number: %w", key, err)
+	}
+	if p < 1 || p > 65535 {
+		return 0, fmt.Errorf("config: %s: port must be between 1 and 65535, got %d", key, p)
+	}
+	return p, nil
 }
 
 // Addr reads a host:port address from the named environment variable. It
 // validates that the value has a valid host and port component using
 // net.SplitHostPort. If the variable is unset or empty, defaultVal is returned.
 func Addr(key, defaultVal string) (string, error) {
-v := strings.TrimSpace(os.Getenv(key))
-if v == "" {
-return defaultVal, nil
-}
-host, portStr, err := net.SplitHostPort(v)
-if err != nil {
-return "", fmt.Errorf("config: %s: invalid address: %w", key, err)
-}
-p, err := strconv.Atoi(portStr)
-if err != nil || p < 1 || p > 65535 {
-return "", fmt.Errorf("config: %s: port must be between 1 and 65535", key)
-}
-return net.JoinHostPort(host, portStr), nil
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return defaultVal, nil
+	}
+	host, portStr, err := net.SplitHostPort(v)
+	if err != nil {
+		return "", fmt.Errorf("config: %s: invalid address: %w", key, err)
+	}
+	p, err := strconv.Atoi(portStr)
+	if err != nil || p < 1 || p > 65535 {
+		return "", fmt.Errorf("config: %s: port must be between 1 and 65535", key)
+	}
+	return net.JoinHostPort(host, portStr), nil
 }
 
 // StringSliceRequired reads a comma-separated environment variable into a
 // string slice and returns an error if the variable is unset, empty, or
 // contains no non-empty elements after trimming.
 func StringSliceRequired(key string) ([]string, error) {
-v := os.Getenv(key)
-if v == "" {
-return nil, fmt.Errorf("config: %s is required", key)
-}
-parts := strings.Split(v, ",")
-result := make([]string, 0, len(parts))
-for _, p := range parts {
-p = strings.TrimSpace(p)
-if p != "" {
-result = append(result, p)
-}
-}
-if len(result) == 0 {
-return nil, fmt.Errorf("config: %s is required", key)
-}
-return result, nil
+	v := os.Getenv(key)
+	if v == "" {
+		return nil, fmt.Errorf("config: %s is required", key)
+	}
+	parts := strings.Split(v, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("config: %s is required", key)
+	}
+	return result, nil
 }
 
 // Bytes reads a byte-size value from the named environment variable.
@@ -301,111 +426,111 @@ return result, nil
 // Plain integers are treated as bytes. If the variable is unset or empty,
 // defaultVal is returned.
 func Bytes(key string, defaultVal int64) (int64, error) {
-v := strings.TrimSpace(os.Getenv(key))
-if v == "" {
-return defaultVal, nil
-}
-upper := strings.ToUpper(v)
-multiplier := int64(1)
-numStr := v
-switch {
-case strings.HasSuffix(upper, "TB"):
-multiplier = 1 << 40
-numStr = strings.TrimSpace(v[:len(v)-2])
-case strings.HasSuffix(upper, "GB"):
-multiplier = 1 << 30
-numStr = strings.TrimSpace(v[:len(v)-2])
-case strings.HasSuffix(upper, "MB"):
-multiplier = 1 << 20
-numStr = strings.TrimSpace(v[:len(v)-2])
-case strings.HasSuffix(upper, "KB"):
-multiplier = 1 << 10
-numStr = strings.TrimSpace(v[:len(v)-2])
-case strings.HasSuffix(upper, "B"):
-numStr = strings.TrimSpace(v[:len(v)-1])
-}
-n, err := strconv.ParseInt(numStr, 10, 64)
-if err != nil {
-return 0, fmt.Errorf("config: %s: invalid byte size %q: %w", key, v, err)
-}
-return n * multiplier, nil
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return defaultVal, nil
+	}
+	upper := strings.ToUpper(v)
+	multiplier := int64(1)
+	numStr := v
+	switch {
+	case strings.HasSuffix(upper, "TB"):
+		multiplier = 1 << 40
+		numStr = strings.TrimSpace(v[:len(v)-2])
+	case strings.HasSuffix(upper, "GB"):
+		multiplier = 1 << 30
+		numStr = strings.TrimSpace(v[:len(v)-2])
+	case strings.HasSuffix(upper, "MB"):
+		multiplier = 1 << 20
+		numStr = strings.TrimSpace(v[:len(v)-2])
+	case strings.HasSuffix(upper, "KB"):
+		multiplier = 1 << 10
+		numStr = strings.TrimSpace(v[:len(v)-2])
+	case strings.HasSuffix(upper, "B"):
+		numStr = strings.TrimSpace(v[:len(v)-1])
+	}
+	n, err := strconv.ParseInt(numStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("config: %s: invalid byte size %q: %w", key, v, err)
+	}
+	return n * multiplier, nil
 }
 
 // Enum reads key from the environment and validates that its value is one
 // of the allowed choices. If the variable is unset or empty, defaultVal is
 // returned. Comparison is case-sensitive.
 func Enum(key, defaultVal string, allowed []string) (string, error) {
-v := strings.TrimSpace(os.Getenv(key))
-if v == "" {
-return defaultVal, nil
-}
-for _, a := range allowed {
-if v == a {
-return v, nil
-}
-}
-return "", fmt.Errorf("config: %s: value %q is not one of %v", key, v, allowed)
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return defaultVal, nil
+	}
+	for _, a := range allowed {
+		if v == a {
+			return v, nil
+		}
+	}
+	return "", fmt.Errorf("config: %s: value %q is not one of %v", key, v, allowed)
 }
 
 // MustEnum is like Enum but panics if the value is not one of the allowed
 // choices. Intended for use during application startup.
 func MustEnum(key string, allowed []string) string {
-v, err := Enum(key, "", allowed)
-if err != nil {
-panic(err)
-}
-if v == "" {
-panic(fmt.Sprintf("config: %s is required", key))
-}
-return v
+	v, err := Enum(key, "", allowed)
+	if err != nil {
+		panic(err)
+	}
+	if v == "" {
+		panic(fmt.Sprintf("config: %s is required", key))
+	}
+	return v
 }
 
 // MustURL is like URL but panics if the variable is unset or the value is
 // not a valid HTTP/HTTPS URL. Intended for use during application startup.
 func MustURL(key string) string {
-v, err := URL(key, "")
-if err != nil {
-panic(err)
-}
-if v == "" {
-panic(fmt.Sprintf("config: %s is required", key))
-}
-return v
+	v, err := URL(key, "")
+	if err != nil {
+		panic(err)
+	}
+	if v == "" {
+		panic(fmt.Sprintf("config: %s is required", key))
+	}
+	return v
 }
 
 // MustPort is like Port but panics if the variable is unset or the value is
 // not a valid port (1–65535). Intended for use during application startup.
 func MustPort(key string) int {
-v, err := Port(key, 0)
-if err != nil {
-panic(err)
-}
-if v == 0 {
-panic(fmt.Sprintf("config: %s is required", key))
-}
-return v
+	v, err := Port(key, 0)
+	if err != nil {
+		panic(err)
+	}
+	if v == 0 {
+		panic(fmt.Sprintf("config: %s is required", key))
+	}
+	return v
 }
 
 // MustAddr is like Addr but panics if the variable is unset or the value is
 // not a valid host:port address. Intended for use during application startup.
 func MustAddr(key string) string {
-v, err := Addr(key, "")
-if err != nil {
-panic(err)
-}
-if v == "" {
-panic(fmt.Sprintf("config: %s is required", key))
-}
-return v
+	v, err := Addr(key, "")
+	if err != nil {
+		panic(err)
+	}
+	if v == "" {
+		panic(fmt.Sprintf("config: %s is required", key))
+	}
+	return v
 }
 
 // MustStringSlice is like StringSliceRequired but panics if the variable is
 // unset, empty, or contains no non-empty elements. Intended for application
 // startup.
 func MustStringSlice(key string) []string {
-v, err := StringSliceRequired(key)
-if err != nil {
-panic(err)
-}
-return v
+	v, err := StringSliceRequired(key)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

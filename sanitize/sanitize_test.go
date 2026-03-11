@@ -635,3 +635,28 @@ func TestUnique_NoDuplicates(t *testing.T) {
 got := Unique([]int{1, 2, 3})
 testkit.AssertLen(t, got, 3)
 }
+
+func TestMap_StringToUpper(t *testing.T) {
+got := Map([]string{"a", "b", "c"}, strings.ToUpper)
+testkit.AssertLen(t, got, 3)
+testkit.AssertEqual(t, got[0], "A")
+testkit.AssertEqual(t, got[2], "C")
+}
+
+func TestMap_IntToString(t *testing.T) {
+got := Map([]int{1, 2, 3}, func(n int) string {
+return fmt.Sprintf("%d", n)
+})
+testkit.AssertLen(t, got, 3)
+testkit.AssertEqual(t, got[0], "1")
+}
+
+func TestMap_Nil(t *testing.T) {
+got := Map[string, string](nil, strings.ToUpper)
+testkit.AssertNil(t, got)
+}
+
+func TestMap_Empty(t *testing.T) {
+got := Map([]string{}, strings.ToUpper)
+testkit.AssertLen(t, got, 0)
+}

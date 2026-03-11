@@ -349,3 +349,15 @@ result = append(result, item)
 }
 return result
 }
+
+// Map applies fn to each element of items and returns the transformed slice.
+func Map[T any, U any](items []T, fn func(T) U) []U {
+if items == nil {
+return nil
+}
+result := make([]U, len(items))
+for i, item := range items {
+result[i] = fn(item)
+}
+return result
+}

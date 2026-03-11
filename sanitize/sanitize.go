@@ -160,3 +160,23 @@ func StripHTML(s string) string {
 	}
 	return b.String()
 }
+
+// Mask replaces all but the last visibleSuffix runes of s with '*'.
+// Useful for masking credit card numbers, tokens, and API keys in logs.
+// Returns the original string unchanged if it is shorter than or equal
+// to visibleSuffix. Returns all '*' if visibleSuffix is zero or negative.
+func Mask(s string, visibleSuffix int) string {
+	runes := []rune(s)
+	n := len(runes)
+	if n == 0 {
+		return ""
+	}
+	if visibleSuffix <= 0 {
+		return strings.Repeat("*", n)
+	}
+	if n <= visibleSuffix {
+		return s
+	}
+	masked := strings.Repeat("*", n-visibleSuffix) + string(runes[n-visibleSuffix:])
+	return masked
+}

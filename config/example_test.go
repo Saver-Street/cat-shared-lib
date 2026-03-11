@@ -1,0 +1,53 @@
+package config_test
+
+import (
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/config"
+)
+
+func ExampleString() {
+	os.Setenv("APP_NAME", "billing-service")
+	defer os.Unsetenv("APP_NAME")
+
+	fmt.Println(config.String("APP_NAME", "default"))
+	fmt.Println(config.String("MISSING_KEY", "fallback"))
+	// Output:
+	// billing-service
+	// fallback
+}
+
+func ExampleInt() {
+	os.Setenv("PORT", "8080")
+	defer os.Unsetenv("PORT")
+
+	fmt.Println(config.Int("PORT", 3000))
+	fmt.Println(config.Int("MISSING_PORT", 3000))
+	// Output:
+	// 8080
+	// 3000
+}
+
+func ExampleBool() {
+	os.Setenv("DEBUG", "true")
+	defer os.Unsetenv("DEBUG")
+
+	fmt.Println(config.Bool("DEBUG", false))
+	fmt.Println(config.Bool("MISSING_FLAG", false))
+	// Output:
+	// true
+	// false
+}
+
+func ExampleDuration() {
+	os.Setenv("TIMEOUT", "30s")
+	defer os.Unsetenv("TIMEOUT")
+
+	fmt.Println(config.Duration("TIMEOUT", 5*time.Second))
+	fmt.Println(config.Duration("MISSING_DUR", 5*time.Second))
+	// Output:
+	// 30s
+	// 5s
+}

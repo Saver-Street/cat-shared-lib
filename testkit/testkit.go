@@ -53,7 +53,7 @@ func AssertJSONEqual(t T, got, want any) {
 	if err != nil {
 		t.Fatalf("testkit: marshal want: %v", err)
 	}
-	if string(g) != string(w) {
+	if !bytes.Equal(g, w) {
 		t.Errorf("testkit: JSON mismatch\n got:  %s\n want: %s", g, w)
 	}
 }
@@ -74,7 +74,7 @@ func AssertJSONContains(t T, body []byte, subset map[string]any) {
 		}
 		wantJSON, _ := json.Marshal(wantV)
 		gotJSON, _ := json.Marshal(gotV)
-		if string(wantJSON) != string(gotJSON) {
+		if !bytes.Equal(wantJSON, gotJSON) {
 			t.Errorf("testkit: key %q: got %s, want %s", k, gotJSON, wantJSON)
 		}
 	}

@@ -127,15 +127,13 @@ func Parse(q url.Values, cfg Config) Params {
 				fields = append(fields, *f)
 			}
 		}
-	} else {
+	} else if cfg.isAllowed(raw) {
 		// Single field mode: sort=name&order=asc
-		if cfg.isAllowed(raw) {
-			dir := parseDirection(q.Get("order"), cfg.DefaultDirection)
-			fields = append(fields, Field{
-				Name:      cfg.canonicalName(raw),
-				Direction: dir,
-			})
-		}
+		dir := parseDirection(q.Get("order"), cfg.DefaultDirection)
+		fields = append(fields, Field{
+			Name:      cfg.canonicalName(raw),
+			Direction: dir,
+		})
 	}
 
 	if len(fields) == 0 {

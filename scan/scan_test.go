@@ -331,20 +331,147 @@ func TestRowsLimit_ScanError(t *testing.T) {
 }
 
 func TestValue_Success(t *testing.T) {
-row := &mockRow{data: []any{"hello"}}
-got, err := Value[string](row)
-testkit.AssertNoError(t, err)
-testkit.AssertEqual(t, got, "hello")
+	row := &mockRow{data: []any{"hello"}}
+	got, err := Value[string](row)
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, got, "hello")
 }
 
 func TestValue_NilRow(t *testing.T) {
-_, err := Value[string](nil)
-testkit.AssertError(t, err)
-testkit.AssertErrorContains(t, err, "row must not be nil")
+	_, err := Value[string](nil)
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "row must not be nil")
 }
 
 func TestValue_ScanError(t *testing.T) {
-row := &mockRow{err: errors.New("no rows")}
-_, err := Value[string](row)
-testkit.AssertError(t, err)
+	row := &mockRow{err: errors.New("no rows")}
+	_, err := Value[string](row)
+	testkit.AssertError(t, err)
+}
+
+// ---- Map tests ----
+
+type dto struct {
+	Label string
+}
+
+func TestMap_Success(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"alice", "1"}, {"bob", "2"}}}
+	results, err := Map[item, dto](rows, scanItem, func(it item) (dto, error) {
+		return dto{Label: it.Name + ":" + it.Val}, nil
+	})
+	testkit.RequireNoError(t, err)
+	testkit.RequireLen(t, results, 2)
+	testkit.AssertEqual(t, results[0].Label, "alice:1")
+	testkit.AssertEqual(t, results[1].Label, "bob:2")
+	testkit.AssertTrue(t, rows.closed)
+}
+
+func TestMap_Empty(t *testing.T) {
+	rows := &mockRows{data: [][]any{}}
+	results, err := Map[item, dto](rows, scanItem, func(it item) (dto, error) {
+		return dto{Label: it.Name}, nil
+	})
+	testkit.RequireNoError(t, err)
+	testkit.AssertLen(t, results, 0)
+}
+
+func TestMap_TransformError(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "1"}}}
+	_, err := Map[item, dto](rows, scanItem, func(it item) (dto, error) {
+		return dto{}, errors.New("transform failed")
+	})
+	testkit.AssertErrorContains(t, err, "transform failed")
+}
+
+func TestMap_ScanError(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"a", "1"}}, scanErr: errors.New("scan fail")}
+	_, err := Map[item, dto](rows, scanItem, func(it item) (dto, error) {
+		return dto{}, nil
+	})
+	testkit.AssertErrorContains(t, err, "scan fail")
+}
+
+func TestMap_IterError(t *testing.T) {
+	rows := &mockRows{data: [][]any{}, iterErr: errors.New("iter fail")}
+	_, err := Map[item, dto](rows, scanItem, func(it item) (dto, error) {
+		return dto{}, nil
+	})
+	testkit.AssertErrorContains(t, err, "iter fail")
+}
+
+func TestMap_NilRows(t *testing.T) {
+	_, err := Map[item, dto](nil, scanItem, func(it item) (dto, error) {
+		return dto{}, nil
+	})
+	testkit.AssertErrorContains(t, err, "rows must not be nil")
+}
+
+func TestMap_NilScanFn(t *testing.T) {
+	rows := &mockRows{data: [][]any{}}
+	_, err := Map[item, dto](rows, nil, func(it item) (dto, error) {
+		return dto{}, nil
+	})
+	testkit.AssertErrorContains(t, err, "scanFn must not be nil")
+}
+
+func TestMap_NilTransformFn(t *testing.T) {
+	rows := &mockRows{data: [][]any{}}
+	_, err := Map[item, dto](rows, scanItem, nil)
+	testkit.AssertErrorContains(t, err, "transformFn must not be nil")
+}
+
+// ---- Collect tests ----
+
+func TestCollect_Success(t *testing.T) {
+	rows := &mockRows{data: [][]any{{"alice", "1"}, {"bob", "2"}}}
+	names, err := Collect[item, string](rows, scanItem, func(it item) string {
+		return it.Name
+	})
+	testkit.RequireNoError(t, err)
+	testkit.RequireLen(t, names, 2)
+	testkit.AssertEqual(t, names[0], "alice")
+	testkit.AssertEqual(t, names[1], "bob")
+}
+
+func TestCollect_Empty(t *testing.T) {
+	rows := &mockRows{data: [][]any{}}
+	names, err := Collect[item, string](rows, scanItem, func(it item) string {
+		return it.Name
+	})
+	testkit.RequireNoError(t, err)
+	testkit.AssertLen(t, names, 0)
+}
+
+func TestCollect_NilRows(t *testing.T) {
+	_, err := Collect[item, string](nil, scanItem, func(it item) string {
+		return it.Name
+	})
+	testkit.AssertErrorContains(t, err, "rows must not be nil")
+}
+
+func BenchmarkMap(b *testing.B) {
+	data := make([][]any, 10)
+	for i := range data {
+		data[i] = []any{"name", "val"}
+	}
+	for b.Loop() {
+		rows := &mockRows{data: data}
+		Map[item, dto](rows, scanItem, func(it item) (dto, error) {
+			return dto{Label: it.Name}, nil
+		})
+	}
+}
+
+func BenchmarkCollect(b *testing.B) {
+	data := make([][]any, 10)
+	for i := range data {
+		data[i] = []any{"name", "val"}
+	}
+	for b.Loop() {
+		rows := &mockRows{data: data}
+		Collect[item, string](rows, scanItem, func(it item) string {
+			return it.Name
+		})
+	}
 }

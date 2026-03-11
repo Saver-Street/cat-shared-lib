@@ -130,12 +130,55 @@ func RowsLimit[T any](rows RowScanner, scanFn func(*T) []any, limit int) ([]T, e
 // wrapper for queries that return exactly one column and one row,
 // such as SELECT count(*) or SELECT max(id).
 func Value[T any](row SingleRowScanner) (T, error) {
-var v T
-if row == nil {
-return v, errors.New("scan.Value: row must not be nil")
+	var v T
+	if row == nil {
+		return v, errors.New("scan.Value: row must not be nil")
+	}
+	if err := row.Scan(&v); err != nil {
+		return v, err
+	}
+	return v, nil
 }
-if err := row.Scan(&v); err != nil {
-return v, err
+
+// Map scans rows into type T and applies a transform function to produce
+// type U. This is useful for converting database models to API response
+// types in a single pass without intermediate allocations.
+func Map[T, U any](rows RowScanner, scanFn func(*T) []any, transformFn func(T) (U, error)) ([]U, error) {
+	if rows == nil {
+		return nil, errors.New("scan.Map: rows must not be nil")
+	}
+	if scanFn == nil {
+		return nil, errors.New("scan.Map: scanFn must not be nil")
+	}
+	if transformFn == nil {
+		return nil, errors.New("scan.Map: transformFn must not be nil")
+	}
+	defer rows.Close()
+
+	var results []U
+	for rows.Next() {
+		var item T
+		if err := rows.Scan(scanFn(&item)...); err != nil {
+			return nil, err
+		}
+		u, err := transformFn(item)
+		if err != nil {
+			return nil, fmt.Errorf("scan.Map: transform: %w", err)
+		}
+		results = append(results, u)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
-return v, nil
+
+// Collect scans all rows and extracts a single field or derived value of
+// type U from each row. It is a convenience wrapper around Map for the
+// common case of collecting a list of IDs, names, or other scalar values
+// from a query result.
+func Collect[T any, U any](rows RowScanner, scanFn func(*T) []any, extractFn func(T) U) ([]U, error) {
+	return Map[T, U](rows, scanFn, func(item T) (U, error) {
+		return extractFn(item), nil
+	})
 }

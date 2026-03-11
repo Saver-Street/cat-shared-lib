@@ -570,3 +570,18 @@ testkit.AssertContains(t, fmt.Sprint(r), "between 1 and 65535")
 }()
 MustPort("TEST_MUST_PORT")
 }
+
+func TestMustAddr_Valid(t *testing.T) {
+t.Setenv("TEST_ADDR", "localhost:8080")
+got := MustAddr("TEST_ADDR")
+testkit.AssertEqual(t, got, "localhost:8080")
+}
+
+func TestMustAddr_PanicsOnMissing(t *testing.T) {
+testkit.AssertPanics(t, func() { MustAddr("MISSING_ADDR") })
+}
+
+func TestMustAddr_PanicsOnInvalid(t *testing.T) {
+t.Setenv("TEST_ADDR", "not-an-addr")
+testkit.AssertPanics(t, func() { MustAddr("TEST_ADDR") })
+}

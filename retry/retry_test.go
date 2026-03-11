@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 var errTemp = errors.New("temporary error")
@@ -47,9 +49,7 @@ func TestDo_AllAttemptsExhausted(t *testing.T) {
 		calls++
 		return errTemp
 	})
-	if !errors.Is(err, errTemp) {
-		t.Errorf("expected errTemp, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, errTemp)
 	if calls != 3 {
 		t.Errorf("expected 3 calls, got %d", calls)
 	}
@@ -97,9 +97,7 @@ func TestDo_ContextCancelledBeforeFirstAttempt(t *testing.T) {
 		t.Fatal("should not be called")
 		return nil
 	})
-	if !errors.Is(err, context.Canceled) {
-		t.Errorf("expected context.Canceled, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, context.Canceled)
 }
 
 func TestDo_ContextCancelledDuringSleep(t *testing.T) {
@@ -119,12 +117,8 @@ func TestDo_ContextCancelledDuringSleep(t *testing.T) {
 		return errTemp
 	})
 
-	if !errors.Is(err, context.Canceled) {
-		t.Errorf("expected context.Canceled, got %v", err)
-	}
-	if !errors.Is(err, errTemp) {
-		t.Errorf("expected errTemp in joined error, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, context.Canceled)
+	testkit.AssertErrorIs(t, err, errTemp)
 }
 
 func TestDo_RetryIf_NonRetryableError(t *testing.T) {
@@ -145,9 +139,7 @@ func TestDo_RetryIf_NonRetryableError(t *testing.T) {
 	if calls != 1 {
 		t.Errorf("expected 1 call for non-retryable error, got %d", calls)
 	}
-	if !errors.Is(err, permanent) {
-		t.Errorf("expected permanent error, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, permanent)
 }
 
 func TestDo_RetryIf_RetryableError(t *testing.T) {
@@ -168,18 +160,14 @@ func TestDo_RetryIf_RetryableError(t *testing.T) {
 	if calls != 3 {
 		t.Errorf("expected 3 calls, got %d", calls)
 	}
-	if !errors.Is(err, retryable) {
-		t.Errorf("expected retryable error, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, retryable)
 }
 
 func TestDo_SingleAttempt(t *testing.T) {
 	err := Do(context.Background(), Config{MaxAttempts: 1}, func(ctx context.Context) error {
 		return errTemp
 	})
-	if !errors.Is(err, errTemp) {
-		t.Errorf("expected errTemp, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, errTemp)
 }
 
 func TestCalcDelay_ExponentialBackoff(t *testing.T) {
@@ -255,9 +243,7 @@ func TestDo_ContextCancelledBeforeAttempt_WithPreviousError(t *testing.T) {
 		return nil
 	})
 
-	if !errors.Is(err, context.Canceled) {
-		t.Errorf("expected context.Canceled, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, context.Canceled)
 }
 
 func TestCalcDelay_NegativeInitialDelay(t *testing.T) {
@@ -298,9 +284,7 @@ func TestDo_ContextExpiredBetweenAttempts(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if !errors.Is(err, errTemp) {
-			t.Errorf("iteration %d: expected errTemp in error, got %v", i, err)
-		}
+		testkit.AssertErrorIs(t, err, errTemp)
 	}
 }
 

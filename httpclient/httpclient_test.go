@@ -187,18 +187,14 @@ func TestRetry_AllFail(t *testing.T) {
 	if err == nil {
 		t.Fatal("Get() = nil, want error after all retries exhausted")
 	}
-	if !errors.Is(err, ErrRequestFailed) {
-		t.Errorf("error = %v, want %v", err, ErrRequestFailed)
-	}
+	testkit.AssertErrorIs(t, err, ErrRequestFailed)
 }
 
 func TestDo_NilContext(t *testing.T) {
 	c := New()
 	//nolint:staticcheck // intentionally passing nil context
 	_, err := c.Do(nil, "GET", "http://example.com", nil)
-	if !errors.Is(err, ErrNilContext) {
-		t.Errorf("Do(nil ctx) = %v, want %v", err, ErrNilContext)
-	}
+	testkit.AssertErrorIs(t, err, ErrNilContext)
 }
 
 func TestDo_ContextCanceled(t *testing.T) {
@@ -441,9 +437,7 @@ func TestCircuitBreaker_Integration(t *testing.T) {
 	// Third call should be rejected by circuit breaker without hitting server
 	beforeAttempts := attempts.Load()
 	_, err := c.Get(context.Background(), srv.URL)
-	if !errors.Is(err, circuitbreaker.ErrCircuitOpen) {
-		t.Errorf("Get() = %v, want %v", err, circuitbreaker.ErrCircuitOpen)
-	}
+	testkit.AssertErrorIs(t, err, circuitbreaker.ErrCircuitOpen)
 	if attempts.Load() != beforeAttempts {
 		t.Error("server was called despite open circuit")
 	}
@@ -758,9 +752,7 @@ func TestDo_NilContextExtra(t *testing.T) {
 	c := New()
 	//nolint:staticcheck
 	_, err := c.Do(nil, http.MethodGet, "http://localhost", nil)
-	if !errors.Is(err, ErrNilContext) {
-		t.Fatalf("expected ErrNilContext, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrNilContext)
 }
 
 func TestPostJSON_DecodeResponseError(t *testing.T) {

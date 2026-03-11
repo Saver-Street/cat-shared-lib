@@ -1,10 +1,11 @@
 package apperror
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestNew(t *testing.T) {
@@ -26,12 +27,8 @@ func TestNew(t *testing.T) {
 func TestWrap(t *testing.T) {
 	cause := fmt.Errorf("db connection lost")
 	e := Wrap(http.StatusInternalServerError, CodeInternal, "failed to fetch user", cause)
-	if !errors.Is(e, cause) {
-		t.Errorf("Err = %v, want %v", e.Err, cause)
-	}
-	if !errors.Is(e, cause) {
-		t.Error("errors.Is should find wrapped cause")
-	}
+	testkit.AssertErrorIs(t, e, cause)
+	testkit.AssertErrorIs(t, e, cause)
 }
 
 func TestError_Error_WithCause(t *testing.T) {
@@ -56,12 +53,8 @@ func TestError_Error_NoCause(t *testing.T) {
 func TestError_Unwrap(t *testing.T) {
 	cause := fmt.Errorf("original")
 	e := Wrap(500, CodeInternal, "wrapped", cause)
-	if !errors.Is(e, cause) {
-		t.Error("errors.Is should find cause")
-	}
-	if !errors.Is(e, cause) {
-		t.Error("Unwrap should return cause")
-	}
+	testkit.AssertErrorIs(t, e, cause)
+	testkit.AssertErrorIs(t, e, cause)
 
 	e2 := New(400, CodeBadRequest, "no cause")
 	if e2.Unwrap() != nil {
@@ -113,9 +106,7 @@ func TestInternalWrap(t *testing.T) {
 	if e.Code != CodeInternal {
 		t.Errorf("Code = %q, want %q", e.Code, CodeInternal)
 	}
-	if !errors.Is(e, cause) {
-		t.Error("should wrap cause")
-	}
+	testkit.AssertErrorIs(t, e, cause)
 }
 
 func TestHTTPStatus(t *testing.T) {

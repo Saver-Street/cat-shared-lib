@@ -54,9 +54,7 @@ func TestRegister_Success(t *testing.T) {
 	testkit.RequireNoError(t, err)
 
 	services := r.Services()
-	if len(services) != 1 {
-		t.Fatalf("len(Services()) = %d, want 1", len(services))
-	}
+	testkit.RequireLen(t, services, 1)
 	testkit.AssertEqual(t, services[0], "billing")
 }
 
@@ -86,9 +84,7 @@ func TestRegister_UpdateExisting(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://new:8080"})
 
 	all, _ := r.ResolveAll("svc")
-	if len(all) != 1 {
-		t.Fatalf("len(instances) = %d, want 1 (update, not duplicate)", len(all))
-	}
+	testkit.RequireLen(t, all, 1)
 	testkit.AssertEqual(t, all[0].Addr, "http://new:8080")
 }
 
@@ -101,9 +97,7 @@ func TestDeregister(t *testing.T) {
 	testkit.RequireNoError(t, err)
 
 	all, _ := r.ResolveAll("svc")
-	if len(all) != 1 {
-		t.Fatalf("len(instances) = %d, want 1", len(all))
-	}
+	testkit.RequireLen(t, all, 1)
 	testkit.AssertEqual(t, all[0].ID, "2")
 }
 

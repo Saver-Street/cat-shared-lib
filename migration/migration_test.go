@@ -361,9 +361,7 @@ func TestApplied_OK(t *testing.T) {
 	r := newRunner(db)
 	records, err := r.Applied(context.Background())
 	testkit.RequireNoError(t, err)
-	if len(records) != 1 {
-		t.Fatalf("expected 1 record, got %d", len(records))
-	}
+	testkit.RequireLen(t, records, 1)
 	testkit.AssertEqual(t, records[0].ID, 1)
 }
 

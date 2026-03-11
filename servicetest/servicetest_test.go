@@ -210,9 +210,7 @@ func TestDBTestHelper_QueryRow_RecordsQuery(t *testing.T) {
 
 	_ = db.QueryRow(context.Background(), "SELECT 1", "arg1")
 	queries := db.Queries()
-	if len(queries) != 1 {
-		t.Fatalf("expected 1 query, got %d", len(queries))
-	}
+	testkit.RequireLen(t, queries, 1)
 	testkit.AssertEqual(t, queries[0].SQL, "SELECT 1")
 }
 

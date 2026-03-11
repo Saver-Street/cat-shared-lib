@@ -25,9 +25,7 @@ func TestSpec_WithDescription(t *testing.T) {
 
 func TestSpec_AddServer(t *testing.T) {
 	s := NewSpec("API", "1.0.0").AddServer("https://api.example.com", "Production")
-	if len(s.Servers) != 1 {
-		t.Fatalf("expected 1 server, got %d", len(s.Servers))
-	}
+	testkit.RequireLen(t, s.Servers, 1)
 	testkit.AssertEqual(t, s.Servers[0].URL, "https://api.example.com")
 }
 
@@ -134,9 +132,7 @@ func TestOperation_AddParameter(t *testing.T) {
 		AddParameter("page", "query", "Page number", false, IntegerSchema()).
 		AddParameter("id", "path", "User ID", true, StringSchema())
 
-	if len(op.Parameters) != 2 {
-		t.Fatalf("expected 2 params, got %d", len(op.Parameters))
-	}
+	testkit.RequireLen(t, op.Parameters, 2)
 	testkit.AssertEqual(t, op.Parameters[0].Name, "page")
 	testkit.AssertEqual(t, op.Parameters[0].In, "query")
 	testkit.AssertTrue(t, op.Parameters[1].Required)

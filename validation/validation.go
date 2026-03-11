@@ -289,3 +289,19 @@ return fmt.Errorf("%s must be uppercase", field)
 }
 return nil
 }
+
+// StartsWith validates that value starts with the given prefix.
+func StartsWith(field, value, prefix string) error {
+if !strings.HasPrefix(value, prefix) {
+return fmt.Errorf("%s must start with %q", field, prefix)
+}
+return nil
+}
+
+// EndsWith validates that value ends with the given suffix.
+func EndsWith(field, value, suffix string) error {
+if !strings.HasSuffix(value, suffix) {
+return fmt.Errorf("%s must end with %q", field, suffix)
+}
+return nil
+}

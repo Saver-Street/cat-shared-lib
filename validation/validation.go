@@ -229,3 +229,19 @@ return &ValidationError{Field: field, Message: field + " must contain only lette
 }
 return nil
 }
+
+var numericRe = regexp.MustCompile(`^[0-9]+$`)
+
+// Numeric validates that value (after trimming) contains only ASCII digits
+// (0-9). Useful for ZIP codes, phone PINs, and numeric reference codes
+// that should be treated as strings rather than integers.
+func Numeric(field, value string) error {
+v := strings.TrimSpace(value)
+if v == "" {
+return &ValidationError{Field: field, Message: field + " is required"}
+}
+if !numericRe.MatchString(v) {
+return &ValidationError{Field: field, Message: field + " must contain only digits"}
+}
+return nil
+}

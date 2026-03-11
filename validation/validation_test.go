@@ -333,3 +333,28 @@ testkit.AssertContains(t, err.Error(), "is required")
 func TestAlphanumeric_Trimmed(t *testing.T) {
 testkit.AssertNoError(t, Alphanumeric("code", "  abc123  "))
 }
+
+func TestNumeric_Valid(t *testing.T) {
+testkit.AssertNoError(t, Numeric("zip", "90210"))
+}
+
+func TestNumeric_Invalid(t *testing.T) {
+err := Numeric("zip", "90-210")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "only digits")
+}
+
+func TestNumeric_Empty(t *testing.T) {
+err := Numeric("zip", "")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "is required")
+}
+
+func TestNumeric_Letters(t *testing.T) {
+err := Numeric("zip", "ABC")
+testkit.AssertError(t, err)
+}
+
+func TestNumeric_Trimmed(t *testing.T) {
+testkit.AssertNoError(t, Numeric("zip", "  12345  "))
+}

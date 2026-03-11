@@ -9,6 +9,9 @@
 // [GetUserEmail], and related getters.  [RequireAuth], [RequireAdmin],
 // [RequireRole], and [RequireSubscriptionTier] enforce access policies.
 // [SignHS256] creates signed tokens for testing or token issuance.
+// [APIKey] validates a single API key from a request header, [APIKeyQuery]
+// from a query parameter, and [APIKeyMulti] accepts any of several keys.
+// All comparisons are constant-time to prevent timing attacks.
 //
 // # Rate Limiting & Brute-Force Protection
 //

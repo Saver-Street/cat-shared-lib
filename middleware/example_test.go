@@ -315,3 +315,43 @@ func ExampleSecureHeaders() {
 	// nosniff
 	// DENY
 }
+
+func ExampleAPIKey() {
+	handler := middleware.APIKey("X-API-Key", "secret123")(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}),
+	)
+
+	// Valid key.
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-API-Key", "secret123")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	fmt.Println(rec.Code)
+
+	// Invalid key.
+	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2.Header.Set("X-API-Key", "wrong")
+	rec2 := httptest.NewRecorder()
+	handler.ServeHTTP(rec2, req2)
+	fmt.Println(rec2.Code)
+	// Output:
+	// 200
+	// 401
+}
+
+func ExampleAPIKeyMulti() {
+	handler := middleware.APIKeyMulti("X-API-Key", []string{"key-a", "key-b"})(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}),
+	)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-API-Key", "key-b")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	fmt.Println(rec.Code)
+	// Output:
+	// 200
+}

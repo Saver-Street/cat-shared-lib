@@ -106,3 +106,39 @@ func ExampleStripHTML() {
 	// Output:
 	// Hello World
 }
+
+func ExampleNullString() {
+	name := "Alice"
+	fmt.Println(sanitize.NullString(&name, "unknown"))
+	fmt.Println(sanitize.NullString(nil, "unknown"))
+	// Output:
+	// Alice
+	// unknown
+}
+
+func ExampleNullInt64() {
+	age := int64(30)
+	fmt.Println(sanitize.NullInt64(&age, 0))
+	fmt.Println(sanitize.NullInt64(nil, 0))
+	// Output:
+	// 30
+	// 0
+}
+
+func ExampleNullBool() {
+	active := true
+	fmt.Println(sanitize.NullBool(&active, false))
+	fmt.Println(sanitize.NullBool(nil, false))
+	// Output:
+	// true
+	// false
+}
+
+func ExampleDeref() {
+	s := "hello"
+	fmt.Println(sanitize.Deref(&s, "default"))
+	fmt.Println(sanitize.Deref(nil, "default"))
+	// Output:
+	// hello
+	// default
+}

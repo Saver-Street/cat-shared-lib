@@ -29,6 +29,11 @@ const (
 	CodeServiceDown      Code = "SERVICE_UNAVAILABLE"
 	CodeUnprocessable    Code = "UNPROCESSABLE_ENTITY"
 	CodeMethodNotAllowed Code = "METHOD_NOT_ALLOWED"
+	CodePaymentRequired  Code = "PAYMENT_REQUIRED"
+	CodeTooLarge         Code = "PAYLOAD_TOO_LARGE"
+	CodeGone             Code = "GONE"
+	CodeNotImplemented   Code = "NOT_IMPLEMENTED"
+	CodePrecondition     Code = "PRECONDITION_FAILED"
 )
 
 // Error is a structured application error with an HTTP status code,
@@ -122,6 +127,71 @@ func RateLimit(message string) *Error {
 // ServiceDown creates a 503 SERVICE_UNAVAILABLE error.
 func ServiceDown(message string) *Error {
 	return New(http.StatusServiceUnavailable, CodeServiceDown, message)
+}
+
+// NotFoundWrap creates a 404 NOT_FOUND error wrapping an underlying error.
+func NotFoundWrap(message string, err error) *Error {
+	return Wrap(http.StatusNotFound, CodeNotFound, message, err)
+}
+
+// BadRequestWrap creates a 400 BAD_REQUEST error wrapping an underlying error.
+func BadRequestWrap(message string, err error) *Error {
+	return Wrap(http.StatusBadRequest, CodeBadRequest, message, err)
+}
+
+// UnauthorizedWrap creates a 401 UNAUTHORIZED error wrapping an underlying error.
+func UnauthorizedWrap(message string, err error) *Error {
+	return Wrap(http.StatusUnauthorized, CodeUnauthorized, message, err)
+}
+
+// ForbiddenWrap creates a 403 FORBIDDEN error wrapping an underlying error.
+func ForbiddenWrap(message string, err error) *Error {
+	return Wrap(http.StatusForbidden, CodeForbidden, message, err)
+}
+
+// ConflictWrap creates a 409 CONFLICT error wrapping an underlying error.
+func ConflictWrap(message string, err error) *Error {
+	return Wrap(http.StatusConflict, CodeConflict, message, err)
+}
+
+// ValidationWrap creates a 422 VALIDATION_ERROR error wrapping an underlying error.
+func ValidationWrap(message string, err error) *Error {
+	return Wrap(http.StatusUnprocessableEntity, CodeValidation, message, err)
+}
+
+// TimeoutWrap creates a 504 TIMEOUT error wrapping an underlying error.
+func TimeoutWrap(message string, err error) *Error {
+	return Wrap(http.StatusGatewayTimeout, CodeTimeout, message, err)
+}
+
+// ServiceDownWrap creates a 503 SERVICE_UNAVAILABLE error wrapping an underlying error.
+func ServiceDownWrap(message string, err error) *Error {
+	return Wrap(http.StatusServiceUnavailable, CodeServiceDown, message, err)
+}
+
+// PaymentRequired creates a 402 PAYMENT_REQUIRED error.
+func PaymentRequired(message string) *Error {
+	return New(http.StatusPaymentRequired, CodePaymentRequired, message)
+}
+
+// TooLarge creates a 413 PAYLOAD_TOO_LARGE error.
+func TooLarge(message string) *Error {
+	return New(http.StatusRequestEntityTooLarge, CodeTooLarge, message)
+}
+
+// Gone creates a 410 GONE error.
+func Gone(message string) *Error {
+	return New(http.StatusGone, CodeGone, message)
+}
+
+// NotImplemented creates a 501 NOT_IMPLEMENTED error.
+func NotImplemented(message string) *Error {
+	return New(http.StatusNotImplemented, CodeNotImplemented, message)
+}
+
+// PreconditionFailed creates a 412 PRECONDITION_FAILED error.
+func PreconditionFailed(message string) *Error {
+	return New(http.StatusPreconditionFailed, CodePrecondition, message)
 }
 
 // HTTPStatus returns the HTTP status code for an error. If the error is

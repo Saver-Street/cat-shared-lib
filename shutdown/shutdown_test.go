@@ -372,7 +372,7 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 	}
 
 	// Start a long-running request to keep the server busy.
-	go http.Get("http://" + addr + "/slow") //nolint:errcheck
+	go http.Get("http://" + addr + "/slow") //nolint:noctx
 
 	// Wait for the request to be in-flight.
 	<-reqStarted

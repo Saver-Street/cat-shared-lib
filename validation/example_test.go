@@ -54,6 +54,38 @@ func ExampleMatch() {
 	// code: code must match format XXX-0000
 }
 
+func ExampleUUID() {
+	fmt.Println(validation.UUID("id", "550e8400-e29b-41d4-a716-446655440000"))
+	fmt.Println(validation.UUID("id", "not-a-uuid"))
+	// Output:
+	// <nil>
+	// id: invalid UUID format
+}
+
+func ExamplePhone() {
+	fmt.Println(validation.Phone("phone", "+1-555-123-4567"))
+	fmt.Println(validation.Phone("phone", "123"))
+	// Output:
+	// <nil>
+	// phone: phone number must contain 7-15 digits
+}
+
+func ExampleMaxLength() {
+	fmt.Println(validation.MaxLength("bio", "short", 100))
+	fmt.Println(validation.MaxLength("bio", "this is way too long", 5))
+	// Output:
+	// <nil>
+	// bio: bio must be at most 5 characters
+}
+
+func ExampleOneOf() {
+	fmt.Println(validation.OneOf("status", "active", []string{"active", "inactive", "pending"}))
+	fmt.Println(validation.OneOf("status", "deleted", []string{"active", "inactive", "pending"}))
+	// Output:
+	// <nil>
+	// status: status must be one of: active, inactive, pending
+}
+
 func ExampleCollect() {
 	errs := validation.Collect(
 		validation.Required("name", "Alice"),

@@ -168,7 +168,9 @@ func TestTokenBucket_Cleanup(t *testing.T) {
 }
 
 func TestTokenBucket_StopIdempotent(t *testing.T) {
-	tbl := NewTokenBucketLimiter(TokenBucketConfig{})
+	tbl := NewTokenBucketLimiter(TokenBucketConfig{CleanupInterval: 10 * time.Millisecond})
+	// Let the cleanup ticker fire at least once.
+	time.Sleep(50 * time.Millisecond)
 	tbl.Stop()
 	tbl.Stop() // should not panic
 }

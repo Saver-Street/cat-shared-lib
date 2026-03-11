@@ -11,7 +11,9 @@ linters:
     - durationcheck
     - errorlint
     - gosec
+    - misspell
     - nilerr
+    - nolintlint
     - prealloc
     - unconvert
     - unparam

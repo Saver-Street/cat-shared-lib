@@ -54,35 +54,35 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 |---|---|---|
 | `middleware` | JWT auth (HS256), request ID, logging, recovery, rate limiting, brute-force | 99% |
 | `config` | Env var parsing with defaults, validation, required checks | 100% |
-| `database` | PostgreSQL connection pool, transaction helpers | 97% |
-| `validation` | Email, UUID, phone, URL validators with clear error messages | 98% |
-| `cache` | Generic in-memory LRU cache with per-entry TTL | 99% |
-| `retry` | Exponential backoff with jitter and context cancellation | 95% |
-| `crypto` | bcrypt password hashing, secure token generation, HMAC-SHA256 | 93% |
+| `database` | PostgreSQL connection pool, transaction helpers | 96% |
+| `validation` | Email, UUID, phone, URL validators with clear error messages | 100% |
+| `cache` | Generic in-memory LRU cache with per-entry TTL | 97% |
+| `retry` | Exponential backoff with jitter and context cancellation | 100% |
+| `crypto` | bcrypt password hashing, secure token generation, HMAC-SHA256 | 95% |
 | `email` | SMTP mailer with HTML/text template support | 92% |
-| `tracing` | OpenTelemetry distributed tracing setup and helpers | 96% |
-| `migration` | Database migration runner with rollback support | 97% |
+| `tracing` | OpenTelemetry distributed tracing setup and helpers | 98% |
+| `migration` | Database migration runner with rollback support | 100% |
 | `response` | JSON response helpers, pagination headers | 100% |
 | `request` | HTTP request parsing, URL param extraction, pagination | 100% |
-| `health` | Standardized health check handlers with concurrent checkers | 92% |
-| `httpclient` | Resilient HTTP client with retries and circuit breaker | 99% |
+| `health` | Standardized health check handlers with concurrent checkers | 99% |
+| `httpclient` | Resilient HTTP client with retries and circuit breaker | 98% |
 | `apperror` | Standardized error types with HTTP status codes | 100% |
-| `circuitbreaker` | Circuit breaker pattern for resilient service calls | 99% |
-| `ratelimit` | Per-key sliding-window + token-bucket rate limiter | 98% |
+| `circuitbreaker` | Circuit breaker pattern for resilient service calls | 100% |
+| `ratelimit` | Per-key sliding-window + token-bucket rate limiter | 100% |
 | `cors` | CORS middleware with configurable origins | 100% |
-| `discovery` | Service registry and instance-based health checking | 97% |
+| `discovery` | Service registry and instance-based health checking | 100% |
 | `entitlements` | Subscription tier limits + DirectDB queries | 100% |
 | `featureflags` | Environment-variable-based feature flags | 100% |
 | `flags` | Feature flag DirectDB reads (boolean/plain-text) | 100% |
 | `identity` | Candidate resolution + context getters | 100% |
 | `metrics` | Prometheus metrics helpers | 99% |
-| `openapi` | OpenAPI/Swagger spec serving | 96% |
+| `openapi` | OpenAPI/Swagger spec serving | 100% |
 | `sanitize` | Filename sanitization, NilIfEmpty, IsDuplicateKey, Deref | 100% |
 | `scan` | Generic database row scanning (Rows, Row, First) | 100% |
 | `security` | Suspicious input detection, PII redaction | 100% |
 | `server` | HTTP server with graceful shutdown (SIGINT/SIGTERM) | 100% |
-| `shutdown` | OS signal-based graceful shutdown coordinator | 96% |
-| `testkit` | Mock server, call recorder, and other test helpers | 94% |
+| `shutdown` | OS signal-based graceful shutdown coordinator | 100% |
+| `testkit` | Mock server, call recorder, and other test helpers | 100% |
 | `types` | Shared domain types (User, CandidateProfile, Pagination) | 100% |
 | `contracts` | Shared service interfaces (Service, Handler, HealthCheck, StandardError) | 100% |
 | `servicetest` | Integration test helpers: HTTP test server, mock Querier, fixture loader | 100% |

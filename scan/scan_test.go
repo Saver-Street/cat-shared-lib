@@ -329,3 +329,22 @@ func TestRowsLimit_ScanError(t *testing.T) {
 	_, err := RowsLimit[item](rows, scanItem, 5)
 	testkit.AssertError(t, err)
 }
+
+func TestValue_Success(t *testing.T) {
+row := &mockRow{data: []any{"hello"}}
+got, err := Value[string](row)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, got, "hello")
+}
+
+func TestValue_NilRow(t *testing.T) {
+_, err := Value[string](nil)
+testkit.AssertError(t, err)
+testkit.AssertErrorContains(t, err, "row must not be nil")
+}
+
+func TestValue_ScanError(t *testing.T) {
+row := &mockRow{err: errors.New("no rows")}
+_, err := Value[string](row)
+testkit.AssertError(t, err)
+}

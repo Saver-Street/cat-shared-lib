@@ -26,3 +26,35 @@ func ExampleNewSpec() {
 	// 200
 	// true
 }
+
+func ExampleSpec_AddSchema() {
+	spec := openapi.NewSpec("Users API", "1.0.0").
+		AddSchema("User", openapi.ObjectSchema(map[string]*openapi.Schema{
+			"id":   openapi.IntegerSchema(),
+			"name": openapi.StringSchema(),
+		})).
+		AddPath("/users/{id}", "get", openapi.NewOperation("Get user").
+			AddResponse("200", "Success", openapi.RefSchema("#/components/schemas/User")))
+
+	data, _ := spec.JSON()
+	fmt.Println(strings.Contains(string(data), "components"))
+	fmt.Println(strings.Contains(string(data), "#/components/schemas/User"))
+	// Output:
+	// true
+	// true
+}
+
+func ExampleSpec_AddSecurityScheme() {
+	spec := openapi.NewSpec("Secure API", "1.0.0").
+		AddSecurityScheme("bearerAuth", openapi.BearerAuth("JWT")).
+		AddPath("/protected", "get", openapi.NewOperation("Protected").
+			WithSecurity("bearerAuth").
+			AddResponse("200", "OK", nil))
+
+	data, _ := spec.JSON()
+	fmt.Println(strings.Contains(string(data), "securitySchemes"))
+	fmt.Println(strings.Contains(string(data), "bearer"))
+	// Output:
+	// true
+	// true
+}

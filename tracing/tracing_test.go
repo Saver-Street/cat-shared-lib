@@ -27,9 +27,7 @@ func newTestProvider(t *testing.T) *Provider {
 
 func TestNewProvider_Noop(t *testing.T) {
 	tp := newTestProvider(t)
-	if tp == nil {
-		t.Fatal("expected non-nil provider")
-	}
+	testkit.AssertNotNil(t, tp)
 }
 
 func TestNewProvider_Stdout(t *testing.T) {
@@ -48,9 +46,7 @@ func TestNewProvider_UnknownExporter(t *testing.T) {
 		ServiceName: "svc",
 		Exporter:    "kafka",
 	})
-	if err == nil {
-		t.Fatal("expected error for unknown exporter")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestNewProvider_WithEnvironment(t *testing.T) {
@@ -68,25 +64,19 @@ func TestNewProvider_WithEnvironment(t *testing.T) {
 func TestNewProvider_SampleRateZeroDefaults(t *testing.T) {
 	cfg := Config{ServiceName: "s", SampleRate: 0}
 	cfg.defaults()
-	if cfg.SampleRate != 1.0 {
-		t.Errorf("expected SampleRate=1.0, got %f", cfg.SampleRate)
-	}
+	testkit.AssertEqual(t, cfg.SampleRate, 1.0)
 }
 
 func TestNewProvider_ExporterDefault(t *testing.T) {
 	cfg := Config{ServiceName: "s"}
 	cfg.defaults()
-	if cfg.Exporter != ExporterNoop {
-		t.Errorf("expected noop exporter, got %q", cfg.Exporter)
-	}
+	testkit.AssertEqual(t, cfg.Exporter, ExporterNoop)
 }
 
 func TestProvider_Tracer(t *testing.T) {
 	tp := newTestProvider(t)
 	tr := tp.Tracer("test-component")
-	if tr == nil {
-		t.Fatal("expected non-nil tracer")
-	}
+	testkit.AssertNotNil(t, tr)
 }
 
 func TestProvider_Shutdown(t *testing.T) {
@@ -97,9 +87,7 @@ func TestProvider_Shutdown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if err := tp.Shutdown(context.Background()); err != nil {
-		t.Fatalf("unexpected error on shutdown: %v", err)
-	}
+	testkit.AssertNoError(t, tp.Shutdown(context.Background()))
 }
 
 // ---- Span helpers ----
@@ -149,16 +137,12 @@ func TestSetAttributes(t *testing.T) {
 
 func TestTraceID_NoSpan(t *testing.T) {
 	id := TraceID(context.Background())
-	if id != "" {
-		t.Errorf("expected empty trace ID, got %q", id)
-	}
+	testkit.AssertEqual(t, id, "")
 }
 
 func TestSpanID_NoSpan(t *testing.T) {
 	id := SpanID(context.Background())
-	if id != "" {
-		t.Errorf("expected empty span ID, got %q", id)
-	}
+	testkit.AssertEqual(t, id, "")
 }
 
 func TestTraceID_WithSpan(t *testing.T) {
@@ -166,12 +150,8 @@ func TestTraceID_WithSpan(t *testing.T) {
 	ctx, span := tp.Tracer("t").Start(context.Background(), "op")
 	defer span.End()
 	id := TraceID(ctx)
-	if id == "" {
-		t.Error("expected non-empty trace ID with active span")
-	}
-	if len(id) != 32 {
-		t.Errorf("trace ID should be 32 hex chars, got %d (%q)", len(id), id)
-	}
+	testkit.AssertNotEqual(t, id, "")
+	testkit.AssertLen(t, id, 32)
 }
 
 func TestSpanID_WithSpan(t *testing.T) {
@@ -179,27 +159,19 @@ func TestSpanID_WithSpan(t *testing.T) {
 	ctx, span := tp.Tracer("t").Start(context.Background(), "op")
 	defer span.End()
 	id := SpanID(ctx)
-	if id == "" {
-		t.Error("expected non-empty span ID with active span")
-	}
-	if len(id) != 16 {
-		t.Errorf("span ID should be 16 hex chars, got %d (%q)", len(id), id)
-	}
+	testkit.AssertNotEqual(t, id, "")
+	testkit.AssertLen(t, id, 16)
 }
 
 func TestIsRecording_NoSpan(t *testing.T) {
-	if IsRecording(context.Background()) {
-		t.Error("expected false for context with no span")
-	}
+	testkit.AssertFalse(t, IsRecording(context.Background()))
 }
 
 func TestIsRecording_WithSpan(t *testing.T) {
 	tp := newTestProvider(t)
 	ctx, span := tp.Tracer("t").Start(context.Background(), "op")
 	defer span.End()
-	if !IsRecording(ctx) {
-		t.Error("expected true for context with active recording span")
-	}
+	testkit.AssertTrue(t, IsRecording(ctx))
 }
 
 // ---- HTTP middleware ----
@@ -213,9 +185,7 @@ func TestMiddleware_200(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/health", nil)
 	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d", rr.Code)
-	}
+	testkit.AssertEqual(t, rr.Code, http.StatusOK)
 }
 
 func TestMiddleware_500(t *testing.T) {
@@ -227,9 +197,7 @@ func TestMiddleware_500(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/boom", nil)
 	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusInternalServerError {
-		t.Errorf("expected 500, got %d", rr.Code)
-	}
+	testkit.AssertEqual(t, rr.Code, http.StatusInternalServerError)
 }
 
 func TestMiddleware_PropagatesContext(t *testing.T) {
@@ -243,9 +211,7 @@ func TestMiddleware_PropagatesContext(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/trace", nil)
 	handler.ServeHTTP(rr, req)
-	if gotTraceID == "" {
-		t.Error("expected trace ID to be set in handler context")
-	}
+	testkit.AssertNotEqual(t, gotTraceID, "")
 }
 
 func TestInjectExtractHTTP(t *testing.T) {
@@ -272,42 +238,30 @@ func TestStart_GlobalTracer(t *testing.T) {
 
 func TestNoopExporter(t *testing.T) {
 	n := &noopExporter{}
-	if err := n.ExportSpans(context.Background(), nil); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if err := n.Shutdown(context.Background()); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.AssertNoError(t, n.ExportSpans(context.Background(), nil))
+	testkit.AssertNoError(t, n.Shutdown(context.Background()))
 }
 
 func TestStatusWriter_DefaultStatus(t *testing.T) {
 	rr := httptest.NewRecorder()
 	sw := &statusWriter{ResponseWriter: rr, status: http.StatusOK}
 	sw.WriteHeader(http.StatusCreated)
-	if sw.status != http.StatusCreated {
-		t.Errorf("expected 201, got %d", sw.status)
-	}
+	testkit.AssertEqual(t, sw.status, http.StatusCreated)
 }
 
 func TestExporterType_Constants(t *testing.T) {
-	if ExporterStdout == ExporterNoop {
-		t.Error("exporter constants must differ")
-	}
+	testkit.AssertNotEqual(t, ExporterStdout, ExporterNoop)
 	testkit.AssertContains(t, string(ExporterStdout), "stdout")
 }
 
 func TestShutdown_NilProvider(t *testing.T) {
 	var p *Provider
-	if err := p.Shutdown(context.Background()); err != nil {
-		t.Errorf("expected nil error for nil provider, got %v", err)
-	}
+	testkit.AssertNoError(t, p.Shutdown(context.Background()))
 }
 
 func TestShutdown_NilTP(t *testing.T) {
 	p := &Provider{tp: nil}
-	if err := p.Shutdown(context.Background()); err != nil {
-		t.Errorf("expected nil error for nil tp, got %v", err)
-	}
+	testkit.AssertNoError(t, p.Shutdown(context.Background()))
 }
 
 func TestShutdown_CancelledContext(t *testing.T) {

@@ -142,3 +142,21 @@ func ExampleDeref() {
 	// hello
 	// default
 }
+
+func ExampleSanitizePhone() {
+	fmt.Println(sanitize.SanitizePhone("+1 (555) 123-4567"))
+	// Output:
+	// +15551234567
+}
+
+func ExampleSanitizeURL() {
+	fmt.Println(sanitize.SanitizeURL("  HTTPS://Example.COM/path/  "))
+	// Output:
+	// https://example.com/path
+}
+
+func ExampleSanitizeName() {
+	fmt.Println(sanitize.SanitizeName("  john   doe  "))
+	// Output:
+	// John Doe
+}

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/Saver-Street/cat-shared-lib/discovery"
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestServiceDiscoveryChecker_AllHealthy(t *testing.T) {
@@ -63,9 +63,7 @@ func TestServiceDiscoveryChecker_OneUnhealthy(t *testing.T) {
 	if err == nil {
 		t.Fatal("Check() = nil, want error when one instance is unhealthy")
 	}
-	if !strings.Contains(err.Error(), "1/2 instances unhealthy") {
-		t.Errorf("error = %v, want '1/2 instances unhealthy'", err)
-	}
+	testkit.AssertErrorContains(t, err, "1/2 instances unhealthy")
 
 	// Verify that the unhealthy instance was marked in registry.
 	all, _ := reg.ResolveAll("billing")

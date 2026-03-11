@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/Saver-Street/cat-shared-lib/middleware"
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -76,9 +76,7 @@ func TestLookupCandidateID_DBError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "connection failed") {
-		t.Errorf("error = %q, want to contain \"connection failed\"", err.Error())
-	}
+	testkit.AssertErrorContains(t, err, "connection failed")
 	if id != "" {
 		t.Errorf("id = %q, want empty on error", id)
 	}

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Saver-Street/cat-shared-lib/circuitbreaker"
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestNew_Defaults(t *testing.T) {
@@ -270,9 +271,7 @@ func TestRequestHook_Error(t *testing.T) {
 	defer srv.Close()
 
 	_, err := c.Get(context.Background(), srv.URL)
-	if err == nil || !strings.Contains(err.Error(), "hook failed") {
-		t.Errorf("Get() error = %v, want hook error", err)
-	}
+	testkit.AssertErrorContains(t, err, "hook failed")
 }
 
 func TestResponseHook(t *testing.T) {
@@ -415,9 +414,7 @@ func TestGetJSON_ClientError(t *testing.T) {
 	if err == nil {
 		t.Fatal("GetJSON() = nil, want error for 404")
 	}
-	if !strings.Contains(err.Error(), "404") {
-		t.Errorf("error = %v, want to contain 404", err)
-	}
+	testkit.AssertErrorContains(t, err, "404")
 }
 
 func TestCircuitBreaker_Integration(t *testing.T) {
@@ -679,9 +676,7 @@ func TestDoAttempt_ResponseHookError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from response hook")
 	}
-	if !strings.Contains(err.Error(), "response hook") {
-		t.Errorf("error = %v, want to contain 'response hook'", err)
-	}
+	testkit.AssertErrorContains(t, err, "response hook")
 }
 
 func TestDo_ContextCancelledDuringRetry(t *testing.T) {
@@ -756,9 +751,7 @@ func TestDecodeResponse_4xxError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for 4xx response")
 	}
-	if !strings.Contains(err.Error(), "400") {
-		t.Errorf("error = %v, want to contain 400", err)
-	}
+	testkit.AssertErrorContains(t, err, "400")
 }
 
 func TestDo_NilContextExtra(t *testing.T) {
@@ -812,9 +805,7 @@ func TestDoAttempt_RequestHookError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from request hook")
 	}
-	if !strings.Contains(err.Error(), "request hook") {
-		t.Errorf("error = %v, want to contain 'request hook'", err)
-	}
+	testkit.AssertErrorContains(t, err, "request hook")
 }
 
 func TestGetJSON_DecodeError(t *testing.T) {
@@ -848,9 +839,7 @@ func TestDoAttempt_InvalidURL(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for invalid URL")
 	}
-	if !strings.Contains(err.Error(), "creating request") {
-		t.Errorf("expected 'creating request' error, got: %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "creating request")
 }
 
 func TestDoAttempt_ReadBodyError(t *testing.T) {

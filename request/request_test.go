@@ -447,3 +447,33 @@ func TestParseDateParam_WhitespaceTrimmed(t *testing.T) {
 	testkit.AssertNoError(t, err)
 	testkit.AssertEqual(t, got, time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC))
 }
+
+func TestParseEnumParam_Match(t *testing.T) {
+	q := url.Values{"status": {"active"}}
+	got := ParseEnumParam(q, "status", []string{"active", "inactive", "pending"}, "active")
+	testkit.AssertEqual(t, got, "active")
+}
+
+func TestParseEnumParam_CaseInsensitive(t *testing.T) {
+	q := url.Values{"status": {"ACTIVE"}}
+	got := ParseEnumParam(q, "status", []string{"active", "inactive"}, "inactive")
+	testkit.AssertEqual(t, got, "active")
+}
+
+func TestParseEnumParam_NotAllowed(t *testing.T) {
+	q := url.Values{"status": {"deleted"}}
+	got := ParseEnumParam(q, "status", []string{"active", "inactive"}, "active")
+	testkit.AssertEqual(t, got, "active")
+}
+
+func TestParseEnumParam_Missing(t *testing.T) {
+	q := url.Values{}
+	got := ParseEnumParam(q, "status", []string{"active", "inactive"}, "inactive")
+	testkit.AssertEqual(t, got, "inactive")
+}
+
+func TestParseEnumParam_Empty(t *testing.T) {
+	q := url.Values{"status": {""}}
+	got := ParseEnumParam(q, "status", []string{"active", "inactive"}, "active")
+	testkit.AssertEqual(t, got, "active")
+}

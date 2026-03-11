@@ -223,3 +223,19 @@ func ParseDateParam(q url.Values, key string) (time.Time, error) {
 	}
 	return time.Time{}, fmt.Errorf("query parameter %q: invalid date format %q (expected RFC 3339 or YYYY-MM-DD)", key, raw)
 }
+
+// ParseEnumParam reads a query parameter and validates it against a set of
+// allowed values (case-insensitive). Returns defaultValue if the parameter is
+// absent, empty, or not in the allowed set.
+func ParseEnumParam(q url.Values, key string, allowed []string, defaultValue string) string {
+	raw := strings.TrimSpace(q.Get(key))
+	if raw == "" {
+		return defaultValue
+	}
+	for _, a := range allowed {
+		if strings.EqualFold(raw, a) {
+			return a
+		}
+	}
+	return defaultValue
+}

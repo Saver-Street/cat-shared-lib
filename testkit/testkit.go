@@ -14,8 +14,11 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -583,4 +586,129 @@ func AssertBetween[V cmp.Ordered](t T, got, lo, hi V) {
 	if got < lo || got > hi {
 		t.Errorf("expected %v to be between %v and %v", got, lo, hi)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Fixture & file helpers
+// ---------------------------------------------------------------------------
+
+// LoadFixture reads a file relative to the test's working directory and returns
+// its contents as bytes. It calls t.Fatal on any read error.
+func LoadFixture(t T, path string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		t.Fatalf("LoadFixture: %v", err)
+	}
+	return data
+}
+
+// LoadJSONFixture reads a JSON file and unmarshals it into dst.
+func LoadJSONFixture(t T, path string, dst any) {
+	t.Helper()
+	data := LoadFixture(t, path)
+	if err := json.Unmarshal(data, dst); err != nil {
+		t.Fatalf("LoadJSONFixture: unmarshal %s: %v", path, err)
+	}
+}
+
+// WriteFixture creates a temporary file with the given content in dir and
+// returns its path. The file is automatically removed when the test finishes.
+func WriteFixture(t *testing.T, dir, name string, content []byte) string {
+	t.Helper()
+	p := filepath.Join(dir, name)
+	if err := os.WriteFile(p, content, 0o600); err != nil {
+		t.Fatalf("WriteFixture: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(p) })
+	return p
+}
+
+// TempDir creates a temporary directory that is automatically removed when
+// the test finishes and returns its path.
+func TempDir(t *testing.T) string {
+	t.Helper()
+	return t.TempDir()
+}
+
+// TempFile creates a named file with the given content inside a temporary
+// directory. The directory is automatically removed when the test finishes.
+func TempFile(t *testing.T, name string, content []byte) string {
+	t.Helper()
+	dir := t.TempDir()
+	p := filepath.Join(dir, name)
+	if err := os.WriteFile(p, content, 0o600); err != nil {
+		t.Fatalf("TempFile: %v", err)
+	}
+	return p
+}
+
+// AssertFileExists fails if the file at path does not exist.
+func AssertFileExists(t T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err != nil {
+		t.Errorf("expected file to exist: %s", path)
+	}
+}
+
+// AssertFileContains fails if the file content does not contain substr.
+func AssertFileContains(t T, path, substr string) {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		t.Fatalf("AssertFileContains: %v", err)
+	}
+	if !strings.Contains(string(data), substr) {
+		t.Errorf("expected file %s to contain %q", path, substr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Slice assertions
+// ---------------------------------------------------------------------------
+
+// AssertSliceContains fails if the slice does not contain the element.
+func AssertSliceContains[V comparable](t T, s []V, elem V) {
+	t.Helper()
+	if !slices.Contains(s, elem) {
+		t.Errorf("expected slice to contain %v, got %v", elem, s)
+	}
+}
+
+// AssertSliceNotContains fails if the slice contains the element.
+func AssertSliceNotContains[V comparable](t T, s []V, elem V) {
+	t.Helper()
+	if slices.Contains(s, elem) {
+		t.Errorf("expected slice not to contain %v", elem)
+	}
+}
+
+// AssertSliceEqual fails if two slices are not deeply equal.
+func AssertSliceEqual[V comparable](t T, got, want []V) {
+	t.Helper()
+	if !slices.Equal(got, want) {
+		t.Errorf("slice mismatch\ngot:  %v\nwant: %v", got, want)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Async / eventual consistency helper
+// ---------------------------------------------------------------------------
+
+// Eventually retries fn until it returns nil or the timeout is reached.
+// The check interval defaults to 10ms. Use this for assertions on
+// asynchronous or eventually-consistent state.
+func Eventually(t T, timeout time.Duration, fn func() error) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	interval := 10 * time.Millisecond
+	var lastErr error
+	for time.Now().Before(deadline) {
+		lastErr = fn()
+		if lastErr == nil {
+			return
+		}
+		time.Sleep(interval)
+	}
+	t.Errorf("Eventually timed out after %v: %v", timeout, lastErr)
 }

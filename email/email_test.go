@@ -73,9 +73,7 @@ func TestSend_PlainText(t *testing.T) {
 		Subject: "Hello",
 		Text:    "Plain body",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, cap.from, "no-reply@example.com")
 	testkit.AssertEqual(t, cap.to, []string{"recv@example.com"})
 	testkit.AssertContains(t, string(cap.msg), "Subject:")
@@ -88,9 +86,7 @@ func TestSend_HTMLOnly(t *testing.T) {
 		Subject: "HTML mail",
 		HTML:    "<h1>Hi</h1>",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	body := string(cap.msg)
 	testkit.AssertContains(t, body, "text/html")
 }
@@ -103,9 +99,7 @@ func TestSend_Multipart(t *testing.T) {
 		HTML:    "<p>hello</p>",
 		Text:    "hello",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	body := string(cap.msg)
 	testkit.AssertContains(t, body, "multipart/alternative")
 	testkit.AssertContains(t, body, "text/plain")
@@ -120,9 +114,7 @@ func TestSend_WithCC(t *testing.T) {
 		Subject: "Test",
 		Text:    "body",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	found := false
 	for _, r := range cap.to {
 		if r == "cc@b.com" {
@@ -140,9 +132,7 @@ func TestSend_WithBCC(t *testing.T) {
 		Subject: "Test",
 		Text:    "body",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	found := false
 	for _, r := range cap.to {
 		if r == "bcc@b.com" {
@@ -173,9 +163,7 @@ func TestSend_ExtraHeaders(t *testing.T) {
 		Text:    "body",
 		Headers: map[string]string{"X-Custom": "value"},
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertContains(t, string(cap.msg), "X-Custom: value")
 }
 
@@ -196,9 +184,7 @@ func TestConfig_DefaultTimeout(t *testing.T) {
 
 func TestParseHTMLString(t *testing.T) {
 	tmpl, err := ParseHTMLString("welcome", `<h1>Hello {{.Name}}</h1>`)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertNotNil(t, tmpl)
 }
 
@@ -210,9 +196,7 @@ func TestParseHTMLString_Invalid(t *testing.T) {
 func TestRenderHTML(t *testing.T) {
 	tmpl, _ := ParseHTMLString("welcome", `<h1>Hello {{.Name}}</h1>`)
 	out, err := RenderHTML(tmpl, "welcome", map[string]string{"Name": "World"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, out, "<h1>Hello World</h1>")
 }
 
@@ -224,9 +208,7 @@ func TestRenderHTML_MissingTemplate(t *testing.T) {
 
 func TestParseTextString(t *testing.T) {
 	tmpl, err := ParseTextString("plain", `Hello {{.Name}}`)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertNotNil(t, tmpl)
 }
 
@@ -238,9 +220,7 @@ func TestParseTextString_Invalid(t *testing.T) {
 func TestRenderText(t *testing.T) {
 	tmpl, _ := ParseTextString("plain", `Hello {{.Name}}`)
 	out, err := RenderText(tmpl, "plain", map[string]string{"Name": "Jordan"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, out, "Hello Jordan")
 }
 
@@ -257,9 +237,7 @@ func TestBuildMessage_SubjectEncoding(t *testing.T) {
 		Text:    "body",
 	}
 	raw, err := buildMessage("from@example.com", msg)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertContains(t, string(raw), "Subject:")
 }
 
@@ -270,21 +248,15 @@ func TestParseHTMLTemplates_NoFiles(t *testing.T) {
 
 func TestParseHTMLTemplates_ValidFile(t *testing.T) {
 	f, err := os.CreateTemp("", "*.html")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	defer os.Remove(f.Name())
 	f.WriteString(`{{define "welcome"}}<h1>Hello {{.}}</h1>{{end}}`)
 	f.Close()
 
 	tmpl, err := ParseHTMLTemplates(f.Name())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	out, err := RenderHTML(tmpl, "welcome", "World")
-	if err != nil {
-		t.Fatalf("render error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertContains(t, out, "Hello World")
 }
 
@@ -318,9 +290,7 @@ func TestSend_NilAuth(t *testing.T) {
 	err := m.Send(context.Background(), Message{
 		To: []string{"a@b.com"}, Subject: "s", Text: "t",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	_ = cap
 }
 
@@ -330,9 +300,7 @@ func TestBuildMessage_HTMLOnly_Content(t *testing.T) {
 		Subject: "hi",
 		HTML:    "<b>hello</b>",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertContains(t, string(raw), "quoted-printable")
 }
 
@@ -342,9 +310,7 @@ func TestBuildMessage_TextOnly_Content(t *testing.T) {
 		Subject: "hi",
 		Text:    "plain body",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertContains(t, string(raw), "text/plain")
 }
 
@@ -352,9 +318,7 @@ func TestBuildMessage_DateHeader(t *testing.T) {
 	raw, err := buildMessage("from@x.com", Message{
 		To: []string{"a@b.com"}, Subject: "d", Text: "body",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertContains(t, string(raw), "Date:")
 }
 
@@ -362,9 +326,7 @@ func TestBuildMessage_MIMEVersion(t *testing.T) {
 	raw, err := buildMessage("from@x.com", Message{
 		To: []string{"a@b.com"}, Subject: "m", Text: "body",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertContains(t, string(raw), "MIME-Version: 1.0")
 }
 
@@ -375,9 +337,7 @@ func TestSend_MultipleRecipients(t *testing.T) {
 		Subject: "Hi",
 		Text:    "body",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertLen(t, cap.to, 2)
 }
 
@@ -413,9 +373,7 @@ func TestSend_WithAllRecipientTypes(t *testing.T) {
 		HTML:    "<p>Hello</p>",
 		Text:    "Hello",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	// All three should appear in the envelope recipients.
 	recipientSet := make(map[string]bool)
 	for _, r := range cap.to {

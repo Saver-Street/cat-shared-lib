@@ -130,6 +130,16 @@ func MaxLength(field, value string, max int) error {
 	return nil
 }
 
+// ExactLength validates that value (after trimming) is exactly n characters.
+// Useful for fixed-format fields like ISO country codes or PIN codes.
+func ExactLength(field, value string, n int) error {
+	v := strings.TrimSpace(value)
+	if len([]rune(v)) != n {
+		return &ValidationError{Field: field, Message: fmt.Sprintf("%s must be exactly %d characters", field, n)}
+	}
+	return nil
+}
+
 // OneOf validates that value is one of the allowed values.
 func OneOf(field, value string, allowed []string) error {
 	for _, a := range allowed {

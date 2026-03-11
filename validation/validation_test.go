@@ -313,3 +313,23 @@ testkit.AssertContains(t, err.Error(), "is required")
 func TestNoWhitespace_Newline(t *testing.T) {
 testkit.AssertError(t, NoWhitespace("token", "abc\ndef"))
 }
+
+func TestAlphanumeric_Valid(t *testing.T) {
+testkit.AssertNoError(t, Alphanumeric("code", "ABC123"))
+}
+
+func TestAlphanumeric_Invalid(t *testing.T) {
+err := Alphanumeric("code", "ABC-123")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "only letters and digits")
+}
+
+func TestAlphanumeric_Empty(t *testing.T) {
+err := Alphanumeric("code", "")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "is required")
+}
+
+func TestAlphanumeric_Trimmed(t *testing.T) {
+testkit.AssertNoError(t, Alphanumeric("code", "  abc123  "))
+}

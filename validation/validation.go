@@ -214,3 +214,18 @@ return &ValidationError{Field: field, Message: field + " must not contain whites
 }
 return nil
 }
+
+var alphaNumericRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+
+// Alphanumeric validates that value (after trimming) contains only ASCII
+// letters and digits. Useful for codes, reference IDs, and usernames.
+func Alphanumeric(field, value string) error {
+v := strings.TrimSpace(value)
+if v == "" {
+return &ValidationError{Field: field, Message: field + " is required"}
+}
+if !alphaNumericRe.MatchString(v) {
+return &ValidationError{Field: field, Message: field + " must contain only letters and digits"}
+}
+return nil
+}

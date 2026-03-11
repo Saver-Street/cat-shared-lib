@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -252,4 +253,23 @@ if p < 1 || p > 65535 {
 return 0, fmt.Errorf("config: %s: port must be between 1 and 65535, got %d", key, p)
 }
 return p, nil
+}
+
+// Addr reads a host:port address from the named environment variable. It
+// validates that the value has a valid host and port component using
+// net.SplitHostPort. If the variable is unset or empty, defaultVal is returned.
+func Addr(key, defaultVal string) (string, error) {
+v := strings.TrimSpace(os.Getenv(key))
+if v == "" {
+return defaultVal, nil
+}
+host, portStr, err := net.SplitHostPort(v)
+if err != nil {
+return "", fmt.Errorf("config: %s: invalid address: %w", key, err)
+}
+p, err := strconv.Atoi(portStr)
+if err != nil || p < 1 || p > 65535 {
+return "", fmt.Errorf("config: %s: port must be between 1 and 65535", key)
+}
+return net.JoinHostPort(host, portStr), nil
 }

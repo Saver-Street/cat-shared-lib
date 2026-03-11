@@ -31,6 +31,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Saver-Street/cat-shared-lib/circuitbreaker"
@@ -85,6 +86,9 @@ type Options struct {
 
 	// UserAgent is set as the User-Agent header. Default: "cat-shared-lib/httpclient".
 	UserAgent string
+
+	// BaseURL is prepended to request URLs that start with "/".
+	BaseURL string
 }
 
 // Option applies a configuration to the client.
@@ -145,6 +149,38 @@ func WithUserAgent(ua string) Option {
 	return func(o *Options) { o.UserAgent = ua }
 }
 
+// WithBaseURL sets a base URL that is prepended to all request paths.
+// For example, WithBaseURL("https://api.example.com/v1") turns a
+// request to "/users" into "https://api.example.com/v1/users".
+func WithBaseURL(base string) Option {
+	return func(o *Options) { o.BaseURL = base }
+}
+
+// WithBearerToken sets a static Bearer token for Authorization headers.
+func WithBearerToken(token string) Option {
+	return func(o *Options) {
+		if o.Headers == nil {
+			o.Headers = make(map[string]string)
+		}
+		o.Headers["Authorization"] = "Bearer " + token
+	}
+}
+
+// WithBearerTokenFunc sets a dynamic Bearer token provider that is called
+// before each request. Useful for tokens that expire and need refreshing.
+func WithBearerTokenFunc(fn func() (string, error)) Option {
+	return func(o *Options) {
+		o.RequestHooks = append(o.RequestHooks, func(req *http.Request) error {
+			token, err := fn()
+			if err != nil {
+				return fmt.Errorf("httpclient: bearer token provider: %w", err)
+			}
+			req.Header.Set("Authorization", "Bearer "+token)
+			return nil
+		})
+	}
+}
+
 // Client is a configured HTTP client with retry and circuit breaker support.
 type Client struct {
 	http *http.Client
@@ -186,10 +222,13 @@ type Response struct {
 
 // Do sends an HTTP request with retries and optional circuit breaker protection.
 // The request body is buffered so it can be replayed across retries.
+// If a BaseURL is configured and url starts with "/", the BaseURL is prepended.
 func (c *Client) Do(ctx context.Context, method, url string, body io.Reader) (*Response, error) {
 	if ctx == nil {
 		return nil, ErrNilContext
 	}
+
+	url = c.resolveURL(url)
 
 	// Buffer the body for retries.
 	var bodyBytes []byte
@@ -342,6 +381,14 @@ func (c *Client) backoff(attempt int) time.Duration {
 		jittered = time.Millisecond
 	}
 	return jittered
+}
+
+// resolveURL prepends BaseURL to path-only URLs (starting with "/").
+func (c *Client) resolveURL(u string) string {
+	if c.opts.BaseURL != "" && len(u) > 0 && u[0] == '/' {
+		return strings.TrimRight(c.opts.BaseURL, "/") + u
+	}
+	return u
 }
 
 // Get sends a GET request and returns the response.

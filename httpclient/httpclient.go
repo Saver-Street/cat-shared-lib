@@ -364,6 +364,11 @@ func (c *Client) Delete(ctx context.Context, url string) (*Response, error) {
 	return c.Do(ctx, http.MethodDelete, url, nil)
 }
 
+// Patch sends a PATCH request with the given body.
+func (c *Client) Patch(ctx context.Context, url string, body io.Reader) (*Response, error) {
+	return c.Do(ctx, http.MethodPatch, url, body)
+}
+
 // GetJSON sends a GET request and decodes the JSON response into target.
 func (c *Client) GetJSON(ctx context.Context, url string, target any) error {
 	resp, err := c.Get(ctx, url)
@@ -409,6 +414,22 @@ func (c *Client) PutJSON(ctx context.Context, url string, payload, target any) e
 // DeleteJSON sends a DELETE request and decodes the response into target.
 func (c *Client) DeleteJSON(ctx context.Context, url string, target any) error {
 	resp, err := c.Delete(ctx, url)
+	if err != nil {
+		return err
+	}
+	if target != nil {
+		return decodeResponse(resp, target)
+	}
+	return nil
+}
+
+// PatchJSON sends a PATCH request with a JSON payload and decodes the response.
+func (c *Client) PatchJSON(ctx context.Context, url string, payload, target any) error {
+	body, err := marshalJSON(payload)
+	if err != nil {
+		return err
+	}
+	resp, err := c.Do(ctx, http.MethodPatch, url, body)
 	if err != nil {
 		return err
 	}

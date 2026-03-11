@@ -369,6 +369,11 @@ func (c *Client) Patch(ctx context.Context, url string, body io.Reader) (*Respon
 	return c.Do(ctx, http.MethodPatch, url, body)
 }
 
+// Head sends a HEAD request.
+func (c *Client) Head(ctx context.Context, url string) (*Response, error) {
+	return c.Do(ctx, http.MethodHead, url, nil)
+}
+
 // GetJSON sends a GET request and decodes the JSON response into target.
 func (c *Client) GetJSON(ctx context.Context, url string, target any) error {
 	resp, err := c.Get(ctx, url)

@@ -260,3 +260,24 @@ func BenchmarkDo_NoRetry(b *testing.B) {
 		Do(ctx, cfg, func(ctx context.Context) error { return nil })
 	}
 }
+
+func TestSimple_Success(t *testing.T) {
+	calls := 0
+	err := Simple(context.Background(), 3, func(_ context.Context) error {
+		calls++
+		if calls < 2 {
+			return errors.New("transient")
+		}
+		return nil
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, calls, 2)
+}
+
+func TestSimple_Exhausted(t *testing.T) {
+	err := Simple(context.Background(), 2, func(_ context.Context) error {
+		return errors.New("fail")
+	})
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "fail")
+}

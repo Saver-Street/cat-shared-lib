@@ -276,3 +276,42 @@ func ExampleRequireSubscriptionTier() {
 	// 403
 	// 200
 }
+
+func ExampleRecovery() {
+	handler := middleware.Recovery(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		panic("something went wrong")
+	}))
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/", nil)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Code)
+	// Output: 500
+}
+
+func ExampleRequestID() {
+	handler := middleware.RequestID(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := middleware.GetRequestID(r)
+		fmt.Println("has id:", id != "")
+	}))
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/", nil)
+	handler.ServeHTTP(w, r)
+	// Output: has id: true
+}
+
+func ExampleSecureHeaders() {
+	handler := middleware.SecureHeaders(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/", nil)
+	handler.ServeHTTP(w, r)
+	fmt.Println(w.Header().Get("X-Content-Type-Options"))
+	fmt.Println(w.Header().Get("X-Frame-Options"))
+	// Output:
+	// nosniff
+	// DENY
+}

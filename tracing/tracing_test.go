@@ -93,9 +93,7 @@ func TestStart(t *testing.T) {
 	if ctx2 == ctx {
 		t.Error("expected new context with span")
 	}
-	if span == nil {
-		t.Fatal("expected non-nil span")
-	}
+	testkit.RequireNotNil(t, span)
 }
 
 func TestRecordError_Nil(t *testing.T) {
@@ -222,9 +220,7 @@ func TestStart_GlobalTracer(t *testing.T) {
 	newTestProvider(t)
 	ctx, span := Start(context.Background(), "global-op")
 	defer span.End()
-	if span == nil {
-		t.Fatal("expected non-nil span")
-	}
+	testkit.RequireNotNil(t, span)
 	_ = ctx
 }
 
@@ -275,7 +271,5 @@ func TestStartWithTracer_SpanKind(t *testing.T) {
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 	_ = ctx
-	if span == nil {
-		t.Fatal("nil span")
-	}
+	testkit.RequireNotNil(t, span)
 }

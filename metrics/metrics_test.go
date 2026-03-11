@@ -11,9 +11,7 @@ import (
 
 func TestNewRegistry(t *testing.T) {
 	r := NewRegistry()
-	if r == nil {
-		t.Fatal("expected non-nil registry")
-	}
+	testkit.RequireNotNil(t, r)
 }
 
 func TestRegistry_Register_Duplicate_Panics(t *testing.T) {

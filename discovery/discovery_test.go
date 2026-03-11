@@ -10,9 +10,7 @@ import (
 
 func TestNewRegistry(t *testing.T) {
 	r := NewRegistry()
-	if r == nil {
-		t.Fatal("NewRegistry() = nil")
-	}
+	testkit.RequireNotNil(t, r)
 	testkit.AssertLen(t, r.Services(), 0)
 }
 

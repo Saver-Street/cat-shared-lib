@@ -149,9 +149,7 @@ func TestOperation_WithRequestBody(t *testing.T) {
 	})
 	op := NewOperation("Create user").WithRequestBody("User data", true, schema)
 
-	if op.RequestBody == nil {
-		t.Fatal("expected request body")
-	}
+	testkit.RequireNotNil(t, op.RequestBody)
 	testkit.AssertTrue(t, op.RequestBody.Required)
 	_, ok := op.RequestBody.Content["application/json"]
 	testkit.AssertTrue(t, ok)
@@ -197,9 +195,7 @@ func TestSchemaHelpers(t *testing.T) {
 
 func TestArraySchema_Items(t *testing.T) {
 	s := ArraySchema(IntegerSchema())
-	if s.Items == nil {
-		t.Fatal("expected non-nil items")
-	}
+	testkit.RequireNotNil(t, s.Items)
 	testkit.AssertEqual(t, s.Items.Type, "integer")
 }
 

@@ -279,9 +279,7 @@ func TestWaitForSignal(t *testing.T) {
 	select {
 	case <-done:
 		defer cancel()
-		if ctx == nil {
-			t.Fatal("expected non-nil context")
-		}
+		testkit.RequireNotNil(t, ctx)
 		deadline, ok := ctx.Deadline()
 		if !ok {
 			t.Fatal("expected context with deadline")

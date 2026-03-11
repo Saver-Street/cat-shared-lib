@@ -44,9 +44,7 @@ func TestNewStandardErrorWithDetails(t *testing.T) {
 	details := map[string]any{"field": "email", "reason": "invalid format"}
 	e := NewStandardErrorWithDetails("VALIDATION_ERROR", "validation failed", details)
 	testkit.AssertEqual(t, e.Code, "VALIDATION_ERROR")
-	if e.Details == nil {
-		t.Fatal("expected Details to be set")
-	}
+	testkit.RequireNotNil(t, e.Details)
 	testkit.AssertEqual(t, e.Details["field"], "email")
 }
 

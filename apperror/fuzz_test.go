@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func FuzzNew(f *testing.F) {
@@ -13,9 +15,7 @@ func FuzzNew(f *testing.F) {
 	f.Add(999, "CUSTOM", "unicode: 日本語 ñ ü 🎉")
 	f.Fuzz(func(t *testing.T, status int, code, message string) {
 		e := New(status, Code(code), message)
-		if e == nil {
-			t.Fatal("New returned nil")
-		}
+		testkit.RequireNotNil(t, e)
 		if e.HTTPStatus != status {
 			t.Errorf("HTTPStatus = %d, want %d", e.HTTPStatus, status)
 		}
@@ -38,9 +38,7 @@ func FuzzWrap(f *testing.F) {
 	f.Fuzz(func(t *testing.T, status int, code, message string) {
 		inner := errors.New("root cause")
 		e := Wrap(status, Code(code), message, inner)
-		if e == nil {
-			t.Fatal("Wrap returned nil")
-		}
+		testkit.RequireNotNil(t, e)
 		// Error() must not panic and must include the inner error.
 		s := e.Error()
 		if s == "" {

@@ -40,9 +40,7 @@ func TestNilIfEmpty_Empty(t *testing.T) {
 
 func TestNilIfEmpty_NonEmpty(t *testing.T) {
 	got := NilIfEmpty("hello")
-	if got == nil {
-		t.Fatal("expected non-nil")
-	}
+	testkit.RequireNotNil(t, got)
 	testkit.AssertEqual(t, *got, "hello")
 }
 
@@ -89,9 +87,7 @@ func TestIsDuplicateKey_WrappedError(t *testing.T) {
 
 func TestNilIfEmpty_Whitespace(t *testing.T) {
 	got := NilIfEmpty(" ")
-	if got == nil {
-		t.Fatal("whitespace-only string should not be nil")
-	}
+	testkit.RequireNotNil(t, got)
 	testkit.AssertEqual(t, *got, " ")
 }
 
@@ -127,17 +123,13 @@ func TestTrimAndNilIfEmpty_WhitespaceOnly(t *testing.T) {
 
 func TestTrimAndNilIfEmpty_NonEmpty(t *testing.T) {
 	got := TrimAndNilIfEmpty("  hello  ")
-	if got == nil {
-		t.Fatal("expected non-nil for non-empty string after trim")
-	}
+	testkit.RequireNotNil(t, got)
 	testkit.AssertEqual(t, *got, "hello")
 }
 
 func TestTrimAndNilIfEmpty_NoTrimNeeded(t *testing.T) {
 	got := TrimAndNilIfEmpty("world")
-	if got == nil {
-		t.Fatal("expected non-nil")
-	}
+	testkit.RequireNotNil(t, got)
 	testkit.AssertEqual(t, *got, "world")
 }
 

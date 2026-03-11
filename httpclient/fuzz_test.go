@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func FuzzNew(f *testing.F) {
@@ -27,9 +29,7 @@ func FuzzNew(f *testing.F) {
 			WithMaxBackoff(time.Duration(maxBO)),
 			WithUserAgent(agent),
 		)
-		if c == nil {
-			t.Fatal("New returned nil")
-		}
+		testkit.RequireNotNil(t, c)
 	})
 }
 
@@ -96,9 +96,7 @@ func FuzzWithHeader(f *testing.F) {
 			WithTimeout(2*time.Second),
 			WithHeader(key, value),
 		)
-		if c == nil {
-			t.Fatal("New returned nil")
-		}
+		testkit.RequireNotNil(t, c)
 		// Must not panic when making a request with arbitrary headers.
 		ctx := context.Background()
 		_, _ = c.Get(ctx, srv.URL+"/test")

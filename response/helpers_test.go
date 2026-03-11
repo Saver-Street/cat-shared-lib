@@ -420,3 +420,19 @@ func TestAppError_WithGenericError(t *testing.T) {
 	testkit.AssertJSON(t, w.Body.Bytes(), &body)
 	testkit.AssertEqual(t, body["error"], "Internal server error")
 }
+
+func TestRedirect_Found(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := testkit.NewRequest("GET", "/old", nil)
+	Redirect(w, r, "/new", http.StatusFound)
+	testkit.AssertEqual(t, w.Code, http.StatusFound)
+	testkit.AssertEqual(t, w.Header().Get("Location"), "/new")
+}
+
+func TestRedirect_MovedPermanently(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := testkit.NewRequest("GET", "/legacy", nil)
+	Redirect(w, r, "https://example.com/new", http.StatusMovedPermanently)
+	testkit.AssertEqual(t, w.Code, http.StatusMovedPermanently)
+	testkit.AssertEqual(t, w.Header().Get("Location"), "https://example.com/new")
+}

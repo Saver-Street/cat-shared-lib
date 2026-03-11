@@ -105,6 +105,12 @@ func GatewayTimeout(w http.ResponseWriter, msg string) {
 	Error(w, http.StatusGatewayTimeout, msg)
 }
 
+// Redirect sends an HTTP redirect response. Use http.StatusFound (302) for
+// temporary redirects or http.StatusMovedPermanently (301) for permanent ones.
+func Redirect(w http.ResponseWriter, r *http.Request, url string, code int) {
+	http.Redirect(w, r, url, code)
+}
+
 // PagedResult is a standard paginated JSON response envelope.
 // Data holds the current page of items; Total is the count across all pages.
 type PagedResult[T any] struct {

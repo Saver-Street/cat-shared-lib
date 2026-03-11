@@ -37,6 +37,19 @@ func TestAssertNotEqual_Fail(t *testing.T) {
 	}
 }
 
+func TestAssertApprox_Pass(t *testing.T) {
+	AssertApprox(t, 1.0, 1.0, 0.001)
+	AssertApprox(t, 1.0005, 1.0, 0.001)
+}
+
+func TestAssertApprox_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertApprox(mock, 1.5, 1.0, 0.001)
+	if !mock.errored {
+		t.Error("expected failure for values outside epsilon")
+	}
+}
+
 func TestAssertNil_Pass(t *testing.T) {
 	AssertNil(t, nil)
 	var p *int

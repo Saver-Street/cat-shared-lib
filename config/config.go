@@ -41,6 +41,19 @@ func Int(key string, defaultVal int) int {
 	return n
 }
 
+// Int64 reads an int64 environment variable or returns the default.
+func Int64(key string, defaultVal int64) int64 {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return defaultVal
+	}
+	return n
+}
+
 // Bool reads a boolean environment variable or returns the default.
 // Truthy values: "true", "1", "yes" (case-insensitive).
 func Bool(key string, defaultVal bool) bool {
@@ -110,6 +123,20 @@ func MustInt(key string) int {
 	n, err := strconv.Atoi(v)
 	if err != nil {
 		panic(fmt.Sprintf("config: environment variable %s=%q is not a valid integer", key, v))
+	}
+	return n
+}
+
+// MustInt64 reads a required int64 environment variable.
+// Panics if unset, empty, or not a valid int64.
+func MustInt64(key string) int64 {
+	v := os.Getenv(key)
+	if v == "" {
+		panic(fmt.Sprintf("config: required environment variable %s is not set", key))
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		panic(fmt.Sprintf("config: environment variable %s=%q is not a valid int64", key, v))
 	}
 	return n
 }

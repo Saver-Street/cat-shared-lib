@@ -8,24 +8,18 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestDefaults(t *testing.T) {
 	c := Config{}
 	c.defaults()
 
-	if c.ReadTimeout != 15*time.Second {
-		t.Errorf("expected ReadTimeout 15s, got %v", c.ReadTimeout)
-	}
-	if c.WriteTimeout != 30*time.Second {
-		t.Errorf("expected WriteTimeout 30s, got %v", c.WriteTimeout)
-	}
-	if c.IdleTimeout != 60*time.Second {
-		t.Errorf("expected IdleTimeout 60s, got %v", c.IdleTimeout)
-	}
-	if c.ShutdownTimeout != 10*time.Second {
-		t.Errorf("expected ShutdownTimeout 10s, got %v", c.ShutdownTimeout)
-	}
+	testkit.AssertEqual(t, c.ReadTimeout, 15*time.Second)
+	testkit.AssertEqual(t, c.WriteTimeout, 30*time.Second)
+	testkit.AssertEqual(t, c.IdleTimeout, 60*time.Second)
+	testkit.AssertEqual(t, c.ShutdownTimeout, 10*time.Second)
 }
 
 func TestDefaults_CustomValues(t *testing.T) {
@@ -37,18 +31,10 @@ func TestDefaults_CustomValues(t *testing.T) {
 	}
 	c.defaults()
 
-	if c.ReadTimeout != 5*time.Second {
-		t.Errorf("expected ReadTimeout 5s, got %v", c.ReadTimeout)
-	}
-	if c.WriteTimeout != 10*time.Second {
-		t.Errorf("expected WriteTimeout 10s, got %v", c.WriteTimeout)
-	}
-	if c.IdleTimeout != 20*time.Second {
-		t.Errorf("expected IdleTimeout 20s, got %v", c.IdleTimeout)
-	}
-	if c.ShutdownTimeout != 3*time.Second {
-		t.Errorf("expected ShutdownTimeout 3s, got %v", c.ShutdownTimeout)
-	}
+	testkit.AssertEqual(t, c.ReadTimeout, 5*time.Second)
+	testkit.AssertEqual(t, c.WriteTimeout, 10*time.Second)
+	testkit.AssertEqual(t, c.IdleTimeout, 20*time.Second)
+	testkit.AssertEqual(t, c.ShutdownTimeout, 3*time.Second)
 }
 
 func TestListenAndServe_GracefulShutdown(t *testing.T) {
@@ -106,9 +92,7 @@ func TestListenAndServe_GracefulShutdown(t *testing.T) {
 		t.Fatal("timeout waiting for shutdown")
 	}
 
-	if !cleanupCalled {
-		t.Error("cleanup function was not called")
-	}
+	testkit.AssertTrue(t, cleanupCalled)
 }
 
 func TestListenAndServe_BadAddr(t *testing.T) {
@@ -139,9 +123,7 @@ func TestListenAndServe_BadAddr(t *testing.T) {
 		t.Fatal("timeout waiting for error")
 	}
 
-	if !cleanupCalled {
-		t.Error("cleanup should be called even on startup failure")
-	}
+	testkit.AssertTrue(t, cleanupCalled)
 }
 
 func TestListenAndServe_ShutdownTimeout(t *testing.T) {
@@ -203,9 +185,7 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 		t.Fatal("timeout waiting for shutdown")
 	}
 
-	if !cleanupCalled {
-		t.Error("cleanup should be called even on shutdown timeout")
-	}
+	testkit.AssertTrue(t, cleanupCalled)
 
 	// Release the blocked handler to avoid leaking goroutines
 	close(release)
@@ -222,12 +202,8 @@ func TestConfig_Fields(t *testing.T) {
 		ShutdownTimeout: 4 * time.Second,
 	}
 
-	if cfg.Addr != ":0" {
-		t.Error("Addr mismatch")
-	}
-	if cfg.Handler == nil {
-		t.Error("Handler nil")
-	}
+	testkit.AssertEqual(t, cfg.Addr, ":0")
+	testkit.AssertNotNil(t, cfg.Handler)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -239,12 +215,8 @@ func TestDefaults_PartialOverride(t *testing.T) {
 		ReadTimeout: 5 * time.Second,
 	}
 	c.defaults()
-	if c.ReadTimeout != 5*time.Second {
-		t.Errorf("expected ReadTimeout 5s, got %v", c.ReadTimeout)
-	}
-	if c.WriteTimeout != 30*time.Second {
-		t.Errorf("expected WriteTimeout 30s (default), got %v", c.WriteTimeout)
-	}
+	testkit.AssertEqual(t, c.ReadTimeout, 5*time.Second)
+	testkit.AssertEqual(t, c.WriteTimeout, 30*time.Second)
 }
 
 func TestListenAndServe_NoCleanupFuncs(t *testing.T) {
@@ -294,7 +266,5 @@ func TestListenAndServe_NilHandler(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil Handler, got nil")
 	}
-	if err.Error() != "server: Handler must not be nil" {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.AssertEqual(t, err.Error(), "server: Handler must not be nil")
 }

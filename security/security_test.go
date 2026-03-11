@@ -2,6 +2,8 @@ package security
 
 import (
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestContainsSuspiciousInput_SQL(t *testing.T) {
@@ -125,9 +127,7 @@ func TestRedactPII_NonString(t *testing.T) {
 
 func TestRedactPII_Empty(t *testing.T) {
 	result := RedactPII(map[string]any{})
-	if len(result) != 0 {
-		t.Errorf("expected empty map, got %v", result)
-	}
+	testkit.AssertLen(t, result, 0)
 }
 
 func TestRedactPII_CaseInsensitiveField(t *testing.T) {
@@ -258,9 +258,7 @@ func TestRedactPII_NilMap(t *testing.T) {
 	if result == nil {
 		t.Error("RedactPII(nil) should return non-nil empty map")
 	}
-	if len(result) != 0 {
-		t.Errorf("expected empty map, got %v", result)
-	}
+	testkit.AssertLen(t, result, 0)
 }
 
 func TestRedactPII_AllPIIFieldNames(t *testing.T) {
@@ -304,9 +302,7 @@ func TestRedactPII_EmptyArray(t *testing.T) {
 	data := map[string]any{"items": []any{}}
 	result := RedactPII(data)
 	items := result["items"].([]any)
-	if len(items) != 0 {
-		t.Errorf("expected empty array, got %v", items)
-	}
+	testkit.AssertLen(t, items, 0)
 }
 
 func TestRedactPII_MixedArrayTypes(t *testing.T) {

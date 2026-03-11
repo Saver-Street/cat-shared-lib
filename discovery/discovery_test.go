@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestNewRegistry(t *testing.T) {
@@ -12,9 +14,7 @@ func TestNewRegistry(t *testing.T) {
 	if r == nil {
 		t.Fatal("NewRegistry() = nil")
 	}
-	if len(r.Services()) != 0 {
-		t.Errorf("Services() = %v, want empty", r.Services())
-	}
+	testkit.AssertLen(t, r.Services(), 0)
 }
 
 func TestStatus_String(t *testing.T) {
@@ -128,9 +128,7 @@ func TestDeregister_LastInstance(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a:8080"})
 	_ = r.Deregister("svc", "1")
 
-	if len(r.Services()) != 0 {
-		t.Errorf("Services() = %v, want empty after last instance removed", r.Services())
-	}
+	testkit.AssertLen(t, r.Services(), 0)
 }
 
 func TestDeregister_Errors(t *testing.T) {
@@ -229,9 +227,7 @@ func TestResolveAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAll() error = %v", err)
 	}
-	if len(all) != 2 {
-		t.Errorf("ResolveAll() len = %d, want 2 (includes unhealthy)", len(all))
-	}
+	testkit.AssertLen(t, all, 2)
 }
 
 func TestResolveHealthy(t *testing.T) {
@@ -244,9 +240,7 @@ func TestResolveHealthy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveHealthy() error = %v", err)
 	}
-	if len(healthy) != 2 {
-		t.Errorf("ResolveHealthy() len = %d, want 2", len(healthy))
-	}
+	testkit.AssertLen(t, healthy, 2)
 }
 
 func TestResolveHealthy_NoneHealthy(t *testing.T) {
@@ -392,14 +386,10 @@ func TestRegisterStatic(t *testing.T) {
 	}
 
 	services := r.Services()
-	if len(services) != 2 {
-		t.Errorf("len(Services()) = %d, want 2", len(services))
-	}
+	testkit.AssertLen(t, services, 2)
 
 	billing, _ := r.ResolveAll("billing")
-	if len(billing) != 2 {
-		t.Errorf("billing instances = %d, want 2", len(billing))
-	}
+	testkit.AssertLen(t, billing, 2)
 }
 
 func TestRegisterStatic_Error(t *testing.T) {

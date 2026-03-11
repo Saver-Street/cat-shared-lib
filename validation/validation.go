@@ -353,3 +353,12 @@ return fmt.Errorf("invalid IPv4 address")
 }
 return nil
 }
+
+// CIDR validates that s is valid CIDR notation (e.g., "192.168.1.0/24").
+func CIDR(s string) error {
+_, _, err := net.ParseCIDR(s)
+if err != nil {
+return fmt.Errorf("invalid CIDR notation")
+}
+return nil
+}

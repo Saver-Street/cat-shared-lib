@@ -529,3 +529,15 @@ func TestIPv4_Invalid(t *testing.T) {
 testkit.AssertError(t, IPv4("not-an-ip"))
 testkit.AssertErrorContains(t, IPv4(""), "invalid IPv4")
 }
+
+func TestCIDR_Valid(t *testing.T) {
+testkit.AssertNoError(t, CIDR("192.168.1.0/24"))
+testkit.AssertNoError(t, CIDR("10.0.0.0/8"))
+testkit.AssertNoError(t, CIDR("::1/128"))
+}
+
+func TestCIDR_Invalid(t *testing.T) {
+testkit.AssertError(t, CIDR("192.168.1.1"))
+testkit.AssertError(t, CIDR("not-cidr"))
+testkit.AssertErrorContains(t, CIDR(""), "invalid CIDR")
+}

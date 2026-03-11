@@ -271,3 +271,21 @@ return err
 }
 return nil
 }
+
+// Lowercase validates that value contains only lowercase letters, digits,
+// and common punctuation — no uppercase letters.
+func Lowercase(field, value string) error {
+if value != strings.ToLower(value) {
+return fmt.Errorf("%s must be lowercase", field)
+}
+return nil
+}
+
+// Uppercase validates that value contains only uppercase letters, digits,
+// and common punctuation — no lowercase letters.
+func Uppercase(field, value string) error {
+if value != strings.ToUpper(value) {
+return fmt.Errorf("%s must be uppercase", field)
+}
+return nil
+}

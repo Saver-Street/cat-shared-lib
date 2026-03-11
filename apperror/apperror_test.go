@@ -65,6 +65,11 @@ func TestConvenienceConstructors(t *testing.T) {
 		{"Timeout", Timeout, 504, CodeTimeout},
 		{"RateLimit", RateLimit, 429, CodeRateLimit},
 		{"ServiceDown", ServiceDown, 503, CodeServiceDown},
+		{"PaymentRequired", PaymentRequired, 402, CodePaymentRequired},
+		{"TooLarge", TooLarge, 413, CodeTooLarge},
+		{"Gone", Gone, 410, CodeGone},
+		{"NotImplemented", NotImplemented, 501, CodeNotImplemented},
+		{"PreconditionFailed", PreconditionFailed, 412, CodePrecondition},
 	}
 
 	for _, tt := range tests {
@@ -83,6 +88,37 @@ func TestInternalWrap(t *testing.T) {
 	testkit.AssertEqual(t, e.HTTPStatus, 500)
 	testkit.AssertEqual(t, e.Code, CodeInternal)
 	testkit.AssertErrorIs(t, e, cause)
+}
+
+func TestWrapVariants(t *testing.T) {
+	cause := fmt.Errorf("root cause")
+
+	tests := []struct {
+		name       string
+		fn         func(string, error) *Error
+		wantStatus int
+		wantCode   Code
+	}{
+		{"NotFoundWrap", NotFoundWrap, 404, CodeNotFound},
+		{"BadRequestWrap", BadRequestWrap, 400, CodeBadRequest},
+		{"UnauthorizedWrap", UnauthorizedWrap, 401, CodeUnauthorized},
+		{"ForbiddenWrap", ForbiddenWrap, 403, CodeForbidden},
+		{"ConflictWrap", ConflictWrap, 409, CodeConflict},
+		{"ValidationWrap", ValidationWrap, 422, CodeValidation},
+		{"TimeoutWrap", TimeoutWrap, 504, CodeTimeout},
+		{"ServiceDownWrap", ServiceDownWrap, 503, CodeServiceDown},
+		{"InternalWrap", InternalWrap, 500, CodeInternal},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := tt.fn("wrap message", cause)
+			testkit.AssertEqual(t, e.HTTPStatus, tt.wantStatus)
+			testkit.AssertEqual(t, e.Code, tt.wantCode)
+			testkit.AssertEqual(t, e.Message, "wrap message")
+			testkit.AssertErrorIs(t, e, cause)
+		})
+	}
 }
 
 func TestHTTPStatus(t *testing.T) {

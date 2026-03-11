@@ -393,3 +393,19 @@ return DateRange{}, fmt.Errorf("%s must be before %s", startKey, endKey)
 }
 return DateRange{Start: start, End: end}, nil
 }
+
+// ParseIDList parses a comma-separated list of UUIDs from the given query
+// parameter. Returns nil if the key is absent. Returns an error if any
+// token is not a valid UUID.
+func ParseIDList(q url.Values, key string) ([]string, error) {
+tokens := ParseCommaSeparated(q, key)
+if tokens == nil {
+return nil, nil
+}
+for _, t := range tokens {
+if !uuidRe.MatchString(t) {
+return nil, fmt.Errorf("query parameter %q: %q is not a valid UUID", key, t)
+}
+}
+return tokens, nil
+}

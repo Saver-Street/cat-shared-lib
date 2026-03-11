@@ -3,6 +3,7 @@ package testkit
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -92,6 +93,67 @@ func TestAssertErrorContains_Miss(t *testing.T) {
 	AssertErrorContains(mock, errors.New("timeout"), "refused")
 	if !mock.errored {
 		t.Error("expected Errorf for missing substr")
+	}
+}
+
+// ---- AssertErrorIs tests ----
+
+func TestAssertErrorIs_Pass(t *testing.T) {
+	wrapped := fmt.Errorf("wrapped: %w", errSentinel)
+	AssertErrorIs(t, wrapped, errSentinel)
+}
+
+func TestAssertErrorIs_Nil(t *testing.T) {
+	mock := &mockT{}
+	AssertErrorIs(mock, nil, errSentinel)
+	if !mock.fatal {
+		t.Error("expected Fatalf for nil error")
+	}
+}
+
+func TestAssertErrorIs_NoMatch(t *testing.T) {
+	mock := &mockT{}
+	AssertErrorIs(mock, errors.New("other"), errSentinel)
+	if !mock.errored {
+		t.Error("expected Errorf for non-matching error")
+	}
+}
+
+// ---- AssertErrorAs tests ----
+
+func TestAssertErrorAs_Pass(t *testing.T) {
+	err := &testCustomError{code: 404}
+	wrapped := fmt.Errorf("wrapped: %w", err)
+	var target *testCustomError
+	AssertErrorAs(t, wrapped, &target)
+	if target.code != 404 {
+		t.Errorf("expected code 404, got %d", target.code)
+	}
+}
+
+func TestAssertErrorAs_Nil(t *testing.T) {
+	mock := &mockT{}
+	var target *testCustomError
+	AssertErrorAs(mock, nil, &target)
+	if !mock.fatal {
+		t.Error("expected Fatalf for nil error")
+	}
+}
+
+func TestAssertErrorAs_NoMatch(t *testing.T) {
+	mock := &mockT{}
+	var target *testCustomError
+	AssertErrorAs(mock, errors.New("plain"), &target)
+	if !mock.errored {
+		t.Error("expected Errorf for non-matching error type")
+	}
+}
+
+func TestAssertErrorAs_BadTarget(t *testing.T) {
+	mock := &mockT{}
+	AssertErrorAs(mock, errors.New("err"), "not-a-pointer")
+	if !mock.fatal {
+		t.Error("expected Fatalf for non-pointer target")
 	}
 }
 
@@ -452,3 +514,11 @@ type mockT struct {
 func (m *mockT) Helper()                          {}
 func (m *mockT) Errorf(_ string, _ ...any)        { m.errored = true }
 func (m *mockT) Fatalf(_ string, _ ...any)        { m.fatal = true; m.errored = true }
+
+// test helpers for AssertErrorIs / AssertErrorAs
+
+var errSentinel = errors.New("sentinel")
+
+type testCustomError struct{ code int }
+
+func (e *testCustomError) Error() string { return fmt.Sprintf("custom error %d", e.code) }

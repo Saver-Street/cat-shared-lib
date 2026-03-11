@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"encoding/json"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -54,9 +53,7 @@ func TestSpec_JSON(t *testing.T) {
 	testkit.RequireNoError(t, err)
 
 	var result map[string]any
-	if err := json.Unmarshal(data, &result); err != nil {
-		t.Fatalf("invalid JSON: %v", err)
-	}
+	testkit.AssertJSON(t, data, &result)
 	testkit.AssertEqual(t, result["openapi"], "3.0.3")
 }
 
@@ -82,9 +79,7 @@ func TestSpec_Handler(t *testing.T) {
 	testkit.AssertEqual(t, rr.Header().Get("Content-Type"), "application/json")
 
 	var result Spec
-	if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
-		t.Fatalf("invalid JSON response: %v", err)
-	}
+	testkit.AssertJSON(t, rr.Body.Bytes(), &result)
 }
 
 func TestSpec_Handler_MarshalError(t *testing.T) {
@@ -227,9 +222,7 @@ func TestFullSpec_Serialization(t *testing.T) {
 	testkit.RequireNoError(t, err)
 
 	var parsed map[string]any
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		t.Fatalf("invalid JSON: %v", err)
-	}
+	testkit.AssertJSON(t, data, &parsed)
 
 	testkit.AssertEqual(t, parsed["openapi"], "3.0.3")
 	paths, ok := parsed["paths"].(map[string]any)
@@ -329,7 +322,7 @@ func TestSpec_Components_JSON(t *testing.T) {
 	testkit.AssertNoError(t, err)
 
 	var parsed map[string]any
-	testkit.AssertNoError(t, json.Unmarshal(data, &parsed))
+	testkit.AssertJSON(t, data, &parsed)
 
 	components, ok := parsed["components"].(map[string]any)
 	testkit.AssertTrue(t, ok)

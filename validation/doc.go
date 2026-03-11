@@ -6,6 +6,10 @@
 // [MinLength] and [MaxLength] enforce rune-count bounds.  [OneOf] ensures a
 // value is among a set of allowed choices.
 //
+// Date validators [Date], [DateBefore], [DateAfter], [DateRange], [FutureDate],
+// and [PastDate] validate time strings against Go time layouts and enforce
+// temporal bounds.
+//
 // [Collect] gathers multiple validation results into a single error slice,
 // filtering out nil entries, which simplifies validating an entire struct in
 // one pass.

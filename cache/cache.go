@@ -125,6 +125,26 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	return e.value, true
 }
 
+// Contains reports whether key exists in the cache and has not expired.
+// Unlike Get, it does not update the LRU order.
+func (c *Cache[K, V]) Contains(key K) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	el, ok := c.items[key]
+	if !ok {
+		return false
+	}
+
+	e := el.Value.(*entry[K, V])
+	if !e.expiresAt.IsZero() && c.now().After(e.expiresAt) {
+		c.removeElement(el)
+		return false
+	}
+
+	return true
+}
+
 // Delete removes an entry from the cache.
 func (c *Cache[K, V]) Delete(key K) {
 	c.mu.Lock()

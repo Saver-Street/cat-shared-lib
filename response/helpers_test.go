@@ -513,3 +513,12 @@ testkit.AssertContains(t, w.Body.String(), "<?xml")
 testkit.AssertContains(t, w.Body.String(), "<name>test</name>")
 testkit.AssertContains(t, w.Body.String(), "<value>42</value>")
 }
+
+func TestCreatedWithLocation(t *testing.T) {
+w := httptest.NewRecorder()
+CreatedWithLocation(w, "/api/users/42", map[string]string{"id": "42"})
+
+testkit.AssertStatus(t, w, http.StatusCreated)
+testkit.AssertHeader(t, w, "Location", "/api/users/42")
+testkit.AssertContains(t, w.Body.String(), `"id"`)
+}

@@ -32,6 +32,13 @@ func Created(w http.ResponseWriter, data any) {
 	JSON(w, http.StatusCreated, data)
 }
 
+// CreatedWithLocation sends a 201 JSON response with a Location header
+// pointing to the newly created resource.
+func CreatedWithLocation(w http.ResponseWriter, location string, data any) {
+	w.Header().Set("Location", location)
+	JSON(w, http.StatusCreated, data)
+}
+
 // Error sends a JSON error response.
 func Error(w http.ResponseWriter, status int, msg string) {
 	JSON(w, status, map[string]string{"error": msg})

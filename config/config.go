@@ -346,3 +346,16 @@ return v, nil
 }
 return "", fmt.Errorf("config: %s: value %q is not one of %v", key, v, allowed)
 }
+
+// MustEnum is like Enum but panics if the value is not one of the allowed
+// choices. Intended for use during application startup.
+func MustEnum(key string, allowed []string) string {
+v, err := Enum(key, "", allowed)
+if err != nil {
+panic(err)
+}
+if v == "" {
+panic(fmt.Sprintf("config: %s is required", key))
+}
+return v
+}

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -493,4 +494,29 @@ _, err := Enum("TEST_ENUM", "info", []string{"debug", "info", "warn", "error"})
 testkit.AssertError(t, err)
 testkit.AssertContains(t, err.Error(), "trace")
 testkit.AssertContains(t, err.Error(), "not one of")
+}
+
+func TestMustEnum_Valid(t *testing.T) {
+t.Setenv("TEST_MUST_ENUM", "warn")
+v := MustEnum("TEST_MUST_ENUM", []string{"debug", "info", "warn", "error"})
+testkit.AssertEqual(t, v, "warn")
+}
+
+func TestMustEnum_Missing(t *testing.T) {
+defer func() {
+r := recover()
+testkit.AssertNotNil(t, r)
+testkit.AssertContains(t, fmt.Sprint(r), "required")
+}()
+MustEnum("TEST_MUST_ENUM_UNSET", []string{"a", "b"})
+}
+
+func TestMustEnum_Invalid(t *testing.T) {
+t.Setenv("TEST_MUST_ENUM", "trace")
+defer func() {
+r := recover()
+testkit.AssertNotNil(t, r)
+testkit.AssertContains(t, fmt.Sprint(r), "not one of")
+}()
+MustEnum("TEST_MUST_ENUM", []string{"debug", "info", "warn"})
 }

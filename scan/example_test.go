@@ -162,3 +162,49 @@ func ExampleRowsLimit() {
 	// Alice from Portland
 	// Bob from Seattle
 }
+
+func ExampleMap() {
+	rows := &exampleRows{data: [][]any{
+		{"Alice", "Portland"},
+		{"Bob", "Seattle"},
+	}}
+
+	type greeting struct {
+		Text string
+	}
+
+	greetings, err := scan.Map[person, greeting](rows, func(p *person) []any {
+		return []any{&p.Name, &p.City}
+	}, func(p person) (greeting, error) {
+		return greeting{Text: fmt.Sprintf("Hello %s from %s!", p.Name, p.City)}, nil
+	})
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	for _, g := range greetings {
+		fmt.Println(g.Text)
+	}
+	// Output:
+	// Hello Alice from Portland!
+	// Hello Bob from Seattle!
+}
+
+func ExampleCollect() {
+	rows := &exampleRows{data: [][]any{
+		{"Alice", "Portland"},
+		{"Bob", "Seattle"},
+	}}
+	names, err := scan.Collect[person, string](rows, func(p *person) []any {
+		return []any{&p.Name, &p.City}
+	}, func(p person) string {
+		return p.Name
+	})
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	fmt.Println(names)
+	// Output:
+	// [Alice Bob]
+}

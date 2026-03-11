@@ -283,67 +283,167 @@ func TestSimple_Exhausted(t *testing.T) {
 }
 
 func TestWithTimeout_Success(t *testing.T) {
-calls := 0
-err := WithTimeout(context.Background(), 5*time.Second, Config{MaxAttempts: 3, InitialDelay: time.Millisecond}, func(ctx context.Context) error {
-calls++
-if calls < 2 {
-return errors.New("fail")
-}
-return nil
-})
-testkit.AssertNoError(t, err)
-testkit.AssertEqual(t, calls, 2)
+	calls := 0
+	err := WithTimeout(context.Background(), 5*time.Second, Config{MaxAttempts: 3, InitialDelay: time.Millisecond}, func(ctx context.Context) error {
+		calls++
+		if calls < 2 {
+			return errors.New("fail")
+		}
+		return nil
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, calls, 2)
 }
 
 func TestWithTimeout_Exceeded(t *testing.T) {
-err := WithTimeout(context.Background(), 50*time.Millisecond, Config{MaxAttempts: 100, InitialDelay: 30 * time.Millisecond}, func(ctx context.Context) error {
-return errors.New("always fail")
-})
-testkit.AssertError(t, err)
+	err := WithTimeout(context.Background(), 50*time.Millisecond, Config{MaxAttempts: 100, InitialDelay: 30 * time.Millisecond}, func(ctx context.Context) error {
+		return errors.New("always fail")
+	})
+	testkit.AssertError(t, err)
 }
 
 func TestDelay_ExponentialGrowth(t *testing.T) {
-cfg := Config{
-InitialDelay:   100 * time.Millisecond,
-Multiplier:     2.0,
-MaxDelay:       10 * time.Second,
-JitterFraction: 0, // Disable jitter for determinism.
-}
-d0 := Delay(cfg, 0)
-d1 := Delay(cfg, 1)
-d2 := Delay(cfg, 2)
+	cfg := Config{
+		InitialDelay:   100 * time.Millisecond,
+		Multiplier:     2.0,
+		MaxDelay:       10 * time.Second,
+		JitterFraction: 0, // Disable jitter for determinism.
+	}
+	d0 := Delay(cfg, 0)
+	d1 := Delay(cfg, 1)
+	d2 := Delay(cfg, 2)
 
-testkit.AssertEqual(t, d0, 100*time.Millisecond)
-testkit.AssertEqual(t, d1, 200*time.Millisecond)
-testkit.AssertEqual(t, d2, 400*time.Millisecond)
+	testkit.AssertEqual(t, d0, 100*time.Millisecond)
+	testkit.AssertEqual(t, d1, 200*time.Millisecond)
+	testkit.AssertEqual(t, d2, 400*time.Millisecond)
 }
 
 func TestDelay_CappedAtMaxDelay(t *testing.T) {
-cfg := Config{
-InitialDelay:   100 * time.Millisecond,
-Multiplier:     2.0,
-MaxDelay:       300 * time.Millisecond,
-JitterFraction: 0,
-}
-d5 := Delay(cfg, 5) // Would be 3200ms uncapped
-testkit.AssertEqual(t, d5, 300*time.Millisecond)
+	cfg := Config{
+		InitialDelay:   100 * time.Millisecond,
+		Multiplier:     2.0,
+		MaxDelay:       300 * time.Millisecond,
+		JitterFraction: 0,
+	}
+	d5 := Delay(cfg, 5) // Would be 3200ms uncapped
+	testkit.AssertEqual(t, d5, 300*time.Millisecond)
 }
 
 func TestDelay_WithJitter(t *testing.T) {
-cfg := Config{
-InitialDelay:   100 * time.Millisecond,
-Multiplier:     2.0,
-MaxDelay:       10 * time.Second,
-JitterFraction: 0.25,
-}
-d := Delay(cfg, 0)
-// With 25% jitter on 100ms, result should be in [75ms, 125ms]
-testkit.AssertTrue(t, d >= 75*time.Millisecond)
-testkit.AssertTrue(t, d <= 125*time.Millisecond)
+	cfg := Config{
+		InitialDelay:   100 * time.Millisecond,
+		Multiplier:     2.0,
+		MaxDelay:       10 * time.Second,
+		JitterFraction: 0.25,
+	}
+	d := Delay(cfg, 0)
+	// With 25% jitter on 100ms, result should be in [75ms, 125ms]
+	testkit.AssertTrue(t, d >= 75*time.Millisecond)
+	testkit.AssertTrue(t, d <= 125*time.Millisecond)
 }
 
 func TestDelay_Defaults(t *testing.T) {
-cfg := Config{JitterFraction: 0}
-d := Delay(cfg, 0)
-testkit.AssertEqual(t, d, 500*time.Millisecond)
+	cfg := Config{JitterFraction: 0}
+	d := Delay(cfg, 0)
+	testkit.AssertEqual(t, d, 500*time.Millisecond)
+}
+
+func TestPermanent(t *testing.T) {
+	base := errors.New("fatal")
+	pe := Permanent(base)
+	testkit.AssertTrue(t, IsPermanent(pe))
+	testkit.AssertTrue(t, errors.Is(pe, base))
+	testkit.AssertEqual(t, pe.Error(), "fatal")
+}
+
+func TestPermanent_Nil(t *testing.T) {
+	testkit.AssertNil(t, Permanent(nil))
+}
+
+func TestIsPermanent_RegularError(t *testing.T) {
+	testkit.AssertFalse(t, IsPermanent(errors.New("normal")))
+}
+
+func TestDo_StopsOnPermanent(t *testing.T) {
+	var calls int
+	err := Do(context.Background(), Config{MaxAttempts: 5, InitialDelay: time.Millisecond}, func(ctx context.Context) error {
+		calls++
+		if calls == 2 {
+			return Permanent(errors.New("permanent fail"))
+		}
+		return errors.New("temp")
+	})
+	testkit.AssertEqual(t, calls, 2)
+	testkit.AssertErrorContains(t, err, "permanent fail")
+	testkit.AssertFalse(t, IsPermanent(err)) // unwrapped
+}
+
+func TestDoWithResult_Success(t *testing.T) {
+	val, err := DoWithResult(context.Background(), Config{MaxAttempts: 3}, func(ctx context.Context) (int, error) {
+		return 42, nil
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, val, 42)
+}
+
+func TestDoWithResult_RetryThenSuccess(t *testing.T) {
+	var calls int
+	val, err := DoWithResult(context.Background(), Config{MaxAttempts: 3, InitialDelay: time.Millisecond}, func(ctx context.Context) (string, error) {
+		calls++
+		if calls < 3 {
+			return "", errors.New("not yet")
+		}
+		return "done", nil
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, val, "done")
+	testkit.AssertEqual(t, calls, 3)
+}
+
+func TestDoWithResult_AllFail(t *testing.T) {
+	val, err := DoWithResult(context.Background(), Config{MaxAttempts: 2, InitialDelay: time.Millisecond}, func(ctx context.Context) (int, error) {
+		return 0, errors.New("always fail")
+	})
+	testkit.AssertError(t, err)
+	testkit.AssertEqual(t, val, 0)
+}
+
+func TestDoWithResult_StopsOnPermanent(t *testing.T) {
+	var calls int
+	val, err := DoWithResult(context.Background(), Config{MaxAttempts: 5, InitialDelay: time.Millisecond}, func(ctx context.Context) (string, error) {
+		calls++
+		return "", Permanent(errors.New("stop"))
+	})
+	testkit.AssertEqual(t, calls, 1)
+	testkit.AssertEqual(t, val, "")
+	testkit.AssertErrorContains(t, err, "stop")
+}
+
+func TestDoWithResult_CancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	val, err := DoWithResult(ctx, Config{MaxAttempts: 3}, func(ctx context.Context) (int, error) {
+		return 0, errors.New("unreachable")
+	})
+	testkit.AssertError(t, err)
+	testkit.AssertTrue(t, errors.Is(err, context.Canceled))
+	testkit.AssertEqual(t, val, 0)
+}
+
+func TestDoWithResult_RetryIf(t *testing.T) {
+	var calls int
+	val, err := DoWithResult(context.Background(), Config{
+		MaxAttempts:  5,
+		InitialDelay: time.Millisecond,
+		RetryIf:      func(err error) bool { return err.Error() == "retry" },
+	}, func(ctx context.Context) (int, error) {
+		calls++
+		if calls == 1 {
+			return 0, errors.New("retry")
+		}
+		return 0, errors.New("stop here")
+	})
+	testkit.AssertEqual(t, calls, 2)
+	testkit.AssertEqual(t, val, 0)
+	testkit.AssertErrorContains(t, err, "stop here")
 }

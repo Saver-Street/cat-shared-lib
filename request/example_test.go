@@ -61,3 +61,55 @@ func ExampleParseBoolParam() {
 	// true
 	// false
 }
+
+func ExampleOptionalQueryParam() {
+	q := url.Values{"status": {"active"}}
+	fmt.Println(request.OptionalQueryParam(q, "status", "pending"))
+	fmt.Println(request.OptionalQueryParam(q, "missing", "pending"))
+	// Output:
+	// active
+	// pending
+}
+
+func ExampleOptionalQueryInt() {
+	q := url.Values{"limit": {"50"}}
+	fmt.Println(request.OptionalQueryInt(q, "limit", 25))
+	fmt.Println(request.OptionalQueryInt(q, "missing", 25))
+	// Output:
+	// 50
+	// 25
+}
+
+func ExampleRequireQueryParamInt() {
+	q := url.Values{"age": {"30"}}
+	val, err := request.RequireQueryParamInt(q, "age")
+	fmt.Println(val, err)
+	// Output:
+	// 30 <nil>
+}
+
+func ExampleParseCommaSeparated() {
+	q := url.Values{"tags": {"go,rust,python"}}
+	fmt.Println(request.ParseCommaSeparated(q, "tags"))
+	fmt.Println(request.ParseCommaSeparated(q, "missing"))
+	// Output:
+	// [go rust python]
+	// []
+}
+
+func ExampleParseSortOrder() {
+	q := url.Values{"sort": {"name"}, "order": {"desc"}}
+	field, dir := request.ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "asc")
+	fmt.Println(field, dir)
+	// Output:
+	// name desc
+}
+
+func ExampleParseEnumParam() {
+	q := url.Values{"role": {"admin"}}
+	fmt.Println(request.ParseEnumParam(q, "role", []string{"admin", "user", "guest"}, "user"))
+	fmt.Println(request.ParseEnumParam(q, "missing", []string{"admin", "user"}, "user"))
+	// Output:
+	// admin
+	// user
+}

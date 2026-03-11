@@ -535,3 +535,32 @@ func TestExtractBearerToken_CaseInsensitive(t *testing.T) {
 	testkit.AssertTrue(t, ok)
 	testkit.AssertEqual(t, token, "xyz789")
 }
+
+func TestContentType(t *testing.T) {
+r := httptest.NewRequest("POST", "/", nil)
+r.Header.Set("Content-Type", "application/json; charset=utf-8")
+testkit.AssertEqual(t, ContentType(r), "application/json")
+}
+
+func TestContentType_Empty(t *testing.T) {
+r := httptest.NewRequest("GET", "/", nil)
+testkit.AssertEqual(t, ContentType(r), "")
+}
+
+func TestContentType_Plain(t *testing.T) {
+r := httptest.NewRequest("POST", "/", nil)
+r.Header.Set("Content-Type", "text/plain")
+testkit.AssertEqual(t, ContentType(r), "text/plain")
+}
+
+func TestIsJSON_True(t *testing.T) {
+r := httptest.NewRequest("POST", "/", nil)
+r.Header.Set("Content-Type", "application/json")
+testkit.AssertTrue(t, IsJSON(r))
+}
+
+func TestIsJSON_False(t *testing.T) {
+r := httptest.NewRequest("POST", "/", nil)
+r.Header.Set("Content-Type", "text/html")
+testkit.AssertFalse(t, IsJSON(r))
+}

@@ -278,17 +278,17 @@ func ExtractBearerToken(r *http.Request) (string, bool) {
 // stripping any parameters (charset, boundary, etc.). Returns an empty string
 // if the header is missing or malformed.
 func ContentType(r *http.Request) string {
-ct := r.Header.Get("Content-Type")
-if ct == "" {
-return ""
-}
-mediaType, _, _ := mime.ParseMediaType(ct)
-return mediaType
+	ct := r.Header.Get("Content-Type")
+	if ct == "" {
+		return ""
+	}
+	mediaType, _, _ := mime.ParseMediaType(ct)
+	return mediaType
 }
 
 // IsJSON returns true if the request's Content-Type is application/json.
 func IsJSON(r *http.Request) bool {
-return ContentType(r) == "application/json"
+	return ContentType(r) == "application/json"
 }
 
 // ClientIP extracts the client IP address from the request. It checks the
@@ -296,120 +296,120 @@ return ContentType(r) == "application/json"
 // in X-Forwarded-For), then falls back to the remote address from the
 // connection. The returned value has any port stripped.
 func ClientIP(r *http.Request) string {
-if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-// X-Forwarded-For may contain a comma-separated list; take the first.
-if i := strings.IndexByte(xff, ','); i > 0 {
-return strings.TrimSpace(xff[:i])
-}
-return strings.TrimSpace(xff)
-}
-if xri := r.Header.Get("X-Real-IP"); xri != "" {
-return strings.TrimSpace(xri)
-}
-// Strip port from RemoteAddr (e.g. "192.168.1.1:12345").
-addr := r.RemoteAddr
-if i := strings.LastIndex(addr, ":"); i > 0 {
-return addr[:i]
-}
-return addr
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// X-Forwarded-For may contain a comma-separated list; take the first.
+		if i := strings.IndexByte(xff, ','); i > 0 {
+			return strings.TrimSpace(xff[:i])
+		}
+		return strings.TrimSpace(xff)
+	}
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return strings.TrimSpace(xri)
+	}
+	// Strip port from RemoteAddr (e.g. "192.168.1.1:12345").
+	addr := r.RemoteAddr
+	if i := strings.LastIndex(addr, ":"); i > 0 {
+		return addr[:i]
+	}
+	return addr
 }
 
 // ParseJSONBody reads the request body (limited to 1 MB) and decodes it
 // into a value of type T. It returns the decoded value and any decoding
 // error. The body is closed after reading.
 func ParseJSONBody[T any](r *http.Request) (T, error) {
-var v T
-defer func() { _ = r.Body.Close() }()
-limited := io.LimitReader(r.Body, 1<<20) // 1 MB
-if err := json.NewDecoder(limited).Decode(&v); err != nil {
-return v, fmt.Errorf("request: invalid JSON body: %w", err)
-}
-return v, nil
+	var v T
+	defer func() { _ = r.Body.Close() }()
+	limited := io.LimitReader(r.Body, 1<<20) // 1 MB
+	if err := json.NewDecoder(limited).Decode(&v); err != nil {
+		return v, fmt.Errorf("request: invalid JSON body: %w", err)
+	}
+	return v, nil
 }
 
 // OptionalQueryFloat reads a float64 query parameter, returning defaultValue
 // if the parameter is missing or empty. Non-numeric values are silently
 // treated as the default.
 func OptionalQueryFloat(q url.Values, key string, defaultValue float64) float64 {
-val := strings.TrimSpace(q.Get(key))
-if val == "" {
-return defaultValue
-}
-f, err := strconv.ParseFloat(val, 64)
-if err != nil {
-return defaultValue
-}
-return f
+	val := strings.TrimSpace(q.Get(key))
+	if val == "" {
+		return defaultValue
+	}
+	f, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return defaultValue
+	}
+	return f
 }
 
 // OptionalQueryBool reads a boolean query parameter, returning nil when the
 // parameter is absent or empty. Accepted true values: "true", "1", "yes";
 // false values: "false", "0", "no". Unrecognised values return nil.
 func OptionalQueryBool(q url.Values, key string) *bool {
-val := strings.TrimSpace(strings.ToLower(q.Get(key)))
-if val == "" {
-return nil
-}
-switch val {
-case "true", "1", "yes":
-b := true
-return &b
-case "false", "0", "no":
-b := false
-return &b
-default:
-return nil
-}
+	val := strings.TrimSpace(strings.ToLower(q.Get(key)))
+	if val == "" {
+		return nil
+	}
+	switch val {
+	case "true", "1", "yes":
+		b := true
+		return &b
+	case "false", "0", "no":
+		b := false
+		return &b
+	default:
+		return nil
+	}
 }
 
 // RequireHeader extracts a required HTTP header value. It returns an error
 // if the header is missing or empty.
 func RequireHeader(r *http.Request, name string) (string, error) {
-v := strings.TrimSpace(r.Header.Get(name))
-if v == "" {
-return "", fmt.Errorf("missing required header: %s", name)
-}
-return v, nil
+	v := strings.TrimSpace(r.Header.Get(name))
+	if v == "" {
+		return "", fmt.Errorf("missing required header: %s", name)
+	}
+	return v, nil
 }
 
 // DateRange represents a start and end time window parsed from query params.
 type DateRange struct {
-Start time.Time
-End   time.Time
+	Start time.Time
+	End   time.Time
 }
 
 // ParseDateRange parses start and end date query parameters. Both are
 // optional — a zero-value time.Time indicates the parameter was absent.
 // Returns an error if start is after end.
 func ParseDateRange(q url.Values, startKey, endKey string) (DateRange, error) {
-start, err := ParseDateParam(q, startKey)
-if err != nil {
-return DateRange{}, err
-}
-end, err := ParseDateParam(q, endKey)
-if err != nil {
-return DateRange{}, err
-}
-if !start.IsZero() && !end.IsZero() && start.After(end) {
-return DateRange{}, fmt.Errorf("%s must be before %s", startKey, endKey)
-}
-return DateRange{Start: start, End: end}, nil
+	start, err := ParseDateParam(q, startKey)
+	if err != nil {
+		return DateRange{}, err
+	}
+	end, err := ParseDateParam(q, endKey)
+	if err != nil {
+		return DateRange{}, err
+	}
+	if !start.IsZero() && !end.IsZero() && start.After(end) {
+		return DateRange{}, fmt.Errorf("%s must be before %s", startKey, endKey)
+	}
+	return DateRange{Start: start, End: end}, nil
 }
 
 // ParseIDList parses a comma-separated list of UUIDs from the given query
 // parameter. Returns nil if the key is absent. Returns an error if any
 // token is not a valid UUID.
 func ParseIDList(q url.Values, key string) ([]string, error) {
-tokens := ParseCommaSeparated(q, key)
-if tokens == nil {
-return nil, nil
-}
-for _, t := range tokens {
-if !uuidRe.MatchString(t) {
-return nil, fmt.Errorf("query parameter %q: %q is not a valid UUID", key, t)
-}
-}
-return tokens, nil
+	tokens := ParseCommaSeparated(q, key)
+	if tokens == nil {
+		return nil, nil
+	}
+	for _, t := range tokens {
+		if !uuidRe.MatchString(t) {
+			return nil, fmt.Errorf("query parameter %q: %q is not a valid UUID", key, t)
+		}
+	}
+	return tokens, nil
 }
 
 // ParseCursor extracts cursor and limit from URL query parameters.

@@ -280,3 +280,39 @@ _, err := URL("CONFIG_TEST_URL_NOHOST", "")
 testkit.AssertError(t, err)
 testkit.AssertContains(t, err.Error(), "must have a host")
 }
+
+func TestInt64(t *testing.T) {
+setEnv(t, "CONFIG_TEST_INT64", "9223372036854775807")
+got := Int64("CONFIG_TEST_INT64", 0)
+testkit.AssertEqual(t, got, int64(9223372036854775807))
+}
+
+func TestInt64_Default(t *testing.T) {
+got := Int64("CONFIG_TEST_INT64_UNSET", 42)
+testkit.AssertEqual(t, got, int64(42))
+}
+
+func TestInt64_Invalid(t *testing.T) {
+setEnv(t, "CONFIG_TEST_INT64_BAD", "not_a_number")
+got := Int64("CONFIG_TEST_INT64_BAD", 99)
+testkit.AssertEqual(t, got, int64(99))
+}
+
+func TestMustInt64(t *testing.T) {
+setEnv(t, "CONFIG_TEST_MUST_INT64", "1234567890123")
+got := MustInt64("CONFIG_TEST_MUST_INT64")
+testkit.AssertEqual(t, got, int64(1234567890123))
+}
+
+func TestMustInt64_Panics(t *testing.T) {
+testkit.AssertPanics(t, func() {
+MustInt64("CONFIG_TEST_MUST_INT64_UNSET")
+})
+}
+
+func TestMustInt64_PanicsInvalid(t *testing.T) {
+setEnv(t, "CONFIG_TEST_MUST_INT64_INV", "abc")
+testkit.AssertPanics(t, func() {
+MustInt64("CONFIG_TEST_MUST_INT64_INV")
+})
+}

@@ -301,3 +301,49 @@ return errors.New("always fail")
 })
 testkit.AssertError(t, err)
 }
+
+func TestDelay_ExponentialGrowth(t *testing.T) {
+cfg := Config{
+InitialDelay:   100 * time.Millisecond,
+Multiplier:     2.0,
+MaxDelay:       10 * time.Second,
+JitterFraction: 0, // Disable jitter for determinism.
+}
+d0 := Delay(cfg, 0)
+d1 := Delay(cfg, 1)
+d2 := Delay(cfg, 2)
+
+testkit.AssertEqual(t, d0, 100*time.Millisecond)
+testkit.AssertEqual(t, d1, 200*time.Millisecond)
+testkit.AssertEqual(t, d2, 400*time.Millisecond)
+}
+
+func TestDelay_CappedAtMaxDelay(t *testing.T) {
+cfg := Config{
+InitialDelay:   100 * time.Millisecond,
+Multiplier:     2.0,
+MaxDelay:       300 * time.Millisecond,
+JitterFraction: 0,
+}
+d5 := Delay(cfg, 5) // Would be 3200ms uncapped
+testkit.AssertEqual(t, d5, 300*time.Millisecond)
+}
+
+func TestDelay_WithJitter(t *testing.T) {
+cfg := Config{
+InitialDelay:   100 * time.Millisecond,
+Multiplier:     2.0,
+MaxDelay:       10 * time.Second,
+JitterFraction: 0.25,
+}
+d := Delay(cfg, 0)
+// With 25% jitter on 100ms, result should be in [75ms, 125ms]
+testkit.AssertTrue(t, d >= 75*time.Millisecond)
+testkit.AssertTrue(t, d <= 125*time.Millisecond)
+}
+
+func TestDelay_Defaults(t *testing.T) {
+cfg := Config{JitterFraction: 0}
+d := Delay(cfg, 0)
+testkit.AssertEqual(t, d, 500*time.Millisecond)
+}

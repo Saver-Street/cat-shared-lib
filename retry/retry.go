@@ -123,3 +123,11 @@ ctx, cancel := context.WithTimeout(ctx, timeout)
 defer cancel()
 return Do(ctx, cfg, fn)
 }
+
+// Delay calculates the backoff delay for the given attempt number (0-based)
+// using the provided Config. This is useful for logging or implementing
+// custom retry loops without using Do directly.
+func Delay(cfg Config, attempt int) time.Duration {
+cfg.defaults()
+return calcDelay(cfg, attempt)
+}

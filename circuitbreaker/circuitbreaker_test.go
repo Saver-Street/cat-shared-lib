@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestNew_Defaults(t *testing.T) {
@@ -86,9 +88,7 @@ func TestExecute_Failure(t *testing.T) {
 	testErr := errors.New("fail")
 	cb := New("test")
 	err := cb.Execute(func() error { return testErr })
-	if !errors.Is(err, testErr) {
-		t.Fatalf("Execute() = %v, want %v", err, testErr)
-	}
+	testkit.AssertErrorIs(t, err, testErr)
 	c := cb.Counts()
 	if c.TotalFailures != 1 {
 		t.Errorf("TotalFailures = %d, want 1", c.TotalFailures)
@@ -112,9 +112,7 @@ func TestTrip_AfterConsecutiveFailures(t *testing.T) {
 
 	// subsequent calls should be rejected
 	err := cb.Execute(func() error { return nil })
-	if !errors.Is(err, ErrCircuitOpen) {
-		t.Errorf("Execute() = %v, want %v", err, ErrCircuitOpen)
-	}
+	testkit.AssertErrorIs(t, err, ErrCircuitOpen)
 }
 
 func TestTrip_SuccessResetsConsecutiveFailures(t *testing.T) {
@@ -227,9 +225,7 @@ func TestHalfOpen_TooManyRequests(t *testing.T) {
 
 	// second request should be rejected
 	err := cb.Execute(func() error { return nil })
-	if !errors.Is(err, ErrTooManyRequests) {
-		t.Errorf("Execute() = %v, want %v", err, ErrTooManyRequests)
-	}
+	testkit.AssertErrorIs(t, err, ErrTooManyRequests)
 	close(done)
 }
 
@@ -283,9 +279,7 @@ func TestIsSuccessful_Custom(t *testing.T) {
 
 	// errExpected should be treated as success
 	err := cb.Execute(func() error { return errExpected })
-	if !errors.Is(err, errExpected) {
-		t.Fatalf("Execute() = %v, want %v", err, errExpected)
-	}
+	testkit.AssertErrorIs(t, err, errExpected)
 	if cb.State() != StateClosed {
 		t.Errorf("State() = %v, want %v (expected error treated as success)", cb.State(), StateClosed)
 	}

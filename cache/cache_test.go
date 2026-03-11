@@ -347,3 +347,44 @@ return 999
 testkit.AssertEqual(t, v, 100) // should return cached value
 testkit.AssertEqual(t, calls, 0) // fill should not be called
 }
+
+func TestContains_Hit(t *testing.T) {
+c := New[string, int](Config{DefaultTTL: time.Minute})
+defer c.Stop()
+
+c.Set("k", 42)
+testkit.AssertTrue(t, c.Contains("k"))
+}
+
+func TestContains_Miss(t *testing.T) {
+c := New[string, int](Config{DefaultTTL: time.Minute})
+defer c.Stop()
+
+testkit.AssertFalse(t, c.Contains("nope"))
+}
+
+func TestContains_Expired(t *testing.T) {
+now := time.Now()
+c := New[string, int](Config{DefaultTTL: time.Minute})
+defer c.Stop()
+c.now = func() time.Time { return now }
+
+c.Set("k", 1)
+c.now = func() time.Time { return now.Add(2 * time.Minute) }
+testkit.AssertFalse(t, c.Contains("k"))
+}
+
+func TestContains_DoesNotPromoteLRU(t *testing.T) {
+c := New[string, int](Config{DefaultTTL: time.Minute, MaxEntries: 2})
+defer c.Stop()
+
+c.Set("a", 1)
+c.Set("b", 2)
+// Contains should NOT promote "a"
+c.Contains("a")
+// Adding a third should evict "a" (oldest) since Contains didn't promote it
+c.Set("c", 3)
+testkit.AssertFalse(t, c.Contains("a"))
+testkit.AssertTrue(t, c.Contains("b"))
+testkit.AssertTrue(t, c.Contains("c"))
+}

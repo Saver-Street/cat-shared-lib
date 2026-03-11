@@ -384,3 +384,34 @@ func BenchmarkTruncateForLog(b *testing.B) {
 		TruncateForLog(s, 20)
 	}
 }
+
+func TestSanitizeHeader_Clean(t *testing.T) {
+	testkit.AssertEqual(t, SanitizeHeader("application/json"), "application/json")
+}
+
+func TestSanitizeHeader_CRLF(t *testing.T) {
+	testkit.AssertEqual(t, SanitizeHeader("value\r\nInjected-Header: evil"), "valueInjected-Header: evil")
+}
+
+func TestSanitizeHeader_CR(t *testing.T) {
+	testkit.AssertEqual(t, SanitizeHeader("value\rInjected"), "valueInjected")
+}
+
+func TestSanitizeHeader_LF(t *testing.T) {
+	testkit.AssertEqual(t, SanitizeHeader("value\nInjected"), "valueInjected")
+}
+
+func TestSanitizeHeader_Empty(t *testing.T) {
+	testkit.AssertEqual(t, SanitizeHeader(""), "")
+}
+
+func TestSanitizeHeader_MultipleCRLF(t *testing.T) {
+	testkit.AssertEqual(t, SanitizeHeader("a\r\nb\r\nc"), "abc")
+}
+
+func BenchmarkSanitizeHeader(b *testing.B) {
+	s := "X-Custom-Value: safe-header-value"
+	for b.Loop() {
+		SanitizeHeader(s)
+	}
+}

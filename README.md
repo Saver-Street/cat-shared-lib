@@ -32,6 +32,7 @@ Shared Go library for Catherine (Auto-Apps) microservices.
   - [contracts — Service Interface Contracts](#contracts--service-interface-contracts)
   - [servicetest — Integration Test Helpers](#servicetest--integration-test-helpers)
 - [Design Notes](#design-notes)
+- [Testing](#testing)
 
 ---
 
@@ -790,7 +791,30 @@ type Querier interface {
 - **DirectDB only** in Phase C — no HTTP service-to-service calls via service packages
 - **Boolean flags are plain-text** (`"true"` / `"false"`) — no encryption
 - **Rate limiter** is per-IP sliding window + token bucket, safe for concurrent use
-- **90%+ test coverage** across all packages (race-condition tested)
 - **Zero-config defaults** — all packages work out of the box with sensible defaults
 - **Context-aware** — every long-running operation accepts `context.Context`
+
+---
+
+## Testing
+
+Every package includes multiple layers of testing:
+
+| Layer | Files | Description |
+|-------|-------|-------------|
+| Unit tests | `*_test.go` | ≥95% statement coverage enforced by CI |
+| Example tests | 34 `example_test.go` | Runnable godoc examples for every package |
+| Fuzz tests | 21 `fuzz_test.go` | Robustness against arbitrary input |
+| Benchmarks | 17 `bench_test.go` | Performance regression detection |
+
+```sh
+make test            # Run all unit tests
+make test-race       # Run tests with Go race detector
+make bench           # Run all benchmarks
+make fuzz            # Smoke-run every fuzz target (5s each)
+make cover           # Generate coverage report
+make check-coverage  # Verify all packages meet 95% threshold
+```
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for testing guidelines and examples.
 

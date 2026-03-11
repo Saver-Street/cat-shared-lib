@@ -180,3 +180,16 @@ func Mask(s string, visibleSuffix int) string {
 	masked := strings.Repeat("*", n-visibleSuffix) + string(runes[n-visibleSuffix:])
 	return masked
 }
+
+// TrimStrings returns a new slice with each element trimmed of leading and
+// trailing whitespace. Empty strings after trimming are omitted.
+func TrimStrings(ss []string) []string {
+	out := make([]string, 0, len(ss))
+	for _, s := range ss {
+		s = strings.TrimSpace(s)
+		if s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}

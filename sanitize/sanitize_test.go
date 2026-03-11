@@ -406,3 +406,25 @@ func TestMask_SingleChar(t *testing.T) {
 func TestMask_APIKey(t *testing.T) {
 	testkit.AssertEqual(t, Mask("sk-abc123def456", 6), "*********def456")
 }
+
+func TestTrimStrings(t *testing.T) {
+	got := TrimStrings([]string{"  hello ", "world", "  ", ""})
+	testkit.AssertLen(t, got, 2)
+	testkit.AssertEqual(t, got[0], "hello")
+	testkit.AssertEqual(t, got[1], "world")
+}
+
+func TestTrimStrings_Empty(t *testing.T) {
+	got := TrimStrings([]string{})
+	testkit.AssertLen(t, got, 0)
+}
+
+func TestTrimStrings_AllEmpty(t *testing.T) {
+	got := TrimStrings([]string{" ", "", "\t"})
+	testkit.AssertLen(t, got, 0)
+}
+
+func TestTrimStrings_Nil(t *testing.T) {
+	got := TrimStrings(nil)
+	testkit.AssertLen(t, got, 0)
+}

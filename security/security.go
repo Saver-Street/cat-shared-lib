@@ -2,11 +2,13 @@
 package security
 
 import (
+	"fmt"
 	"net/url"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 // suspiciousPatterns is the list of compiled regexes used by ContainsSuspiciousInput
@@ -218,4 +220,41 @@ for _, k := range keys {
 parts = append(parts, k+" "+directives[k])
 }
 return strings.Join(parts, "; ")
+}
+
+// IsStrongPassword checks that a password meets minimum complexity
+// requirements: at least minLen characters, and contains at least one
+// uppercase letter, one lowercase letter, one digit, and one special
+// character. Returns a human-readable error describing the first unmet
+// requirement, or nil if all requirements are met.
+func IsStrongPassword(password string, minLen int) error {
+if len(password) < minLen {
+return fmt.Errorf("password must be at least %d characters", minLen)
+}
+var hasUpper, hasLower, hasDigit, hasSpecial bool
+for _, r := range password {
+switch {
+case unicode.IsUpper(r):
+hasUpper = true
+case unicode.IsLower(r):
+hasLower = true
+case unicode.IsDigit(r):
+hasDigit = true
+default:
+hasSpecial = true
+}
+}
+if !hasUpper {
+return fmt.Errorf("password must contain at least one uppercase letter")
+}
+if !hasLower {
+return fmt.Errorf("password must contain at least one lowercase letter")
+}
+if !hasDigit {
+return fmt.Errorf("password must contain at least one digit")
+}
+if !hasSpecial {
+return fmt.Errorf("password must contain at least one special character")
+}
+return nil
 }

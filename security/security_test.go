@@ -520,3 +520,37 @@ func TestCSPHeader_Empty(t *testing.T) {
 csp := CSPHeader(map[string]string{})
 testkit.AssertEqual(t, csp, "")
 }
+
+func TestIsStrongPassword_Valid(t *testing.T) {
+testkit.AssertNoError(t, IsStrongPassword("P@ssw0rd!", 8))
+}
+
+func TestIsStrongPassword_TooShort(t *testing.T) {
+err := IsStrongPassword("P@1a", 8)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "at least 8 characters")
+}
+
+func TestIsStrongPassword_NoUpper(t *testing.T) {
+err := IsStrongPassword("p@ssw0rd!", 8)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "uppercase")
+}
+
+func TestIsStrongPassword_NoLower(t *testing.T) {
+err := IsStrongPassword("P@SSW0RD!", 8)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "lowercase")
+}
+
+func TestIsStrongPassword_NoDigit(t *testing.T) {
+err := IsStrongPassword("P@ssword!", 8)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "digit")
+}
+
+func TestIsStrongPassword_NoSpecial(t *testing.T) {
+err := IsStrongPassword("Passw0rdd", 8)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "special")
+}

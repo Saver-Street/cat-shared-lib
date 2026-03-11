@@ -5,6 +5,7 @@ package validation
 
 import (
 	"cmp"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -322,6 +323,15 @@ return nil
 func JSON(s string) error {
 if !json.Valid([]byte(s)) {
 return fmt.Errorf("invalid JSON")
+}
+return nil
+}
+
+// Base64 validates that s is valid standard base64 (RFC 4648).
+func Base64(s string) error {
+_, err := base64.StdEncoding.DecodeString(s)
+if err != nil {
+return fmt.Errorf("invalid base64")
 }
 return nil
 }

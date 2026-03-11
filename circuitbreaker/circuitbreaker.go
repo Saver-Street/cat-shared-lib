@@ -22,6 +22,7 @@
 package circuitbreaker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -260,6 +261,53 @@ func (b *Breaker) Reset() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.setState(StateClosed)
+}
+
+// ExecuteWithContext runs fn within the circuit breaker, respecting context
+// cancellation. If the context is already done before the call begins, it
+// returns the context error without counting a failure.
+func (b *Breaker) ExecuteWithContext(ctx context.Context, fn func(ctx context.Context) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return b.Execute(func() error {
+		return fn(ctx)
+	})
+}
+
+// Snapshot holds a point-in-time view of the circuit breaker state and
+// counters, suitable for metrics export or health reporting.
+type Snapshot struct {
+	Name                 string        `json:"name"`
+	State                string        `json:"state"`
+	Requests             uint32        `json:"requests"`
+	TotalSuccesses       uint32        `json:"total_successes"`
+	TotalFailures        uint32        `json:"total_failures"`
+	ConsecutiveSuccesses uint32        `json:"consecutive_successes"`
+	ConsecutiveFailures  uint32        `json:"consecutive_failures"`
+	FailureThreshold     uint32        `json:"failure_threshold"`
+	SuccessThreshold     uint32        `json:"success_threshold"`
+	ResetTimeout         time.Duration `json:"reset_timeout"`
+}
+
+// Snapshot returns a point-in-time snapshot of the breaker state.
+func (b *Breaker) Snapshot() Snapshot {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	now := b.nowFunc()
+	state := b.currentState(now)
+	return Snapshot{
+		Name:                 b.name,
+		State:                state.String(),
+		Requests:             b.counts.Requests,
+		TotalSuccesses:       b.counts.TotalSuccesses,
+		TotalFailures:        b.counts.TotalFailures,
+		ConsecutiveSuccesses: b.counts.ConsecutiveSuccesses,
+		ConsecutiveFailures:  b.counts.ConsecutiveFailures,
+		FailureThreshold:     b.opts.FailureThreshold,
+		SuccessThreshold:     b.opts.SuccessThreshold,
+		ResetTimeout:         b.opts.ResetTimeout,
+	}
 }
 
 // currentState returns the effective state, accounting for the reset timeout.

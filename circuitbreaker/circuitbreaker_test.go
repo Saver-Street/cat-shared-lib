@@ -1,6 +1,7 @@
 package circuitbreaker
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -350,4 +351,84 @@ func TestSetState_SameState_Noop(t *testing.T) {
 
 	testkit.AssertEqual(t, stateAfter, stateBefore)
 	testkit.AssertEqual(t, countsAfter, countsBefore)
+}
+
+func TestExecuteWithContext_Success(t *testing.T) {
+	cb := New("test")
+	err := cb.ExecuteWithContext(context.Background(), func(ctx context.Context) error {
+		return nil
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, cb.Counts().TotalSuccesses, uint32(1))
+}
+
+func TestExecuteWithContext_CancelledContext(t *testing.T) {
+	cb := New("test")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel before execution
+
+	err := cb.ExecuteWithContext(ctx, func(ctx context.Context) error {
+		t.Fatal("fn should not be called with cancelled context")
+		return nil
+	})
+	testkit.AssertError(t, err)
+	testkit.AssertTrue(t, errors.Is(err, context.Canceled))
+	// Should not count as a failure
+	testkit.AssertEqual(t, cb.Counts().TotalFailures, uint32(0))
+}
+
+func TestExecuteWithContext_PropagatesContext(t *testing.T) {
+	cb := New("test")
+	type key struct{}
+	ctx := context.WithValue(context.Background(), key{}, "hello")
+
+	err := cb.ExecuteWithContext(ctx, func(ctx context.Context) error {
+		v, _ := ctx.Value(key{}).(string)
+		if v != "hello" {
+			t.Fatal("expected context value to propagate")
+		}
+		return nil
+	})
+	testkit.AssertNoError(t, err)
+}
+
+func TestExecuteWithContext_CircuitOpen(t *testing.T) {
+	cb := New("test", WithFailureThreshold(1))
+	_ = cb.Execute(func() error { return errors.New("fail") })
+	testkit.AssertEqual(t, cb.State(), StateOpen)
+
+	err := cb.ExecuteWithContext(context.Background(), func(ctx context.Context) error {
+		t.Fatal("fn should not be called when circuit is open")
+		return nil
+	})
+	testkit.AssertTrue(t, errors.Is(err, ErrCircuitOpen))
+}
+
+func TestSnapshot(t *testing.T) {
+	cb := New("payment-api",
+		WithFailureThreshold(3),
+		WithSuccessThreshold(2),
+		WithResetTimeout(30*time.Second),
+	)
+
+	_ = cb.Execute(func() error { return nil })
+	_ = cb.Execute(func() error { return errors.New("fail") })
+
+	snap := cb.Snapshot()
+	testkit.AssertEqual(t, snap.Name, "payment-api")
+	testkit.AssertEqual(t, snap.State, "closed")
+	testkit.AssertEqual(t, snap.TotalSuccesses, uint32(1))
+	testkit.AssertEqual(t, snap.TotalFailures, uint32(1))
+	testkit.AssertEqual(t, snap.FailureThreshold, uint32(3))
+	testkit.AssertEqual(t, snap.SuccessThreshold, uint32(2))
+	testkit.AssertEqual(t, snap.ResetTimeout, 30*time.Second)
+}
+
+func TestSnapshot_OpenState(t *testing.T) {
+	cb := New("test", WithFailureThreshold(1))
+	_ = cb.Execute(func() error { return errors.New("fail") })
+
+	snap := cb.Snapshot()
+	testkit.AssertEqual(t, snap.State, "open")
+	testkit.AssertEqual(t, snap.ConsecutiveFailures, uint32(0)) // reset on state change
 }

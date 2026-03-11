@@ -18,7 +18,7 @@ func FuzzDrainer_AddDone(f *testing.F) {
 			t.Skip()
 		}
 		if dones < 0 || dones > adds {
-			dones = adds
+			t.Skip()
 		}
 
 		d := &Drainer{}

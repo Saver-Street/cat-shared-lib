@@ -369,3 +369,27 @@ return "", fmt.Errorf("missing required header: %s", name)
 }
 return v, nil
 }
+
+// DateRange represents a start and end time window parsed from query params.
+type DateRange struct {
+Start time.Time
+End   time.Time
+}
+
+// ParseDateRange parses start and end date query parameters. Both are
+// optional — a zero-value time.Time indicates the parameter was absent.
+// Returns an error if start is after end.
+func ParseDateRange(q url.Values, startKey, endKey string) (DateRange, error) {
+start, err := ParseDateParam(q, startKey)
+if err != nil {
+return DateRange{}, err
+}
+end, err := ParseDateParam(q, endKey)
+if err != nil {
+return DateRange{}, err
+}
+if !start.IsZero() && !end.IsZero() && start.After(end) {
+return DateRange{}, fmt.Errorf("%s must be before %s", startKey, endKey)
+}
+return DateRange{Start: start, End: end}, nil
+}

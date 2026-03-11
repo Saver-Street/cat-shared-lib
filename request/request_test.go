@@ -690,3 +690,39 @@ req.Header.Set("X-Tenant-ID", "  ")
 _, err := RequireHeader(req, "X-Tenant-ID")
 testkit.AssertError(t, err)
 }
+
+func TestParseDateRange_Valid(t *testing.T) {
+q := url.Values{
+"start": {"2024-01-01"},
+"end":   {"2024-12-31"},
+}
+dr, err := ParseDateRange(q, "start", "end")
+testkit.RequireNoError(t, err)
+testkit.AssertEqual(t, dr.Start.Year(), 2024)
+testkit.AssertEqual(t, dr.End.Month(), time.December)
+}
+
+func TestParseDateRange_StartAfterEnd(t *testing.T) {
+q := url.Values{
+"start": {"2024-12-31"},
+"end":   {"2024-01-01"},
+}
+_, err := ParseDateRange(q, "start", "end")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "before")
+}
+
+func TestParseDateRange_BothAbsent(t *testing.T) {
+dr, err := ParseDateRange(url.Values{}, "start", "end")
+testkit.RequireNoError(t, err)
+testkit.AssertTrue(t, dr.Start.IsZero())
+testkit.AssertTrue(t, dr.End.IsZero())
+}
+
+func TestParseDateRange_OnePresent(t *testing.T) {
+q := url.Values{"start": {"2024-06-15"}}
+dr, err := ParseDateRange(q, "start", "end")
+testkit.RequireNoError(t, err)
+testkit.AssertFalse(t, dr.Start.IsZero())
+testkit.AssertTrue(t, dr.End.IsZero())
+}

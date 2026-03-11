@@ -45,9 +45,7 @@ func TestListenAndServe_GracefulShutdown(t *testing.T) {
 
 	// Pick a free port
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	addr := ln.Addr().String()
 	ln.Close()
 
@@ -68,9 +66,7 @@ func TestListenAndServe_GracefulShutdown(t *testing.T) {
 
 	// Verify server responds
 	resp, err := http.Get("http://" + addr + "/")
-	if err != nil {
-		t.Fatalf("server not responding: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	resp.Body.Close()
 	if resp.StatusCode != 200 {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
@@ -78,16 +74,12 @@ func TestListenAndServe_GracefulShutdown(t *testing.T) {
 
 	// Send SIGTERM to self to trigger shutdown
 	proc, err := os.FindProcess(os.Getpid())
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	proc.Signal(syscall.SIGTERM)
 
 	select {
 	case err := <-done:
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for shutdown")
 	}
@@ -98,9 +90,7 @@ func TestListenAndServe_GracefulShutdown(t *testing.T) {
 func TestListenAndServe_BadAddr(t *testing.T) {
 	// Bind to the same addr twice to cause an error
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	defer ln.Close()
 
 	cleanupCalled := false
@@ -137,9 +127,7 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 	})
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	addr := ln.Addr().String()
 	ln.Close()
 
@@ -171,9 +159,7 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 
 	// Send SIGTERM to trigger shutdown
 	proc, err := os.FindProcess(os.Getpid())
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	proc.Signal(syscall.SIGTERM)
 
 	select {
@@ -221,9 +207,7 @@ func TestDefaults_PartialOverride(t *testing.T) {
 
 func TestListenAndServe_NoCleanupFuncs(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	addr := ln.Addr().String()
 	ln.Close()
 
@@ -239,16 +223,12 @@ func TestListenAndServe_NoCleanupFuncs(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	proc, err := os.FindProcess(os.Getpid())
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	proc.Signal(syscall.SIGTERM)
 
 	select {
 	case err := <-done:
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for shutdown")
 	}

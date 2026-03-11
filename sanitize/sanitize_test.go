@@ -553,3 +553,21 @@ testkit.AssertEqual(t, CamelToSnake(tt.in), tt.want)
 })
 }
 }
+
+func TestSnakeToCamel(t *testing.T) {
+tests := []struct{ in, want string }{
+{"", ""},
+{"foo", "foo"},
+{"foo_bar", "fooBar"},
+{"foo_bar_baz", "fooBarBaz"},
+{"http_client", "httpClient"},
+{"USER_ID", "userId"},
+{"__double__under__", "doubleUnder"},
+{"single", "single"},
+}
+for _, tt := range tests {
+t.Run(tt.in, func(t *testing.T) {
+testkit.AssertEqual(t, SnakeToCamel(tt.in), tt.want)
+})
+}
+}

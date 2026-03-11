@@ -291,3 +291,24 @@ b.WriteRune(r)
 }
 return b.String()
 }
+
+// SnakeToCamel converts a snake_case string to camelCase. The first
+// character remains lowercase. Empty segments (from consecutive
+// underscores) are skipped.
+func SnakeToCamel(s string) string {
+parts := strings.Split(s, "_")
+var b strings.Builder
+for i, p := range parts {
+if p == "" {
+continue
+}
+if i == 0 || b.Len() == 0 {
+b.WriteString(strings.ToLower(p))
+} else {
+runes := []rune(strings.ToLower(p))
+runes[0] = unicode.ToUpper(runes[0])
+b.WriteString(string(runes))
+}
+}
+return b.String()
+}

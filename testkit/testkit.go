@@ -5,6 +5,7 @@ package testkit
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -496,6 +497,22 @@ func MustMarshalJSON(v any) []byte {
 		panic(fmt.Sprintf("testkit: MustMarshalJSON: %v", err))
 	}
 	return b
+}
+
+// AssertGreater asserts that got > want.
+func AssertGreater[V cmp.Ordered](t T, got, want V) {
+	t.Helper()
+	if got <= want {
+		t.Errorf("expected %v > %v", got, want)
+	}
+}
+
+// AssertLess asserts that got < want.
+func AssertLess[V cmp.Ordered](t T, got, want V) {
+	t.Helper()
+	if got >= want {
+		t.Errorf("expected %v < %v", got, want)
+	}
 }
 
 // Ptr returns a pointer to v. Useful for creating pointers to literals in

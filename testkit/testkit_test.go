@@ -799,3 +799,51 @@ func TestPtr_Bool(t *testing.T) {
 	p := Ptr(true)
 	AssertTrue(t, *p)
 }
+
+func TestAssertGreater_Pass(t *testing.T) {
+mt := &mockT{}
+AssertGreater(mt, 10, 5)
+AssertFalse(t, mt.errored)
+}
+
+func TestAssertGreater_Fail_Equal(t *testing.T) {
+mt := &mockT{}
+AssertGreater(mt, 5, 5)
+AssertTrue(t, mt.errored)
+}
+
+func TestAssertGreater_Fail_Less(t *testing.T) {
+mt := &mockT{}
+AssertGreater(mt, 3, 5)
+AssertTrue(t, mt.errored)
+}
+
+func TestAssertLess_Pass(t *testing.T) {
+mt := &mockT{}
+AssertLess(mt, 3, 5)
+AssertFalse(t, mt.errored)
+}
+
+func TestAssertLess_Fail_Equal(t *testing.T) {
+mt := &mockT{}
+AssertLess(mt, 5, 5)
+AssertTrue(t, mt.errored)
+}
+
+func TestAssertLess_Fail_Greater(t *testing.T) {
+mt := &mockT{}
+AssertLess(mt, 10, 5)
+AssertTrue(t, mt.errored)
+}
+
+func TestAssertGreater_String(t *testing.T) {
+mt := &mockT{}
+AssertGreater(mt, "b", "a")
+AssertFalse(t, mt.errored)
+}
+
+func TestAssertLess_String(t *testing.T) {
+mt := &mockT{}
+AssertLess(mt, "a", "b")
+AssertFalse(t, mt.errored)
+}

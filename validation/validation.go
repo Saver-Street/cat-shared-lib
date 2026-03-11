@@ -262,6 +262,14 @@ func Between[V cmp.Ordered](field string, value, min, max V) error {
 	return nil
 }
 
+// Positive validates that value is greater than zero.
+func Positive(field string, value int) error {
+	if value <= 0 {
+		return &ValidationError{Field: field, Message: field + " must be positive"}
+	}
+	return nil
+}
+
 // EachString applies a string validator to every element in values. It
 // returns the first validation error encountered, using field[i] as the
 // field name for error context. Returns nil if all elements pass.

@@ -350,9 +350,7 @@ func TestJWTClaims_JSON(t *testing.T) {
 	data, err := json.Marshal(c)
 	testkit.RequireNoError(t, err)
 	var got JWTClaims
-	if err := json.Unmarshal(data, &got); err != nil {
-		t.Fatal(err)
-	}
+	testkit.AssertJSON(t, data, &got)
 	testkit.AssertEqual(t, got.Subject, c.Subject)
 	testkit.AssertEqual(t, got.Email, c.Email)
 	testkit.AssertEqual(t, got.Role, c.Role)

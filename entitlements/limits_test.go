@@ -70,9 +70,7 @@ func TestTierLimits_JSONRoundTrip(t *testing.T) {
 	data, err := json.Marshal(limits)
 	testkit.RequireNoError(t, err)
 	var got TierLimits
-	if err := json.Unmarshal(data, &got); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	testkit.AssertJSON(t, data, &got)
 	testkit.AssertEqual(t, got.Tier, "pro")
 	testkit.AssertEqual(t, got.MonthlyApplications, 150)
 	testkit.AssertTrue(t, got.AutoSubmit)

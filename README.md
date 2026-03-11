@@ -53,20 +53,20 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 
 | Package | Description | Coverage |
 |---|---|---|
-| `middleware` | JWT auth (HS256), request ID, logging, recovery, rate limiting, ETag, caching | 99.7% |
-| `config` | Env var parsing with defaults, validation, byte sizes, URLs, ports | 100% |
+| `middleware` | JWT auth, request ID, logging, recovery, rate limiting, ETag, caching, basic auth, compression | 99.7% |
+| `config` | Env var parsing with defaults, validation, byte sizes, URLs, ports, enums | 100% |
 | `database` | PostgreSQL connection pool, transaction helpers | 96.6% |
-| `validation` | Email, UUID, phone, URL, slug, alphanumeric, hex, numeric, range validators | 100% |
+| `validation` | Email, UUID, phone, URL, slug, alphanumeric, hex, numeric, range, IP, JSON, base64 | 100% |
 | `cache` | Generic in-memory LRU cache with per-entry TTL | 98% |
 | `retry` | Exponential backoff with jitter and context cancellation | 100% |
-| `crypto` | bcrypt password hashing, secure token generation, HMAC-SHA256, SHA-256 | 100% |
+| `crypto` | bcrypt password hashing, secure tokens, HMAC-SHA256, SHA-256, random strings | 100% |
 | `email` | SMTP mailer with HTML/text template support | 92.6% |
 | `tracing` | OpenTelemetry distributed tracing setup and helpers | 98.5% |
 | `migration` | Database migration runner with rollback support | 100% |
-| `response` | JSON response helpers, pagination, SSE, file downloads, streaming | 100% |
-| `request` | HTTP request parsing, URL param extraction, JSON body decoding | 100% |
+| `response` | JSON/XML/HTML response helpers, pagination, SSE, streaming, redirects | 100% |
+| `request` | HTTP request parsing, URL params, JSON body decoding, ID lists | 100% |
 | `health` | Standardized health check handlers with concurrent checkers | 99.2% |
-| `httpclient` | Resilient HTTP client with retries and circuit breaker | 100% |
+| `httpclient` | Resilient HTTP client with retries, circuit breaker, HEAD support | 100% |
 | `apperror` | Standardized error types with HTTP status codes | 100% |
 | `circuitbreaker` | Circuit breaker pattern for resilient service calls | 100% |
 | `ratelimit` | Per-key sliding-window + token-bucket rate limiter | 100% |
@@ -78,12 +78,12 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 | `identity` | Candidate resolution + context getters | 100% |
 | `metrics` | Prometheus metrics helpers | 100% |
 | `openapi` | OpenAPI/Swagger spec serving | 100% |
-| `sanitize` | Filename sanitization, HTML escaping, whitespace normalization, Deref | 100% |
+| `sanitize` | Filename sanitization, HTML escaping, generics (Unique, Filter, Map, Compact, Contains) | 100% |
 | `scan` | Generic database row scanning (Rows, Row, First) | 100% |
-| `security` | Suspicious input detection, PII redaction, URL credential scrubbing | 100% |
+| `security` | Input detection, PII redaction, password strength, CSP, URL scrubbing | 100% |
 | `server` | HTTP server with graceful shutdown (SIGINT/SIGTERM) | 100% |
 | `shutdown` | OS signal-based graceful shutdown coordinator | 100% |
-| `testkit` | Mock server, call recorder, and other test helpers | 100% |
+| `testkit` | 40+ assertion helpers, mock server, call recorder, RequireTrue/RequireFalse | 100% |
 | `types` | Shared domain types (User, CandidateProfile, Pagination) | 100% |
 | `contracts` | Shared service interfaces (Service, Handler, HealthCheck, StandardError) | 100% |
 | `servicetest` | Integration test helpers: HTTP test server, mock Querier, fixture loader | 100% |

@@ -421,3 +421,21 @@ func TestJWTAuthConfig_NowFunc(t *testing.T) {
 		t.Errorf("now() outside expected range")
 	}
 }
+
+func TestValidateJWT_InvalidPayloadBase64(t *testing.T) {
+	secret := []byte("secret")
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
+	// "!!!" is invalid base64, but HMAC is computed on raw bytes so it still signs fine.
+	payload := "!!!"
+	sigInput := header + "." + payload
+	sig, _ := signPayload(sigInput, secret)
+	token := sigInput + "." + sig
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	_, err := validateJWT(req, secret, "", time.Now())
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken, got %v", err)
+	}
+}

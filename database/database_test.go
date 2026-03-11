@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -257,10 +258,14 @@ func TestWithTx_RollbackError(t *testing.T) {
 		},
 	}
 
+	fnErr := fmt.Errorf("fn error")
 	err := WithTx(context.Background(), pool, func(tx pgx.Tx) error {
-		return fmt.Errorf("fn error")
+		return fnErr
 	})
 	testkit.AssertError(t, err)
+	// Both the original error and the rollback error should be present.
+	testkit.AssertTrue(t, errors.Is(err, fnErr))
+	testkit.AssertErrorContains(t, err, "rollback failed")
 }
 
 func TestMigrate_CreateTableError(t *testing.T) {

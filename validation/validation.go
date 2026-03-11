@@ -143,6 +143,23 @@ func OneOf(field, value string, allowed []string) error {
 	}
 }
 
+// Match validates that value matches the given regular expression.
+// The field name and a human-readable description of the expected format
+// are used in the error message.
+func Match(field, value string, re *regexp.Regexp, description string) error {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return &ValidationError{Field: field, Message: field + " is required"}
+	}
+	if !re.MatchString(v) {
+		return &ValidationError{
+			Field:   field,
+			Message: fmt.Sprintf("%s must match %s", field, description),
+		}
+	}
+	return nil
+}
+
 // Collect runs multiple validation functions and returns all errors.
 // Returns nil if all validations pass.
 func Collect(errs ...error) []error {

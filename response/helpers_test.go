@@ -522,3 +522,18 @@ testkit.AssertStatus(t, w, http.StatusCreated)
 testkit.AssertHeader(t, w, "Location", "/api/users/42")
 testkit.AssertContains(t, w.Body.String(), `"id"`)
 }
+
+func TestNotModified(t *testing.T) {
+w := httptest.NewRecorder()
+NotModified(w)
+testkit.AssertStatus(t, w, http.StatusNotModified)
+testkit.AssertEqual(t, w.Body.Len(), 0)
+}
+
+func TestSeeOther(t *testing.T) {
+w := httptest.NewRecorder()
+r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+SeeOther(w, r, "/result")
+testkit.AssertStatus(t, w, http.StatusSeeOther)
+testkit.AssertHeader(t, w, "Location", "/result")
+}

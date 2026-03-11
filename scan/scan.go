@@ -125,3 +125,17 @@ func RowsLimit[T any](rows RowScanner, scanFn func(*T) []any, limit int) ([]T, e
 	}
 	return results, nil
 }
+
+// Value scans a single scalar value from a row. It is a convenience
+// wrapper for queries that return exactly one column and one row,
+// such as SELECT count(*) or SELECT max(id).
+func Value[T any](row SingleRowScanner) (T, error) {
+var v T
+if row == nil {
+return v, errors.New("scan.Value: row must not be nil")
+}
+if err := row.Scan(&v); err != nil {
+return v, err
+}
+return v, nil
+}

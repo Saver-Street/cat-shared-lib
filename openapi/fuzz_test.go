@@ -15,9 +15,7 @@ func FuzzNewSpec(f *testing.F) {
 	f.Add("title\nwith\nnewlines", "v1")
 	f.Fuzz(func(t *testing.T, title, version string) {
 		s := NewSpec(title, version)
-		if s == nil {
-			t.Fatal("NewSpec returned nil")
-		}
+		testkit.RequireNotNil(t, s)
 		// JSON must not panic and must produce valid JSON.
 		data, err := s.JSON()
 		testkit.RequireNoError(t, err)
@@ -35,9 +33,7 @@ func FuzzSpecFluent(f *testing.F) {
 		s := NewSpec(title, version).
 			WithDescription(desc).
 			AddServer(url, serverDesc)
-		if s == nil {
-			t.Fatal("fluent chain returned nil")
-		}
+		testkit.RequireNotNil(t, s)
 		data, err := s.JSON()
 		testkit.RequireNoError(t, err)
 		if !json.Valid(data) {
@@ -55,9 +51,7 @@ func FuzzOperation(f *testing.F) {
 			WithDescription(desc).
 			WithOperationID(opID).
 			WithTags(tag)
-		if op == nil {
-			t.Fatal("operation chain returned nil")
-		}
+		testkit.RequireNotNil(t, op)
 
 		// Add to a spec and serialize.
 		s := NewSpec("test", "1.0").

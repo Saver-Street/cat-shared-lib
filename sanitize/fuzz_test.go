@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -51,9 +52,7 @@ func FuzzNilIfEmpty(f *testing.F) {
 				t.Error("NilIfEmpty(\"\") should return nil")
 			}
 		} else {
-			if result == nil {
-				t.Fatalf("NilIfEmpty(%q) should not return nil", s)
-			}
+			testkit.RequireNotNil(t, result)
 			if *result != s {
 				t.Errorf("NilIfEmpty(%q) = %q, want %q", s, *result, s)
 			}
@@ -228,9 +227,7 @@ func FuzzTrimAndNilIfEmpty(f *testing.F) {
 			}
 			return
 		}
-		if result == nil {
-			t.Fatalf("TrimAndNilIfEmpty(%q) returned nil for non-empty trimmed %q", s, trimmed)
-		}
+		testkit.RequireNotNil(t, result)
 		if *result != trimmed {
 			t.Errorf("TrimAndNilIfEmpty(%q) = %q, want %q", s, *result, trimmed)
 		}

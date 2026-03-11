@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -89,9 +90,7 @@ func FuzzNewWithTable(f *testing.F) {
 	f.Fuzz(func(t *testing.T, table string) {
 		// Must not panic.
 		r := NewWithDB(&mockDB{}, table)
-		if r == nil {
-			t.Fatal("NewWithDB returned nil")
-		}
+		testkit.RequireNotNil(t, r)
 		if r.table != table {
 			t.Errorf("table = %q, want %q", r.table, table)
 		}

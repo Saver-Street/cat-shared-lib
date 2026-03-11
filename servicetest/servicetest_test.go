@@ -118,9 +118,7 @@ func TestHTTPTestServer_RecordsRequests(t *testing.T) {
 		t.Fatalf("RequestCount = %d, want 1", s.RequestCount())
 	}
 	last := s.LastRequest()
-	if last == nil {
-		t.Fatal("LastRequest is nil")
-	}
+	testkit.RequireNotNil(t, last)
 	testkit.AssertEqual(t, last.Method, "POST")
 	testkit.AssertEqual(t, last.Path, "/data")
 	testkit.AssertEqual(t, string(last.Body), `{"x":1}`)

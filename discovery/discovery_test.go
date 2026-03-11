@@ -27,9 +27,7 @@ func TestStatus_String(t *testing.T) {
 		{Status(99), "unknown(99)"},
 	}
 	for _, tt := range tests {
-		if got := tt.s.String(); got != tt.want {
-			t.Errorf("Status(%d).String() = %q, want %q", tt.s, got, tt.want)
-		}
+		testkit.AssertEqual(t, tt.s.String(), tt.want)
 	}
 }
 
@@ -44,9 +42,7 @@ func TestInstance_IsHealthy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		inst := Instance{Status: tt.status}
-		if got := inst.IsHealthy(); got != tt.want {
-			t.Errorf("Instance{Status: %v}.IsHealthy() = %v, want %v", tt.status, got, tt.want)
-		}
+		testkit.AssertEqual(t, inst.IsHealthy(), tt.want)
 	}
 }
 
@@ -62,9 +58,10 @@ func TestRegister_Success(t *testing.T) {
 	}
 
 	services := r.Services()
-	if len(services) != 1 || services[0] != "billing" {
-		t.Errorf("Services() = %v, want [billing]", services)
+	if len(services) != 1 {
+		t.Fatalf("len(Services()) = %d, want 1", len(services))
 	}
+	testkit.AssertEqual(t, services[0], "billing")
 }
 
 func TestRegister_Validation(t *testing.T) {
@@ -96,9 +93,7 @@ func TestRegister_UpdateExisting(t *testing.T) {
 	if len(all) != 1 {
 		t.Fatalf("len(instances) = %d, want 1 (update, not duplicate)", len(all))
 	}
-	if all[0].Addr != "http://new:8080" {
-		t.Errorf("Addr = %q, want http://new:8080", all[0].Addr)
-	}
+	testkit.AssertEqual(t, all[0].Addr, "http://new:8080")
 }
 
 func TestDeregister(t *testing.T) {
@@ -115,9 +110,7 @@ func TestDeregister(t *testing.T) {
 	if len(all) != 1 {
 		t.Fatalf("len(instances) = %d, want 1", len(all))
 	}
-	if all[0].ID != "2" {
-		t.Errorf("remaining ID = %q, want 2", all[0].ID)
-	}
+	testkit.AssertEqual(t, all[0].ID, "2")
 }
 
 func TestDeregister_LastInstance(t *testing.T) {
@@ -157,9 +150,7 @@ func TestResolve_RoundRobin(t *testing.T) {
 	// Should cycle through all 3 instances twice.
 	expected := []string{"http://a", "http://b", "http://c", "http://a", "http://b", "http://c"}
 	for i, want := range expected {
-		if addrs[i] != want {
-			t.Errorf("Resolve()[%d] = %q, want %q", i, addrs[i], want)
-		}
+		testkit.AssertEqual(t, addrs[i], want)
 	}
 }
 
@@ -175,9 +166,7 @@ func TestResolve_SkipsUnhealthy(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Resolve() error = %v", err)
 		}
-		if inst.Addr == "http://b" {
-			t.Error("Resolve() returned unhealthy instance")
-		}
+		testkit.AssertNotEqual(t, inst.Addr, "http://b")
 	}
 }
 
@@ -244,9 +233,7 @@ func TestSetStatus(t *testing.T) {
 	}
 
 	all, _ := r.ResolveAll("svc")
-	if all[0].Status != StatusUnhealthy {
-		t.Errorf("Status = %v, want unhealthy", all[0].Status)
-	}
+	testkit.AssertEqual(t, all[0].Status, StatusUnhealthy)
 }
 
 func TestSetStatus_Callback(t *testing.T) {
@@ -264,9 +251,8 @@ func TestSetStatus_Callback(t *testing.T) {
 	if !called {
 		t.Fatal("OnStateChange callback not called")
 	}
-	if gotFrom != StatusHealthy || gotTo != StatusDraining {
-		t.Errorf("callback got %v→%v, want healthy→draining", gotFrom, gotTo)
-	}
+	testkit.AssertEqual(t, gotFrom, StatusHealthy)
+	testkit.AssertEqual(t, gotTo, StatusDraining)
 }
 
 func TestSetStatus_Errors(t *testing.T) {
@@ -294,9 +280,7 @@ func TestHeartbeat(t *testing.T) {
 	}
 
 	all, _ := r.ResolveAll("svc")
-	if !all[0].LastSeen.Equal(now) {
-		t.Errorf("LastSeen = %v, want %v", all[0].LastSeen, now)
-	}
+	testkit.AssertTrue(t, all[0].LastSeen.Equal(now))
 }
 
 func TestHeartbeat_Errors(t *testing.T) {
@@ -317,9 +301,7 @@ func TestMarkStale(t *testing.T) {
 	// Advance time past TTL
 	now = now.Add(10 * time.Minute)
 	marked := r.MarkStale(5 * time.Minute)
-	if marked != 2 {
-		t.Errorf("MarkStale() = %d, want 2", marked)
-	}
+	testkit.AssertEqual(t, marked, 2)
 
 	_, err := r.Resolve("svc")
 	testkit.AssertErrorIs(t, err, ErrNoHealthyInstances)
@@ -334,9 +316,7 @@ func TestMarkStale_DoesNotAffectAlreadyUnhealthy(t *testing.T) {
 
 	now = now.Add(10 * time.Minute)
 	marked := r.MarkStale(5 * time.Minute)
-	if marked != 0 {
-		t.Errorf("MarkStale() = %d, want 0 (already unhealthy)", marked)
-	}
+	testkit.AssertEqual(t, marked, 0)
 }
 
 func TestRegisterStatic(t *testing.T) {
@@ -363,9 +343,7 @@ func TestRegisterStatic_Error(t *testing.T) {
 		{Service: "good", ID: "1", Addr: "http://a"},
 		{Service: "", ID: "2", Addr: "http://b"}, // invalid
 	})
-	if err == nil {
-		t.Fatal("RegisterStatic() = nil, want error on invalid instance")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestMetadata(t *testing.T) {
@@ -378,12 +356,8 @@ func TestMetadata(t *testing.T) {
 	})
 
 	inst, _ := r.Resolve("svc")
-	if inst.Metadata["version"] != "2.0" {
-		t.Errorf("Metadata[version] = %q, want 2.0", inst.Metadata["version"])
-	}
-	if inst.Metadata["region"] != "us-east" {
-		t.Errorf("Metadata[region] = %q, want us-east", inst.Metadata["region"])
-	}
+	testkit.AssertEqual(t, inst.Metadata["version"], "2.0")
+	testkit.AssertEqual(t, inst.Metadata["region"], "us-east")
 }
 
 func TestConcurrentAccess(t *testing.T) {
@@ -424,9 +398,7 @@ func TestRegister_StatusChangeCallback(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a"})
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a", Status: StatusUnhealthy})
 
-	if !called {
-		t.Error("OnStateChange not called when re-registering with different status")
-	}
+	testkit.AssertTrue(t, called)
 }
 
 func TestResolveAll_EmptyService(t *testing.T) {
@@ -471,10 +443,7 @@ func TestMarkStale_WithCallback(t *testing.T) {
 	r.nowFunc = func() time.Time { return now.Add(10 * time.Minute) }
 	marked := r.MarkStale(5 * time.Minute)
 
-	if marked != 1 {
-		t.Errorf("MarkStale() = %d, want 1", marked)
-	}
-	if cbFrom != StatusHealthy || cbTo != StatusUnhealthy {
-		t.Errorf("callback got from=%v to=%v, want Healthy→Unhealthy", cbFrom, cbTo)
-	}
+	testkit.AssertEqual(t, marked, 1)
+	testkit.AssertEqual(t, cbFrom, StatusHealthy)
+	testkit.AssertEqual(t, cbTo, StatusUnhealthy)
 }

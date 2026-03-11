@@ -501,3 +501,22 @@ testkit.AssertEqual(t, SanitizeFilename(tt.input), tt.expect)
 })
 }
 }
+
+func TestCSPHeader(t *testing.T) {
+csp := CSPHeader(map[string]string{
+"default-src": "'self'",
+"script-src":  "'self' 'unsafe-inline'",
+"img-src":     "'self' data:",
+})
+testkit.AssertEqual(t, csp, "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'")
+}
+
+func TestCSPHeader_Single(t *testing.T) {
+csp := CSPHeader(map[string]string{"default-src": "'none'"})
+testkit.AssertEqual(t, csp, "default-src 'none'")
+}
+
+func TestCSPHeader_Empty(t *testing.T) {
+csp := CSPHeader(map[string]string{})
+testkit.AssertEqual(t, csp, "")
+}

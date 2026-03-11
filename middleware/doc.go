@@ -10,6 +10,9 @@
 // [RequireRole], and [RequireSubscriptionTier] enforce access policies.
 // [SignHS256] creates signed tokens for testing or token issuance.
 //
+// [CORS] handles Cross-Origin Resource Sharing with configurable origins,
+// methods, headers, credentials, and max-age via [CORSConfig].
+//
 // # Rate Limiting & Brute-Force Protection
 //
 // [NewRateLimiter] implements a sliding-window rate limiter keyed by client IP.

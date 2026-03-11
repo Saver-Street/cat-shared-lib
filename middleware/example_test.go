@@ -315,3 +315,23 @@ func ExampleSecureHeaders() {
 	// nosniff
 	// DENY
 }
+
+func ExampleCORS() {
+	handler := middleware.CORS(middleware.CORSConfig{
+		AllowedOrigins:   []string{"https://app.example.com"},
+		AllowCredentials: true,
+	})(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Preflight request.
+	req := httptest.NewRequest(http.MethodOptions, "/api/data", nil)
+	req.Header.Set("Origin", "https://app.example.com")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	fmt.Println(rec.Code)
+	fmt.Println(rec.Header().Get("Access-Control-Allow-Origin"))
+	// Output:
+	// 204
+	// https://app.example.com
+}

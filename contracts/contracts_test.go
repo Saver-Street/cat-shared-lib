@@ -105,9 +105,9 @@ func (m *mockService) HealthCheck(_ context.Context) (HealthStatus, error) {
 	return HealthStatus{State: HealthStateOK, Service: m.name, Version: m.version}, nil
 }
 
-func (m *mockService) Name() string        { return m.name }
-func (m *mockService) Version() string     { return m.version }
-func (m *mockService) Environment() string { return m.env }
+func (m *mockService) Name() string                    { return m.name }
+func (m *mockService) Version() string                 { return m.version }
+func (m *mockService) Environment() string             { return m.env }
 func (m *mockService) RegisterRoutes(_ *http.ServeMux) {}
 
 // Compile-time assertions: mockService satisfies all contracts.

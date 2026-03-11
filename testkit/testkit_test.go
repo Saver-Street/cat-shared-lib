@@ -628,9 +628,9 @@ type mockT struct {
 	fatal   bool
 }
 
-func (m *mockT) Helper()                          {}
-func (m *mockT) Errorf(_ string, _ ...any)        { m.errored = true }
-func (m *mockT) Fatalf(_ string, _ ...any)        { m.fatal = true; m.errored = true }
+func (m *mockT) Helper()                   {}
+func (m *mockT) Errorf(_ string, _ ...any) { m.errored = true }
+func (m *mockT) Fatalf(_ string, _ ...any) { m.fatal = true; m.errored = true }
 
 // test helpers for AssertErrorIs / AssertErrorAs
 

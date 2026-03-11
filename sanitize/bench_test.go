@@ -16,4 +16,3 @@ func BenchmarkDeref(b *testing.B) {
 		Deref(p, "default")
 	}
 }
-

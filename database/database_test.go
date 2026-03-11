@@ -467,4 +467,3 @@ func TestNewPool_ConnectionRefused(t *testing.T) {
 		t.Fatal("expected error for unreachable host")
 	}
 }
-

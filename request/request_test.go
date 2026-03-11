@@ -464,51 +464,51 @@ func TestParseCommaSeparatedInts_Negative(t *testing.T) {
 }
 
 func TestParseSortOrder_Default(t *testing.T) {
-field, dir := ParseSortOrder(url.Values{}, []string{"name", "created_at"}, "created_at", "desc")
-if field != "created_at" || dir != "desc" {
-t.Errorf("got (%q, %q), want (created_at, desc)", field, dir)
-}
+	field, dir := ParseSortOrder(url.Values{}, []string{"name", "created_at"}, "created_at", "desc")
+	if field != "created_at" || dir != "desc" {
+		t.Errorf("got (%q, %q), want (created_at, desc)", field, dir)
+	}
 }
 
 func TestParseSortOrder_Valid(t *testing.T) {
-q := url.Values{"sort": {"name"}, "order": {"asc"}}
-field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
-if field != "name" || dir != "asc" {
-t.Errorf("got (%q, %q), want (name, asc)", field, dir)
-}
+	q := url.Values{"sort": {"name"}, "order": {"asc"}}
+	field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
+	if field != "name" || dir != "asc" {
+		t.Errorf("got (%q, %q), want (name, asc)", field, dir)
+	}
 }
 
 func TestParseSortOrder_InvalidSort(t *testing.T) {
-q := url.Values{"sort": {"unknown"}, "order": {"asc"}}
-field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
-if field != "created_at" {
-t.Errorf("invalid sort should fall back to default, got %q", field)
-}
-if dir != "asc" {
-t.Errorf("valid order should be used, got %q", dir)
-}
+	q := url.Values{"sort": {"unknown"}, "order": {"asc"}}
+	field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
+	if field != "created_at" {
+		t.Errorf("invalid sort should fall back to default, got %q", field)
+	}
+	if dir != "asc" {
+		t.Errorf("valid order should be used, got %q", dir)
+	}
 }
 
 func TestParseSortOrder_InvalidOrder(t *testing.T) {
-q := url.Values{"sort": {"name"}, "order": {"random"}}
-field, dir := ParseSortOrder(q, []string{"name"}, "created_at", "desc")
-if field != "name" || dir != "desc" {
-t.Errorf("got (%q, %q), want (name, desc)", field, dir)
-}
+	q := url.Values{"sort": {"name"}, "order": {"random"}}
+	field, dir := ParseSortOrder(q, []string{"name"}, "created_at", "desc")
+	if field != "name" || dir != "desc" {
+		t.Errorf("got (%q, %q), want (name, desc)", field, dir)
+	}
 }
 
 func TestParseSortOrder_CaseInsensitive(t *testing.T) {
-q := url.Values{"sort": {"NAME"}, "order": {"ASC"}}
-field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
-if field != "name" || dir != "asc" {
-t.Errorf("got (%q, %q), want case-normalized (name, asc)", field, dir)
-}
+	q := url.Values{"sort": {"NAME"}, "order": {"ASC"}}
+	field, dir := ParseSortOrder(q, []string{"name", "created_at"}, "created_at", "desc")
+	if field != "name" || dir != "asc" {
+		t.Errorf("got (%q, %q), want case-normalized (name, asc)", field, dir)
+	}
 }
 
 func TestParseSortOrder_EmptyAllowed(t *testing.T) {
-q := url.Values{"sort": {"name"}, "order": {"asc"}}
-field, dir := ParseSortOrder(q, []string{}, "created_at", "desc")
-if field != "created_at" || dir != "asc" {
-t.Errorf("empty allowed list should always use default field; got (%q, %q)", field, dir)
-}
+	q := url.Values{"sort": {"name"}, "order": {"asc"}}
+	field, dir := ParseSortOrder(q, []string{}, "created_at", "desc")
+	if field != "created_at" || dir != "asc" {
+		t.Errorf("empty allowed list should always use default field; got (%q, %q)", field, dir)
+	}
 }

@@ -391,6 +391,7 @@ func Hostname(field, value string) error {
 
 // hexColorRe matches 3- or 6-digit hex color codes with a leading #.
 var hexColorRe = regexp.MustCompile(`^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
+var hexRe = regexp.MustCompile(`^[a-fA-F0-9]+$`)
 
 // HexColor validates that value is a valid hex color code (#RGB or #RRGGBB).
 func HexColor(field, value string) error {
@@ -400,6 +401,18 @@ func HexColor(field, value string) error {
 	}
 	if !hexColorRe.MatchString(v) {
 		return &ValidationError{Field: field, Message: "invalid hex color format (expected #RGB or #RRGGBB)"}
+	}
+	return nil
+}
+
+// Hex validates that the value contains only hexadecimal characters (0-9, a-f, A-F).
+func Hex(field, value string) error {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return &ValidationError{Field: field, Message: field + " is required"}
+	}
+	if !hexRe.MatchString(v) {
+		return &ValidationError{Field: field, Message: field + " must contain only hexadecimal characters"}
 	}
 	return nil
 }

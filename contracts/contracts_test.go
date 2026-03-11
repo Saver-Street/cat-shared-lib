@@ -103,9 +103,7 @@ var (
 func TestMockService_HealthCheck(t *testing.T) {
 	svc := &mockService{name: "test-svc", version: "1.0.0", env: "test"}
 	status, err := svc.HealthCheck(context.Background())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertTrue(t, status.IsHealthy())
 	testkit.AssertEqual(t, status.Service, "test-svc")
 }

@@ -38,9 +38,7 @@ func TestLookupCandidateID_Found(t *testing.T) {
 	}}
 
 	id, err := LookupCandidateID(context.Background(), db, "user-1")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, id, "cand-abc")
 }
 
@@ -102,9 +100,7 @@ func TestResolveCandidate_UserID_LookupSuccess(t *testing.T) {
 	r = r.WithContext(middleware.SetUserID(r.Context(), "user-99"))
 
 	id, err := ResolveCandidate(r, db)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, id, "cand-from-db")
 }
 
@@ -151,9 +147,7 @@ func TestResolveCandidate_ExtCandidateIDTakesPriorityOverDB(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	id, err := ResolveCandidate(r, db)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, id, "ext-cand-1")
 	testkit.AssertFalse(t, dbCalled)
 }

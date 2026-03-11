@@ -360,9 +360,7 @@ func TestApplied_OK(t *testing.T) {
 	}
 	r := newRunner(db)
 	records, err := r.Applied(context.Background())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	if len(records) != 1 {
 		t.Fatalf("expected 1 record, got %d", len(records))
 	}
@@ -403,9 +401,7 @@ func TestStatus_OK(t *testing.T) {
 	}
 	r := newRunner(db)
 	status, err := r.Status(context.Background(), testMigrations)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertTrue(t, status[1])
 	testkit.AssertFalse(t, status[2])
 }

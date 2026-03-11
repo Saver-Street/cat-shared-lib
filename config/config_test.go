@@ -31,9 +31,7 @@ func TestStringRequired_Missing(t *testing.T) {
 func TestStringRequired_Present(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_REQ", "value")
 	v, err := StringRequired("CONFIG_TEST_REQ")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, v, "value")
 }
 

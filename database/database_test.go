@@ -162,9 +162,7 @@ func TestWithTx_Success(t *testing.T) {
 	err := WithTx(context.Background(), pool, func(tx pgx.Tx) error {
 		return nil
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertTrue(t, committed)
 }
 
@@ -282,9 +280,7 @@ func TestMigrate_CreateTableError(t *testing.T) {
 func TestMigrate_EmptyList(t *testing.T) {
 	q := &mockQuerier{}
 	err := Migrate(context.Background(), q, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 }
 
 func TestMigrate_AppliesMigrations(t *testing.T) {
@@ -322,9 +318,7 @@ func TestMigrate_AppliesMigrations(t *testing.T) {
 	}
 
 	err := Migrate(context.Background(), q, migrations)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 
 	testkit.AssertTrue(t, insertedVersions[1])
 	testkit.AssertTrue(t, insertedVersions[2])
@@ -350,9 +344,7 @@ func TestMigrate_SkipsApplied(t *testing.T) {
 	}
 
 	err := Migrate(context.Background(), q, migrations)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 }
 
 func TestMigrate_CheckError(t *testing.T) {

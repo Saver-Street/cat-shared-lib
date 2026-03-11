@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -123,6 +124,37 @@ func AssertErrorContains(t T, err error, substr string) {
 	}
 	if !strings.Contains(err.Error(), substr) {
 		t.Errorf("testkit: error %q does not contain %q", err.Error(), substr)
+	}
+}
+
+// AssertErrorIs fails unless errors.Is(err, target) returns true.
+// Use this for sentinel error checks (e.g., io.EOF, context.Canceled).
+func AssertErrorIs(t T, err, target error) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("testkit: expected error matching %v, got nil", target)
+		return
+	}
+	if !errors.Is(err, target) {
+		t.Errorf("testkit: error %q is not %v", err.Error(), target)
+	}
+}
+
+// AssertErrorAs fails unless errors.As(err, target) succeeds.
+// target must be a non-nil pointer to the expected error type.
+func AssertErrorAs(t T, err error, target any) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("testkit: expected error assignable to %T, got nil", target)
+		return
+	}
+	rv := reflect.ValueOf(target)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		t.Fatalf("testkit: AssertErrorAs target must be a non-nil pointer, got %T", target)
+		return
+	}
+	if !errors.As(err, target) {
+		t.Errorf("testkit: error %q is not assignable to %T", err.Error(), target)
 	}
 }
 

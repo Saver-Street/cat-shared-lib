@@ -1,9 +1,10 @@
 package validation
 
 import (
-	"errors"
 	"strings"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestEmail_Valid(t *testing.T) {
@@ -15,9 +16,7 @@ func TestEmail_Valid(t *testing.T) {
 		"user123@test-domain.org",
 	}
 	for _, e := range valid {
-		if err := Email("email", e); err != nil {
-			t.Errorf("Email(%q) = %v, want nil", e, err)
-		}
+		testkit.AssertNoError(t, Email("email", e))
 	}
 }
 
@@ -40,9 +39,7 @@ func TestEmail_Invalid(t *testing.T) {
 			continue
 		}
 		var ve *ValidationError
-		if !errors.As(err, &ve) {
-			t.Errorf("Email(%q) error type = %T, want *ValidationError", e, err)
-		}
+		testkit.AssertErrorAs(t, err, &ve)
 	}
 }
 
@@ -53,9 +50,7 @@ func TestUUID_Valid(t *testing.T) {
 		"F47AC10B-58CC-4372-A567-0E02B2C3D479",
 	}
 	for _, u := range valid {
-		if err := UUID("id", u); err != nil {
-			t.Errorf("UUID(%q) = %v, want nil", u, err)
-		}
+		testkit.AssertNoError(t, UUID("id", u))
 	}
 }
 
@@ -76,9 +71,7 @@ func TestUUID_Invalid(t *testing.T) {
 			continue
 		}
 		var ve *ValidationError
-		if !errors.As(err, &ve) {
-			t.Errorf("UUID(%q) error type = %T, want *ValidationError", u, err)
-		}
+		testkit.AssertErrorAs(t, err, &ve)
 	}
 }
 
@@ -92,9 +85,7 @@ func TestPhone_Valid(t *testing.T) {
 		"1234567",
 	}
 	for _, p := range valid {
-		if err := Phone("phone", p); err != nil {
-			t.Errorf("Phone(%q) = %v, want nil", p, err)
-		}
+		testkit.AssertNoError(t, Phone("phone", p))
 	}
 }
 
@@ -114,9 +105,7 @@ func TestPhone_Invalid(t *testing.T) {
 			continue
 		}
 		var ve *ValidationError
-		if !errors.As(err, &ve) {
-			t.Errorf("Phone(%q) error type = %T, want *ValidationError", p, err)
-		}
+		testkit.AssertErrorAs(t, err, &ve)
 	}
 }
 
@@ -128,9 +117,7 @@ func TestURL_Valid(t *testing.T) {
 		"http://192.168.1.1",
 	}
 	for _, u := range valid {
-		if err := URL("website", u); err != nil {
-			t.Errorf("URL(%q) = %v, want nil", u, err)
-		}
+		testkit.AssertNoError(t, URL("website", u))
 	}
 }
 
@@ -150,60 +137,36 @@ func TestURL_Invalid(t *testing.T) {
 			continue
 		}
 		var ve *ValidationError
-		if !errors.As(err, &ve) {
-			t.Errorf("URL(%q) error type = %T, want *ValidationError", u, err)
-		}
+		testkit.AssertErrorAs(t, err, &ve)
 	}
 }
 
 func TestRequired(t *testing.T) {
-	if err := Required("name", "hello"); err != nil {
-		t.Errorf("Required(hello) = %v, want nil", err)
-	}
-	if err := Required("name", ""); err == nil {
-		t.Error("Required('') = nil, want error")
-	}
-	if err := Required("name", "   "); err == nil {
-		t.Error("Required('   ') = nil, want error")
-	}
+	testkit.AssertNoError(t, Required("name", "hello"))
+	testkit.AssertTrue(t, Required("name", "") != nil)
+	testkit.AssertTrue(t, Required("name", "   ") != nil)
 }
 
 func TestMinLength(t *testing.T) {
-	if err := MinLength("name", "hello", 3); err != nil {
-		t.Errorf("MinLength(hello, 3) = %v, want nil", err)
-	}
-	if err := MinLength("name", "hi", 3); err == nil {
-		t.Error("MinLength(hi, 3) = nil, want error")
-	}
-	if err := MinLength("name", "   hi   ", 3); err == nil {
-		t.Error("MinLength trimmed should fail for 2 chars min 3")
-	}
+	testkit.AssertNoError(t, MinLength("name", "hello", 3))
+	testkit.AssertTrue(t, MinLength("name", "hi", 3) != nil)
+	testkit.AssertTrue(t, MinLength("name", "   hi   ", 3) != nil)
 }
 
 func TestMaxLength(t *testing.T) {
-	if err := MaxLength("name", "hi", 5); err != nil {
-		t.Errorf("MaxLength(hi, 5) = %v, want nil", err)
-	}
-	if err := MaxLength("name", "toolongvalue", 5); err == nil {
-		t.Error("MaxLength(toolongvalue, 5) = nil, want error")
-	}
+	testkit.AssertNoError(t, MaxLength("name", "hi", 5))
+	testkit.AssertTrue(t, MaxLength("name", "toolongvalue", 5) != nil)
 }
 
 func TestOneOf(t *testing.T) {
 	allowed := []string{"admin", "user", "guest"}
-	if err := OneOf("role", "admin", allowed); err != nil {
-		t.Errorf("OneOf(admin) = %v, want nil", err)
-	}
-	if err := OneOf("role", "superadmin", allowed); err == nil {
-		t.Error("OneOf(superadmin) = nil, want error")
-	}
+	testkit.AssertNoError(t, OneOf("role", "admin", allowed))
+	testkit.AssertTrue(t, OneOf("role", "superadmin", allowed) != nil)
 }
 
 func TestCollect_AllPass(t *testing.T) {
 	errs := Collect(nil, nil, nil)
-	if errs != nil {
-		t.Errorf("Collect all nil = %v, want nil", errs)
-	}
+	testkit.AssertNil(t, errs)
 }
 
 func TestCollect_SomeFail(t *testing.T) {
@@ -213,47 +176,33 @@ func TestCollect_SomeFail(t *testing.T) {
 		nil,
 		Required("name", ""),
 	)
-	if len(errs) != 2 {
-		t.Errorf("Collect = %d errors, want 2", len(errs))
-	}
+	testkit.AssertLen(t, errs, 2)
 }
 
 func TestValidationError_Error(t *testing.T) {
 	ve := &ValidationError{Field: "email", Message: "invalid email format"}
 	got := ve.Error()
 	want := "email: invalid email format"
-	if got != want {
-		t.Errorf("Error() = %q, want %q", got, want)
-	}
+	testkit.AssertEqual(t, got, want)
 }
 
 func TestEmail_TrimmedInput(t *testing.T) {
-	if err := Email("email", "  user@example.com  "); err != nil {
-		t.Errorf("Email with whitespace should pass after trim: %v", err)
-	}
+	testkit.AssertNoError(t, Email("email", "  user@example.com  "))
 }
 
 func TestUUID_TrimmedInput(t *testing.T) {
-	if err := UUID("id", "  550e8400-e29b-41d4-a716-446655440000  "); err != nil {
-		t.Errorf("UUID with whitespace should pass after trim: %v", err)
-	}
+	testkit.AssertNoError(t, UUID("id", "  550e8400-e29b-41d4-a716-446655440000  "))
 }
 
 func TestPhone_TrimmedInput(t *testing.T) {
-	if err := Phone("phone", "  +14155551234  "); err != nil {
-		t.Errorf("Phone with whitespace should pass after trim: %v", err)
-	}
+	testkit.AssertNoError(t, Phone("phone", "  +14155551234  "))
 }
 
 func TestURL_TrimmedInput(t *testing.T) {
-	if err := URL("url", "  https://example.com  "); err != nil {
-		t.Errorf("URL with whitespace should pass after trim: %v", err)
-	}
+	testkit.AssertNoError(t, URL("url", "  https://example.com  "))
 }
 
 func TestURL_BadParse(t *testing.T) {
 	err := URL("url", "://")
-	if err == nil {
-		t.Error("URL(://) should fail")
-	}
+	testkit.AssertTrue(t, err != nil)
 }

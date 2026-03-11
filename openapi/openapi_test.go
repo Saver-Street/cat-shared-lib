@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -113,6 +114,22 @@ func TestSpec_Handler(t *testing.T) {
 	var result Spec
 	if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
 		t.Fatalf("invalid JSON response: %v", err)
+	}
+}
+
+func TestSpec_Handler_MarshalError(t *testing.T) {
+	s := NewSpec("API", "1.0.0")
+	// math.Inf cannot be marshaled to JSON, triggering the error path.
+	schema := &Schema{Example: math.Inf(1)}
+	s.AddPath("/bad", "get", NewOperation("bad").
+		AddResponse("200", "ok", schema))
+
+	handler := s.Handler()
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 for marshal error, got %d", rr.Code)
 	}
 }
 

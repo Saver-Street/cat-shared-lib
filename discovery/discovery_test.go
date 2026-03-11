@@ -473,3 +473,63 @@ func TestRegister_StatusChangeCallback(t *testing.T) {
 		t.Error("OnStateChange not called when re-registering with different status")
 	}
 }
+
+func TestResolveAll_EmptyService(t *testing.T) {
+	r := NewRegistry()
+	_, err := r.ResolveAll("")
+	if !errors.Is(err, ErrEmptyService) {
+		t.Errorf("ResolveAll('') = %v, want %v", err, ErrEmptyService)
+	}
+}
+
+func TestResolveAll_ServiceNotFound(t *testing.T) {
+	r := NewRegistry()
+	_, err := r.ResolveAll("nonexistent")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("ResolveAll(nonexistent) = %v, want %v", err, ErrServiceNotFound)
+	}
+}
+
+func TestResolveHealthy_ErrorPropagation(t *testing.T) {
+	r := NewRegistry()
+	_, err := r.ResolveHealthy("")
+	if !errors.Is(err, ErrEmptyService) {
+		t.Errorf("ResolveHealthy('') = %v, want %v", err, ErrEmptyService)
+	}
+	_, err = r.ResolveHealthy("nonexistent")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("ResolveHealthy(nonexistent) = %v, want %v", err, ErrServiceNotFound)
+	}
+}
+
+func TestHeartbeat_InstanceNotFound(t *testing.T) {
+	r := NewRegistry()
+	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a"})
+	// Service exists but instance ID does not.
+	err := r.Heartbeat("svc", "nonexistent")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("Heartbeat(svc, nonexistent) = %v, want %v", err, ErrServiceNotFound)
+	}
+}
+
+func TestMarkStale_WithCallback(t *testing.T) {
+	now := time.Now()
+	var cbFrom, cbTo Status
+	r := NewRegistry(WithOnInstanceStateChange(func(inst Instance, from, to Status) {
+		cbFrom = from
+		cbTo = to
+	}))
+	r.nowFunc = func() time.Time { return now }
+
+	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a"})
+	// Advance time beyond TTL.
+	r.nowFunc = func() time.Time { return now.Add(10 * time.Minute) }
+	marked := r.MarkStale(5 * time.Minute)
+
+	if marked != 1 {
+		t.Errorf("MarkStale() = %d, want 1", marked)
+	}
+	if cbFrom != StatusHealthy || cbTo != StatusUnhealthy {
+		t.Errorf("callback got from=%v to=%v, want Healthy→Unhealthy", cbFrom, cbTo)
+	}
+}

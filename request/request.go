@@ -3,6 +3,7 @@ package request
 
 import (
 	"fmt"
+	"mime"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -267,4 +268,21 @@ func ExtractBearerToken(r *http.Request) (string, bool) {
 		return auth[len(prefix):], true
 	}
 	return "", false
+}
+
+// ContentType returns the media type from the request's Content-Type header,
+// stripping any parameters (charset, boundary, etc.). Returns an empty string
+// if the header is missing or malformed.
+func ContentType(r *http.Request) string {
+ct := r.Header.Get("Content-Type")
+if ct == "" {
+return ""
+}
+mediaType, _, _ := mime.ParseMediaType(ct)
+return mediaType
+}
+
+// IsJSON returns true if the request's Content-Type is application/json.
+func IsJSON(r *http.Request) bool {
+return ContentType(r) == "application/json"
 }

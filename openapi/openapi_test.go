@@ -12,25 +12,15 @@ import (
 
 func TestNewSpec(t *testing.T) {
 	s := NewSpec("TestAPI", "1.0.0")
-	if s.OpenAPI != "3.0.3" {
-		t.Errorf("expected openapi 3.0.3, got %q", s.OpenAPI)
-	}
-	if s.Info.Title != "TestAPI" {
-		t.Errorf("expected title TestAPI, got %q", s.Info.Title)
-	}
-	if s.Info.Version != "1.0.0" {
-		t.Errorf("expected version 1.0.0, got %q", s.Info.Version)
-	}
-	if s.Paths == nil {
-		t.Error("expected non-nil paths")
-	}
+	testkit.AssertEqual(t, s.OpenAPI, "3.0.3")
+	testkit.AssertEqual(t, s.Info.Title, "TestAPI")
+	testkit.AssertEqual(t, s.Info.Version, "1.0.0")
+	testkit.AssertNotNil(t, s.Paths)
 }
 
 func TestSpec_WithDescription(t *testing.T) {
 	s := NewSpec("API", "1.0.0").WithDescription("A test API")
-	if s.Info.Description != "A test API" {
-		t.Errorf("expected description, got %q", s.Info.Description)
-	}
+	testkit.AssertEqual(t, s.Info.Description, "A test API")
 }
 
 func TestSpec_AddServer(t *testing.T) {
@@ -38,9 +28,7 @@ func TestSpec_AddServer(t *testing.T) {
 	if len(s.Servers) != 1 {
 		t.Fatalf("expected 1 server, got %d", len(s.Servers))
 	}
-	if s.Servers[0].URL != "https://api.example.com" {
-		t.Errorf("expected url, got %q", s.Servers[0].URL)
-	}
+	testkit.AssertEqual(t, s.Servers[0].URL, "https://api.example.com")
 }
 
 func TestSpec_AddPath(t *testing.T) {
@@ -51,9 +39,7 @@ func TestSpec_AddPath(t *testing.T) {
 	if _, ok := s.Paths["/users"]; !ok {
 		t.Fatal("expected /users path")
 	}
-	if s.Paths["/users"]["get"].Summary != "List users" {
-		t.Error("expected operation summary")
-	}
+	testkit.AssertEqual(t, s.Paths["/users"]["get"].Summary, "List users")
 }
 
 func TestSpec_AddPath_MultipleMethods(t *testing.T) {
@@ -75,9 +61,7 @@ func TestSpec_JSON(t *testing.T) {
 	if err := json.Unmarshal(data, &result); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
-	if result["openapi"] != "3.0.3" {
-		t.Error("expected openapi field")
-	}
+	testkit.AssertEqual(t, result["openapi"], "3.0.3")
 }
 
 func TestSpec_JSONIndent(t *testing.T) {
@@ -86,13 +70,9 @@ func TestSpec_JSONIndent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(data) == 0 {
-		t.Error("expected non-empty output")
-	}
+	testkit.AssertTrue(t, len(data) > 0)
 	// Should contain indentation.
-	if string(data[0:1]) != "{" {
-		t.Error("expected JSON object")
-	}
+	testkit.AssertEqual(t, string(data[0:1]), "{")
 }
 
 func TestSpec_Handler(t *testing.T) {
@@ -104,12 +84,8 @@ func TestSpec_Handler(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d", rr.Code)
-	}
-	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
-		t.Errorf("expected application/json, got %q", ct)
-	}
+	testkit.AssertEqual(t, rr.Code, http.StatusOK)
+	testkit.AssertEqual(t, rr.Header().Get("Content-Type"), "application/json")
 
 	var result Spec
 	if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
@@ -128,33 +104,23 @@ func TestSpec_Handler_MarshalError(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
 
-	if rr.Code != http.StatusInternalServerError {
-		t.Errorf("expected 500 for marshal error, got %d", rr.Code)
-	}
+	testkit.AssertEqual(t, rr.Code, http.StatusInternalServerError)
 }
 
 func TestNewOperation(t *testing.T) {
 	op := NewOperation("Test op")
-	if op.Summary != "Test op" {
-		t.Errorf("expected summary, got %q", op.Summary)
-	}
-	if op.Responses == nil {
-		t.Error("expected non-nil responses")
-	}
+	testkit.AssertEqual(t, op.Summary, "Test op")
+	testkit.AssertNotNil(t, op.Responses)
 }
 
 func TestOperation_WithDescription(t *testing.T) {
 	op := NewOperation("Test").WithDescription("Detailed desc")
-	if op.Description != "Detailed desc" {
-		t.Error("expected description")
-	}
+	testkit.AssertEqual(t, op.Description, "Detailed desc")
 }
 
 func TestOperation_WithOperationID(t *testing.T) {
 	op := NewOperation("Test").WithOperationID("listUsers")
-	if op.OperationID != "listUsers" {
-		t.Error("expected operationId")
-	}
+	testkit.AssertEqual(t, op.OperationID, "listUsers")
 }
 
 func TestOperation_WithTags(t *testing.T) {
@@ -164,9 +130,7 @@ func TestOperation_WithTags(t *testing.T) {
 
 func TestOperation_WithDeprecated(t *testing.T) {
 	op := NewOperation("Test").WithDeprecated()
-	if !op.Deprecated {
-		t.Error("expected deprecated")
-	}
+	testkit.AssertTrue(t, op.Deprecated)
 }
 
 func TestOperation_AddParameter(t *testing.T) {
@@ -177,12 +141,9 @@ func TestOperation_AddParameter(t *testing.T) {
 	if len(op.Parameters) != 2 {
 		t.Fatalf("expected 2 params, got %d", len(op.Parameters))
 	}
-	if op.Parameters[0].Name != "page" || op.Parameters[0].In != "query" {
-		t.Error("first param mismatch")
-	}
-	if !op.Parameters[1].Required {
-		t.Error("expected id to be required")
-	}
+	testkit.AssertEqual(t, op.Parameters[0].Name, "page")
+	testkit.AssertEqual(t, op.Parameters[0].In, "query")
+	testkit.AssertTrue(t, op.Parameters[1].Required)
 }
 
 func TestOperation_WithRequestBody(t *testing.T) {
@@ -195,12 +156,9 @@ func TestOperation_WithRequestBody(t *testing.T) {
 	if op.RequestBody == nil {
 		t.Fatal("expected request body")
 	}
-	if !op.RequestBody.Required {
-		t.Error("expected required body")
-	}
-	if _, ok := op.RequestBody.Content["application/json"]; !ok {
-		t.Error("expected application/json content")
-	}
+	testkit.AssertTrue(t, op.RequestBody.Required)
+	_, ok := op.RequestBody.Content["application/json"]
+	testkit.AssertTrue(t, ok)
 }
 
 func TestOperation_AddResponse(t *testing.T) {
@@ -209,12 +167,8 @@ func TestOperation_AddResponse(t *testing.T) {
 		AddResponse("404", "Not found", nil)
 
 	testkit.AssertLen(t, op.Responses, 2)
-	if op.Responses["200"].Content == nil {
-		t.Error("expected content for 200")
-	}
-	if op.Responses["404"].Content != nil {
-		t.Error("expected no content for 404")
-	}
+	testkit.AssertNotNil(t, op.Responses["200"].Content)
+	testkit.AssertNil(t, op.Responses["404"].Content)
 }
 
 func TestOperation_WithSecurity(t *testing.T) {
@@ -240,25 +194,22 @@ func TestSchemaHelpers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.schema.Type != tt.want {
-				t.Errorf("expected type %q, got %q", tt.want, tt.schema.Type)
-			}
+			testkit.AssertEqual(t, tt.schema.Type, tt.want)
 		})
 	}
 }
 
 func TestArraySchema_Items(t *testing.T) {
 	s := ArraySchema(IntegerSchema())
-	if s.Items == nil || s.Items.Type != "integer" {
-		t.Error("expected integer items")
+	if s.Items == nil {
+		t.Fatal("expected non-nil items")
 	}
+	testkit.AssertEqual(t, s.Items.Type, "integer")
 }
 
 func TestRefSchema(t *testing.T) {
 	s := RefSchema("#/components/schemas/User")
-	if s.Ref != "#/components/schemas/User" {
-		t.Errorf("expected ref, got %q", s.Ref)
-	}
+	testkit.AssertEqual(t, s.Ref, "#/components/schemas/User")
 }
 
 func TestFullSpec_Serialization(t *testing.T) {
@@ -294,16 +245,13 @@ func TestFullSpec_Serialization(t *testing.T) {
 		t.Fatalf("invalid JSON: %v", err)
 	}
 
-	if parsed["openapi"] != "3.0.3" {
-		t.Error("missing openapi version")
-	}
+	testkit.AssertEqual(t, parsed["openapi"], "3.0.3")
 	paths, ok := parsed["paths"].(map[string]any)
 	if !ok {
 		t.Fatal("missing paths")
 	}
-	if _, ok := paths["/pets"]; !ok {
-		t.Error("missing /pets path")
-	}
+	_, ok2 := paths["/pets"]
+	testkit.AssertTrue(t, ok2)
 }
 
 func BenchmarkSpec_JSON(b *testing.B) {

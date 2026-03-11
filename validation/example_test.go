@@ -99,3 +99,11 @@ func ExampleCollect() {
 	// email: invalid email format
 	// password: password must be at least 8 characters
 }
+
+func ExampleDate() {
+	fmt.Println(validation.Date("dob", "2024-01-15", "2006-01-02"))
+	fmt.Println(validation.Date("dob", "not-a-date", "2006-01-02"))
+	// Output:
+	// <nil>
+	// dob: dob must be a valid date (2006-01-02)
+}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/Saver-Street/cat-shared-lib/request"
 )
@@ -139,4 +140,88 @@ func ExampleRequireUUIDParam() {
 	fmt.Println(id, err)
 	// Output:
 	// 550e8400-e29b-41d4-a716-446655440000 <nil>
+}
+
+func ExampleParseCursor() {
+	q := url.Values{"cursor": {"abc123"}, "limit": {"25"}}
+	cp := request.ParseCursor(q, 20, 100)
+	fmt.Printf("Cursor=%s Limit=%d\n", cp.Cursor, cp.Limit)
+	// Output:
+	// Cursor=abc123 Limit=25
+}
+
+func ExampleParseCursor_defaults() {
+	q := url.Values{}
+	cp := request.ParseCursor(q, 20, 100)
+	fmt.Printf("Cursor=%q Limit=%d\n", cp.Cursor, cp.Limit)
+	// Output:
+	// Cursor="" Limit=20
+}
+
+func ExampleExtractBearerToken() {
+	r, _ := http.NewRequest("GET", "/", nil)
+	r.Header.Set("Authorization", "Bearer my-token-123")
+	token, ok := request.ExtractBearerToken(r)
+	fmt.Println(token, ok)
+	// Output:
+	// my-token-123 true
+}
+
+func ExampleContentType() {
+	r, _ := http.NewRequest("POST", "/", strings.NewReader("{}"))
+	r.Header.Set("Content-Type", "application/json; charset=utf-8")
+	fmt.Println(request.ContentType(r))
+	// Output:
+	// application/json
+}
+
+func ExampleIsJSON() {
+	r, _ := http.NewRequest("POST", "/", strings.NewReader("{}"))
+	r.Header.Set("Content-Type", "application/json")
+	fmt.Println(request.IsJSON(r))
+	// Output:
+	// true
+}
+
+func ExampleClientIP() {
+	r, _ := http.NewRequest("GET", "/", nil)
+	r.Header.Set("X-Forwarded-For", "203.0.113.50, 70.41.3.18")
+	fmt.Println(request.ClientIP(r))
+	// Output:
+	// 203.0.113.50
+}
+
+func ExampleOptionalQueryFloat() {
+	q := url.Values{"rating": {"4.5"}}
+	fmt.Println(request.OptionalQueryFloat(q, "rating", 0.0))
+	fmt.Println(request.OptionalQueryFloat(q, "score", 1.0))
+	// Output:
+	// 4.5
+	// 1
+}
+
+func ExampleOptionalQueryBool() {
+	q := url.Values{"active": {"true"}}
+	fmt.Println(*request.OptionalQueryBool(q, "active"))
+	fmt.Println(request.OptionalQueryBool(q, "deleted"))
+	// Output:
+	// true
+	// <nil>
+}
+
+func ExampleRequireHeader() {
+	r, _ := http.NewRequest("GET", "/", nil)
+	r.Header.Set("X-Tenant-ID", "acme")
+	val, err := request.RequireHeader(r, "X-Tenant-ID")
+	fmt.Println(val, err)
+	// Output:
+	// acme <nil>
+}
+
+func ExampleParseIDList() {
+	q := url.Values{"ids": {"550e8400-e29b-41d4-a716-446655440000,6ba7b810-9dad-11d1-80b4-00c04fd430c8"}}
+	ids, err := request.ParseIDList(q, "ids")
+	fmt.Println(len(ids), err)
+	// Output:
+	// 2 <nil>
 }

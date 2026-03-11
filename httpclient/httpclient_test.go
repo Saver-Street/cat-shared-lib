@@ -18,15 +18,9 @@ import (
 
 func TestNew_Defaults(t *testing.T) {
 	c := New()
-	if c.opts.Timeout != 30*time.Second {
-		t.Errorf("Timeout = %v, want 30s", c.opts.Timeout)
-	}
-	if c.opts.MaxRetries != 0 {
-		t.Errorf("MaxRetries = %d, want 0", c.opts.MaxRetries)
-	}
-	if c.opts.UserAgent != "cat-shared-lib/httpclient" {
-		t.Errorf("UserAgent = %q, want default", c.opts.UserAgent)
-	}
+	testkit.AssertEqual(t, c.opts.Timeout, 30*time.Second)
+	testkit.AssertEqual(t, c.opts.MaxRetries, 0)
+	testkit.AssertEqual(t, c.opts.UserAgent, "cat-shared-lib/httpclient")
 }
 
 func TestNew_WithOptions(t *testing.T) {
@@ -38,18 +32,10 @@ func TestNew_WithOptions(t *testing.T) {
 		WithUserAgent("test-agent"),
 		WithHeader("X-Api-Key", "secret"),
 	)
-	if c.opts.Timeout != 5*time.Second {
-		t.Errorf("Timeout = %v, want 5s", c.opts.Timeout)
-	}
-	if c.opts.MaxRetries != 3 {
-		t.Errorf("MaxRetries = %d, want 3", c.opts.MaxRetries)
-	}
-	if c.opts.UserAgent != "test-agent" {
-		t.Errorf("UserAgent = %q, want test-agent", c.opts.UserAgent)
-	}
-	if c.opts.Headers["X-Api-Key"] != "secret" {
-		t.Errorf("Headers[X-Api-Key] = %q, want secret", c.opts.Headers["X-Api-Key"])
-	}
+	testkit.AssertEqual(t, c.opts.Timeout, 5*time.Second)
+	testkit.AssertEqual(t, c.opts.MaxRetries, 3)
+	testkit.AssertEqual(t, c.opts.UserAgent, "test-agent")
+	testkit.AssertEqual(t, c.opts.Headers["X-Api-Key"], "secret")
 }
 
 func TestGet_Success(t *testing.T) {
@@ -68,15 +54,9 @@ func TestGet_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if resp.StatusCode != 200 {
-		t.Errorf("StatusCode = %d, want 200", resp.StatusCode)
-	}
-	if resp.Header.Get("X-Test") != "value" {
-		t.Errorf("Header X-Test = %q, want value", resp.Header.Get("X-Test"))
-	}
-	if string(resp.Body) != `{"ok":true}` {
-		t.Errorf("Body = %q, want {\"ok\":true}", string(resp.Body))
-	}
+	testkit.AssertEqual(t, resp.StatusCode, 200)
+	testkit.AssertEqual(t, resp.Header.Get("X-Test"), "value")
+	testkit.AssertEqual(t, string(resp.Body), "{\"ok\":true}")
 }
 
 func TestPost_WithBody(t *testing.T) {
@@ -97,9 +77,7 @@ func TestPost_WithBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Post() error = %v", err)
 	}
-	if resp.StatusCode != 201 {
-		t.Errorf("StatusCode = %d, want 201", resp.StatusCode)
-	}
+	testkit.AssertEqual(t, resp.StatusCode, 201)
 }
 
 func TestPut_WithBody(t *testing.T) {
@@ -116,9 +94,7 @@ func TestPut_WithBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Put() error = %v", err)
 	}
-	if resp.StatusCode != 200 {
-		t.Errorf("StatusCode = %d, want 200", resp.StatusCode)
-	}
+	testkit.AssertEqual(t, resp.StatusCode, 200)
 }
 
 func TestDelete_Success(t *testing.T) {
@@ -135,9 +111,7 @@ func TestDelete_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
-	if resp.StatusCode != 204 {
-		t.Errorf("StatusCode = %d, want 204", resp.StatusCode)
-	}
+	testkit.AssertEqual(t, resp.StatusCode, 204)
 }
 
 func TestRetry_TransientFailure(t *testing.T) {
@@ -163,12 +137,8 @@ func TestRetry_TransientFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v, expected success after retries", err)
 	}
-	if resp.StatusCode != 200 {
-		t.Errorf("StatusCode = %d, want 200", resp.StatusCode)
-	}
-	if int(attempts.Load()) != 3 {
-		t.Errorf("attempts = %d, want 3", attempts.Load())
-	}
+	testkit.AssertEqual(t, resp.StatusCode, 200)
+	testkit.AssertEqual(t, int(attempts.Load()), 3)
 }
 
 func TestRetry_AllFail(t *testing.T) {
@@ -285,9 +255,7 @@ func TestResponseHook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if hookedStatus != 200 {
-		t.Errorf("hooked status = %d, want 200", hookedStatus)
-	}
+	testkit.AssertEqual(t, hookedStatus, 200)
 }
 
 func TestGetJSON(t *testing.T) {
@@ -307,9 +275,8 @@ func TestGetJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetJSON() error = %v", err)
 	}
-	if result.Name != "Alice" || result.Age != 30 {
-		t.Errorf("GetJSON() result = %+v, want {Alice 30}", result)
-	}
+	testkit.AssertEqual(t, result.Name, "Alice")
+	testkit.AssertEqual(t, result.Age, 30)
 }
 
 func TestPostJSON(t *testing.T) {
@@ -337,9 +304,7 @@ func TestPostJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PostJSON() error = %v", err)
 	}
-	if result.ID != "123" {
-		t.Errorf("PostJSON() id = %q, want 123", result.ID)
-	}
+	testkit.AssertEqual(t, result.ID, "123")
 }
 
 func TestPostJSON_NilTarget(t *testing.T) {
@@ -371,9 +336,7 @@ func TestPutJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PutJSON() error = %v", err)
 	}
-	if !result["updated"] {
-		t.Errorf("PutJSON() updated = false, want true")
-	}
+	testkit.AssertTrue(t, result["updated"])
 }
 
 func TestDeleteJSON(t *testing.T) {
@@ -392,9 +355,7 @@ func TestDeleteJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DeleteJSON() error = %v", err)
 	}
-	if !result["deleted"] {
-		t.Errorf("DeleteJSON() deleted = false, want true")
-	}
+	testkit.AssertTrue(t, result["deleted"])
 }
 
 func TestGetJSON_ClientError(t *testing.T) {
@@ -438,9 +399,7 @@ func TestCircuitBreaker_Integration(t *testing.T) {
 	beforeAttempts := attempts.Load()
 	_, err := c.Get(context.Background(), srv.URL)
 	testkit.AssertErrorIs(t, err, circuitbreaker.ErrCircuitOpen)
-	if attempts.Load() != beforeAttempts {
-		t.Error("server was called despite open circuit")
-	}
+	testkit.AssertEqual(t, attempts.Load(), beforeAttempts)
 }
 
 func TestRetry_BodyReplay(t *testing.T) {
@@ -468,9 +427,7 @@ func TestRetry_BodyReplay(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Post() error = %v", err)
 	}
-	if resp.StatusCode != 200 {
-		t.Errorf("StatusCode = %d, want 200", resp.StatusCode)
-	}
+	testkit.AssertEqual(t, resp.StatusCode, 200)
 }
 
 func TestBackoff(t *testing.T) {
@@ -503,9 +460,7 @@ func TestServerError_NotRetried_WhenNoRetries(t *testing.T) {
 	if err == nil {
 		t.Fatal("Get() = nil, want error for 500")
 	}
-	if attempts.Load() != 1 {
-		t.Errorf("attempts = %d, want 1", attempts.Load())
-	}
+	testkit.AssertEqual(t, attempts.Load(), int32(1))
 }
 
 func TestTransport_Custom(t *testing.T) {
@@ -523,12 +478,8 @@ func TestTransport_Custom(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if !called {
-		t.Error("custom transport was not called")
-	}
-	if string(resp.Body) != "custom" {
-		t.Errorf("Body = %q, want custom", string(resp.Body))
-	}
+	testkit.AssertTrue(t, called)
+	testkit.AssertEqual(t, string(resp.Body), "custom")
 }
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)

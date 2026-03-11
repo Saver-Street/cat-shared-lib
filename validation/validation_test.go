@@ -206,3 +206,40 @@ func TestURL_BadParse(t *testing.T) {
 	err := URL("url", "://")
 	testkit.AssertTrue(t, err != nil)
 }
+
+func TestIntRange_Valid(t *testing.T) {
+	testkit.AssertNoError(t, IntRange("age", 25, 18, 120))
+	testkit.AssertNoError(t, IntRange("age", 18, 18, 120))
+	testkit.AssertNoError(t, IntRange("age", 120, 18, 120))
+}
+
+func TestIntRange_BelowMin(t *testing.T) {
+	testkit.AssertError(t, IntRange("age", 17, 18, 120))
+}
+
+func TestIntRange_AboveMax(t *testing.T) {
+	testkit.AssertError(t, IntRange("age", 121, 18, 120))
+}
+
+func TestIntRange_ErrorMessage(t *testing.T) {
+	err := IntRange("limit", 0, 1, 100)
+	testkit.AssertErrorContains(t, err, "must be between 1 and 100")
+}
+
+func TestPositive_Valid(t *testing.T) {
+	testkit.AssertNoError(t, Positive("count", 1))
+	testkit.AssertNoError(t, Positive("count", 100))
+}
+
+func TestPositive_Zero(t *testing.T) {
+	testkit.AssertError(t, Positive("count", 0))
+}
+
+func TestPositive_Negative(t *testing.T) {
+	testkit.AssertError(t, Positive("count", -5))
+}
+
+func TestPositive_ErrorMessage(t *testing.T) {
+	err := Positive("quantity", 0)
+	testkit.AssertErrorContains(t, err, "must be positive")
+}

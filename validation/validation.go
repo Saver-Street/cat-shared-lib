@@ -157,3 +157,22 @@ func Collect(errs ...error) []error {
 	}
 	return result
 }
+
+// IntRange validates that value is between min and max (inclusive).
+func IntRange(field string, value, min, max int) error {
+	if value < min || value > max {
+		return &ValidationError{
+			Field:   field,
+			Message: fmt.Sprintf("%s must be between %d and %d", field, min, max),
+		}
+	}
+	return nil
+}
+
+// Positive validates that value is greater than zero.
+func Positive(field string, value int) error {
+	if value <= 0 {
+		return &ValidationError{Field: field, Message: field + " must be positive"}
+	}
+	return nil
+}

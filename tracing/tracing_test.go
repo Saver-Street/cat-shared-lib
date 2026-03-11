@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -293,9 +293,7 @@ func TestExporterType_Constants(t *testing.T) {
 	if ExporterStdout == ExporterNoop {
 		t.Error("exporter constants must differ")
 	}
-	if !strings.Contains(string(ExporterStdout), "stdout") {
-		t.Error("stdout exporter constant should contain 'stdout'")
-	}
+	testkit.AssertContains(t, string(ExporterStdout), "stdout")
 }
 
 func TestShutdown_NilProvider(t *testing.T) {

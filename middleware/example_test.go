@@ -171,6 +171,35 @@ func ExampleRequireAdmin() {
 	// 200
 }
 
+func ExampleChain() {
+	// Chain composes middleware so the first argument is the outermost layer.
+	addHeader := func(key, value string) func(http.Handler) http.Handler {
+		return func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set(key, value)
+				next.ServeHTTP(w, r)
+			})
+		}
+	}
+
+	handler := middleware.Chain(
+		addHeader("X-First", "1"),
+		addHeader("X-Second", "2"),
+	)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, httptest.NewRequest("GET", "/", nil))
+	fmt.Println(w.Header().Get("X-First"))
+	fmt.Println(w.Header().Get("X-Second"))
+	fmt.Println(w.Code)
+	// Output:
+	// 1
+	// 2
+	// 200
+}
+
 func ExampleRequireRole() {
 	handler := middleware.RequireRole("editor")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

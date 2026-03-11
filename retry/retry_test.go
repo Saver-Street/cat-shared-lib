@@ -281,3 +281,23 @@ func TestSimple_Exhausted(t *testing.T) {
 	testkit.AssertError(t, err)
 	testkit.AssertErrorContains(t, err, "fail")
 }
+
+func TestWithTimeout_Success(t *testing.T) {
+calls := 0
+err := WithTimeout(context.Background(), 5*time.Second, Config{MaxAttempts: 3, InitialDelay: time.Millisecond}, func(ctx context.Context) error {
+calls++
+if calls < 2 {
+return errors.New("fail")
+}
+return nil
+})
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, calls, 2)
+}
+
+func TestWithTimeout_Exceeded(t *testing.T) {
+err := WithTimeout(context.Background(), 50*time.Millisecond, Config{MaxAttempts: 100, InitialDelay: 30 * time.Millisecond}, func(ctx context.Context) error {
+return errors.New("always fail")
+})
+testkit.AssertError(t, err)
+}

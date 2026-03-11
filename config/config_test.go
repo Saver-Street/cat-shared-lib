@@ -418,3 +418,58 @@ t.Setenv("CFG_TEST_SSR_COMMAS", ", , ,")
 _, err := StringSliceRequired("CFG_TEST_SSR_COMMAS")
 testkit.AssertError(t, err)
 }
+
+func TestBytes_Default(t *testing.T) {
+v, err := Bytes("CFG_TEST_BYTES_UNSET", 1024)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, int64(1024))
+}
+
+func TestBytes_Plain(t *testing.T) {
+t.Setenv("CFG_TEST_BYTES_PLAIN", "4096")
+v, err := Bytes("CFG_TEST_BYTES_PLAIN", 0)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, int64(4096))
+}
+
+func TestBytes_KB(t *testing.T) {
+t.Setenv("CFG_TEST_BYTES_KB", "512KB")
+v, err := Bytes("CFG_TEST_BYTES_KB", 0)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, int64(512*1024))
+}
+
+func TestBytes_MB(t *testing.T) {
+t.Setenv("CFG_TEST_BYTES_MB", "64MB")
+v, err := Bytes("CFG_TEST_BYTES_MB", 0)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, int64(64*1024*1024))
+}
+
+func TestBytes_GB(t *testing.T) {
+t.Setenv("CFG_TEST_BYTES_GB", "2GB")
+v, err := Bytes("CFG_TEST_BYTES_GB", 0)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, int64(2*1024*1024*1024))
+}
+
+func TestBytes_B(t *testing.T) {
+t.Setenv("CFG_TEST_BYTES_B", "100B")
+v, err := Bytes("CFG_TEST_BYTES_B", 0)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, int64(100))
+}
+
+func TestBytes_Invalid(t *testing.T) {
+t.Setenv("CFG_TEST_BYTES_INV", "abcMB")
+_, err := Bytes("CFG_TEST_BYTES_INV", 0)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "invalid byte size")
+}
+
+func TestBytes_Lowercase(t *testing.T) {
+t.Setenv("CFG_TEST_BYTES_LC", "10mb")
+v, err := Bytes("CFG_TEST_BYTES_LC", 0)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, int64(10*1024*1024))
+}

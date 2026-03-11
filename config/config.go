@@ -295,3 +295,38 @@ return nil, fmt.Errorf("config: %s is required", key)
 }
 return result, nil
 }
+
+// Bytes reads a byte-size value from the named environment variable.
+// Supported suffixes (case-insensitive): B, KB, MB, GB, TB.
+// Plain integers are treated as bytes. If the variable is unset or empty,
+// defaultVal is returned.
+func Bytes(key string, defaultVal int64) (int64, error) {
+v := strings.TrimSpace(os.Getenv(key))
+if v == "" {
+return defaultVal, nil
+}
+upper := strings.ToUpper(v)
+multiplier := int64(1)
+numStr := v
+switch {
+case strings.HasSuffix(upper, "TB"):
+multiplier = 1 << 40
+numStr = strings.TrimSpace(v[:len(v)-2])
+case strings.HasSuffix(upper, "GB"):
+multiplier = 1 << 30
+numStr = strings.TrimSpace(v[:len(v)-2])
+case strings.HasSuffix(upper, "MB"):
+multiplier = 1 << 20
+numStr = strings.TrimSpace(v[:len(v)-2])
+case strings.HasSuffix(upper, "KB"):
+multiplier = 1 << 10
+numStr = strings.TrimSpace(v[:len(v)-2])
+case strings.HasSuffix(upper, "B"):
+numStr = strings.TrimSpace(v[:len(v)-1])
+}
+n, err := strconv.ParseInt(numStr, 10, 64)
+if err != nil {
+return 0, fmt.Errorf("config: %s: invalid byte size %q: %w", key, v, err)
+}
+return n * multiplier, nil
+}

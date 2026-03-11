@@ -1,4 +1,4 @@
-.PHONY: test test-v test-race lint cover check-coverage clean help
+.PHONY: test test-v test-race lint cover cover-html check-coverage bench clean help
 
 .DEFAULT_GOAL := help
 
@@ -21,6 +21,10 @@ cover: ## Generate coverage report
 	go test ./... -count=1 -coverprofile=coverage.out
 	go tool cover -func=coverage.out | tail -1
 
+cover-html: cover ## Open coverage report in browser
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report written to coverage.html"
+
 check-coverage: cover ## Fail if total coverage < 95%
 	@coverage=$$(go tool cover -func=coverage.out | tail -1 | awk '{print $$3}' | sed 's/%//'); \
 	threshold=95; \
@@ -32,4 +36,7 @@ check-coverage: cover ## Fail if total coverage < 95%
 	fi
 
 clean: ## Remove build artifacts
-	rm -f coverage.out
+	rm -f coverage.out coverage.html
+
+bench: ## Run all benchmarks
+	go test ./... -bench=. -benchmem -count=1 -run=^$$ -timeout 120s

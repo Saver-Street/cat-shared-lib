@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func newTestRL(n int) *RateLimiter {
@@ -30,9 +32,7 @@ func TestRateLimiter_AllowsUnderLimit(t *testing.T) {
 	rl := newTestRL(3)
 	defer rl.Stop()
 	for i := 0; i < 3; i++ {
-		if code := doRequest(rl, "1.2.3.4"); code != http.StatusOK {
-			t.Errorf("request %d: status = %d, want 200", i+1, code)
-		}
+		testkit.AssertEqual(t, doRequest(rl, "1.2.3.4"), http.StatusOK)
 	}
 }
 
@@ -41,9 +41,7 @@ func TestRateLimiter_BlocksOverLimit(t *testing.T) {
 	defer rl.Stop()
 	doRequest(rl, "5.6.7.8")
 	doRequest(rl, "5.6.7.8")
-	if code := doRequest(rl, "5.6.7.8"); code != http.StatusTooManyRequests {
-		t.Errorf("3rd request: status = %d, want 429", code)
-	}
+	testkit.AssertEqual(t, doRequest(rl, "5.6.7.8"), http.StatusTooManyRequests)
 }
 
 func TestRateLimiter_ExemptPaths(t *testing.T) {
@@ -57,53 +55,39 @@ func TestRateLimiter_ExemptPaths(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, path, nil)
 		r.RemoteAddr = "9.9.9.9:0"
 		rl.Middleware(next).ServeHTTP(w, r)
-		if w.Code != http.StatusOK {
-			t.Errorf("exempt path %q: status = %d, want 200", path, w.Code)
-		}
+		testkit.AssertStatus(t, w, http.StatusOK)
 	}
 }
 
 func TestRateLimiter_DifferentIPsIndependent(t *testing.T) {
 	rl := newTestRL(1)
 	defer rl.Stop()
-	if code := doRequest(rl, "10.0.0.1"); code != http.StatusOK {
-		t.Errorf("ip1 first: %d", code)
-	}
-	if code := doRequest(rl, "10.0.0.2"); code != http.StatusOK {
-		t.Errorf("ip2 first: %d", code)
-	}
+	testkit.AssertEqual(t, doRequest(rl, "10.0.0.1"), http.StatusOK)
+	testkit.AssertEqual(t, doRequest(rl, "10.0.0.2"), http.StatusOK)
 }
 
 func TestGetClientIP_XForwardedFor(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Set("X-Forwarded-For", "203.0.113.5, 10.0.0.1")
-	if ip := GetClientIP(r); ip != "203.0.113.5" {
-		t.Errorf("X-Forwarded-For IP = %q, want 203.0.113.5", ip)
-	}
+	testkit.AssertEqual(t, GetClientIP(r), "203.0.113.5")
 }
 
 func TestGetClientIP_IPv6XFF(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Set("X-Forwarded-For", "2001:db8::1, 10.0.0.1")
-	if ip := GetClientIP(r); ip != "2001:db8::1" {
-		t.Errorf("IPv6 X-Forwarded-For = %q, want 2001:db8::1", ip)
-	}
+	testkit.AssertEqual(t, GetClientIP(r), "2001:db8::1")
 }
 
 func TestGetClientIP_IPv6RemoteAddr(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r.RemoteAddr = "[::1]:8080"
-	if ip := GetClientIP(r); ip != "::1" {
-		t.Errorf("IPv6 RemoteAddr = %q, want ::1", ip)
-	}
+	testkit.AssertEqual(t, GetClientIP(r), "::1")
 }
 
 func TestGetClientIP_XFFWithSpaces(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Set("X-Forwarded-For", "  192.168.1.1  , 10.0.0.1")
-	if ip := GetClientIP(r); ip != "192.168.1.1" {
-		t.Errorf("XFF with spaces = %q, want 192.168.1.1", ip)
-	}
+	testkit.AssertEqual(t, GetClientIP(r), "192.168.1.1")
 }
 
 func TestRateLimiter_ConcurrentRequests(t *testing.T) {
@@ -127,15 +111,11 @@ func TestRateLimiter_ConcurrentRequests(t *testing.T) {
 func TestIsExemptFromRateLimit(t *testing.T) {
 	exempt := []string{"/assets/app.js", "/icons/logo.png", "/static/x", "/health", "/api/health"}
 	for _, p := range exempt {
-		if !IsExemptFromRateLimit(p) {
-			t.Errorf("path %q should be exempt", p)
-		}
+		testkit.AssertTrue(t, IsExemptFromRateLimit(p))
 	}
 	notExempt := []string{"/api/apply", "/api/user", "/"}
 	for _, p := range notExempt {
-		if IsExemptFromRateLimit(p) {
-			t.Errorf("path %q should NOT be exempt", p)
-		}
+		testkit.AssertFalse(t, IsExemptFromRateLimit(p))
 	}
 }
 
@@ -146,36 +126,26 @@ func TestGetClientIP_XFFEmptyFirstPart(t *testing.T) {
 	r.Header.Set("X-Forwarded-For", " , 10.0.0.1")
 	// Empty first part should fall through to RemoteAddr
 	r.RemoteAddr = "192.168.1.1:8080"
-	if ip := GetClientIP(r); ip != "192.168.1.1" {
-		t.Errorf("XFF empty first part = %q, want 192.168.1.1", ip)
-	}
+	testkit.AssertEqual(t, GetClientIP(r), "192.168.1.1")
 }
 
 func TestGetClientIP_NoPort(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r.RemoteAddr = "10.0.0.5"
-	if ip := GetClientIP(r); ip != "10.0.0.5" {
-		t.Errorf("no-port RemoteAddr = %q, want 10.0.0.5", ip)
-	}
+	testkit.AssertEqual(t, GetClientIP(r), "10.0.0.5")
 }
 
 func TestRateLimiter_WindowReset(t *testing.T) {
 	rl := newTestRL(1)
 	defer rl.Stop()
 	// First request passes
-	if code := doRequest(rl, "reset-ip"); code != http.StatusOK {
-		t.Errorf("first request: %d", code)
-	}
+	testkit.AssertEqual(t, doRequest(rl, "reset-ip"), http.StatusOK)
 	// Second request blocked
-	if code := doRequest(rl, "reset-ip"); code != http.StatusTooManyRequests {
-		t.Errorf("second request: %d, want 429", code)
-	}
+	testkit.AssertEqual(t, doRequest(rl, "reset-ip"), http.StatusTooManyRequests)
 	// Wait for window to expire
 	time.Sleep(150 * time.Millisecond)
 	// Third request should pass after window reset
-	if code := doRequest(rl, "reset-ip"); code != http.StatusOK {
-		t.Errorf("post-window request: %d, want 200", code)
-	}
+	testkit.AssertEqual(t, doRequest(rl, "reset-ip"), http.StatusOK)
 }
 
 func TestRateLimiter_RetryAfterHeader(t *testing.T) {
@@ -193,9 +163,7 @@ func TestRateLimiter_RetryAfterHeader(t *testing.T) {
 	if w.Code != http.StatusTooManyRequests {
 		t.Fatalf("expected 429, got %d", w.Code)
 	}
-	if w.Header().Get("Retry-After") == "" {
-		t.Error("Retry-After header missing")
-	}
+	testkit.AssertNotEqual(t, w.Header().Get("Retry-After"), "")
 }
 
 func TestRateLimiter_Cleanup(t *testing.T) {
@@ -211,9 +179,7 @@ func TestRateLimiter_Cleanup(t *testing.T) {
 	rl.mu.RLock()
 	_, exists := rl.visitors["cleanup-ip"]
 	rl.mu.RUnlock()
-	if exists {
-		t.Error("stale visitor entry should have been cleaned up")
-	}
+	testkit.AssertFalse(t, exists)
 }
 
 // --- Benchmarks ---
@@ -239,25 +205,15 @@ func TestNewRateLimiter_ZeroConfigDefaults(t *testing.T) {
 	rl := NewRateLimiter(RateLimiterConfig{})
 	defer rl.Stop()
 
-	if rl.config.RequestsPerWindow != 100 {
-		t.Errorf("expected RequestsPerWindow=100, got %d", rl.config.RequestsPerWindow)
-	}
-	if rl.config.WindowDuration != time.Minute {
-		t.Errorf("expected WindowDuration=1m, got %v", rl.config.WindowDuration)
-	}
-	if rl.config.CleanupInterval != 2*time.Minute {
-		t.Errorf("expected CleanupInterval=2m, got %v", rl.config.CleanupInterval)
-	}
+	testkit.AssertEqual(t, rl.config.RequestsPerWindow, 100)
+	testkit.AssertEqual(t, rl.config.WindowDuration, time.Minute)
+	testkit.AssertEqual(t, rl.config.CleanupInterval, 2*time.Minute)
 }
 
 func TestNewRateLimiter_NegativeConfigDefaults(t *testing.T) {
 	rl := NewRateLimiter(RateLimiterConfig{RequestsPerWindow: -5, WindowDuration: -1})
 	defer rl.Stop()
 
-	if rl.config.RequestsPerWindow != 100 {
-		t.Errorf("expected RequestsPerWindow=100, got %d", rl.config.RequestsPerWindow)
-	}
-	if rl.config.WindowDuration != time.Minute {
-		t.Errorf("expected WindowDuration=1m, got %v", rl.config.WindowDuration)
-	}
+	testkit.AssertEqual(t, rl.config.RequestsPerWindow, 100)
+	testkit.AssertEqual(t, rl.config.WindowDuration, time.Minute)
 }

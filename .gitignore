@@ -5,6 +5,7 @@
 
 # Coverage
 coverage.out
+coverage.html
 cov.out
 *-cov.out
 

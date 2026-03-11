@@ -166,3 +166,17 @@ local := email[:at]
 domain := email[at:]
 return string(local[0]) + strings.Repeat("*", len(local)-1) + domain
 }
+
+// RedactURL removes userinfo (username/password) from a URL string to
+// prevent credential leakage in logs. If the string is not a valid URL,
+// it is returned unchanged.
+func RedactURL(rawURL string) string {
+u, err := url.Parse(rawURL)
+if err != nil {
+return rawURL
+}
+if u.User != nil {
+u.User = url.User("REDACTED")
+}
+return u.String()
+}

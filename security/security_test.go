@@ -454,3 +454,28 @@ testkit.AssertEqual(t, MaskEmail("notanemail"), "notanemail")
 func TestMaskEmail_LongLocal(t *testing.T) {
 testkit.AssertEqual(t, MaskEmail("john.doe@company.com"), "j*******@company.com")
 }
+
+func TestRedactURL_WithCredentials(t *testing.T) {
+got := RedactURL("https://admin:s3cret@db.example.com:5432/mydb")
+testkit.AssertEqual(t, got, "https://REDACTED@db.example.com:5432/mydb")
+}
+
+func TestRedactURL_UsernameOnly(t *testing.T) {
+got := RedactURL("https://admin@db.example.com/mydb")
+testkit.AssertEqual(t, got, "https://REDACTED@db.example.com/mydb")
+}
+
+func TestRedactURL_NoCredentials(t *testing.T) {
+got := RedactURL("https://example.com/path?q=1")
+testkit.AssertEqual(t, got, "https://example.com/path?q=1")
+}
+
+func TestRedactURL_Invalid(t *testing.T) {
+got := RedactURL("://not-a-url")
+testkit.AssertEqual(t, got, "://not-a-url")
+}
+
+func TestRedactURL_Empty(t *testing.T) {
+got := RedactURL("")
+testkit.AssertEqual(t, got, "")
+}

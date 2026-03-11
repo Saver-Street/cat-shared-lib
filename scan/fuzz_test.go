@@ -3,6 +3,8 @@ package scan
 import (
 	"errors"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 // fuzzRows is a RowScanner that returns fuzzed string data.
@@ -50,9 +52,7 @@ func FuzzRows(f *testing.F) {
 		}
 		rows := &fuzzRows{data: data}
 		got, err := Rows[singleField](rows, scanSingleField)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		if len(got) != n {
 			t.Errorf("got %d rows, want %d", len(got), n)
 		}
@@ -68,9 +68,7 @@ func FuzzFirst(f *testing.F) {
 	f.Fuzz(func(t *testing.T, val string) {
 		rows := &fuzzRows{data: []string{val}}
 		got, err := First[singleField](rows, scanSingleField)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		if got.Val != val {
 			t.Errorf("got %q, want %q", got.Val, val)
 		}
@@ -109,9 +107,7 @@ func FuzzRowsLimit(f *testing.F) {
 		}
 		rows := &fuzzRows{data: data}
 		got, err := RowsLimit[singleField](rows, scanSingleField, limit)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		if limit > 0 && len(got) > limit {
 			t.Errorf("got %d rows, exceeds limit %d", len(got), limit)
 		}

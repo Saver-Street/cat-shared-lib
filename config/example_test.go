@@ -100,3 +100,20 @@ func ExampleValidate() {
 	// <nil>
 	// config: missing required environment variables: MISSING_B
 }
+
+func ExampleLookup() {
+	os.Setenv("MY_KEY", "hello")
+	v, ok := config.Lookup("MY_KEY")
+	fmt.Println(v, ok)
+	os.Unsetenv("MY_KEY")
+	// Output:
+	// hello true
+}
+
+func ExampleFeatureEnabled() {
+	os.Setenv("DARK_MODE", "true")
+	fmt.Println(config.FeatureEnabled("DARK_MODE"))
+	os.Unsetenv("DARK_MODE")
+	// Output:
+	// true
+}

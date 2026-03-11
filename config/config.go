@@ -113,6 +113,37 @@ func MustInt(key string) int {
 	return n
 }
 
+// MustBool reads a required boolean environment variable.
+// Panics if unset, empty, or not a recognized boolean value.
+// Truthy: "true", "1", "yes". Falsy: "false", "0", "no" (case-insensitive).
+func MustBool(key string) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		panic(fmt.Sprintf("config: required environment variable %s is not set", key))
+	}
+	switch strings.ToLower(v) {
+	case "true", "1", "yes":
+		return true
+	case "false", "0", "no":
+		return false
+	}
+	panic(fmt.Sprintf("config: environment variable %s=%q is not a valid boolean", key, v))
+}
+
+// MustDuration reads a required environment variable as a time.Duration.
+// Panics if unset, empty, or not a valid duration string.
+func MustDuration(key string) time.Duration {
+	v := os.Getenv(key)
+	if v == "" {
+		panic(fmt.Sprintf("config: required environment variable %s is not set", key))
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		panic(fmt.Sprintf("config: environment variable %s=%q is not a valid duration", key, v))
+	}
+	return d
+}
+
 // Validate checks that all required keys are set and non-empty.
 // Returns a combined error listing all missing keys.
 func Validate(keys ...string) error {

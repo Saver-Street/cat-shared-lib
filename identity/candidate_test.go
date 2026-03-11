@@ -5,47 +5,36 @@ import (
 	"testing"
 
 	"github.com/Saver-Street/cat-shared-lib/middleware"
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestGetUserID_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if id := GetUserID(r); id != "" {
-		t.Errorf("GetUserID empty context = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "")
 }
 
 func TestGetUserID_FromContext(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(middleware.SetUserID(r.Context(), "user-123"))
-	if id := GetUserID(r); id != "user-123" {
-		t.Errorf("GetUserID = %q, want user-123", id)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "user-123")
 }
 
 func TestGetExtCandidateID_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if id := GetExtCandidateID(r); id != "" {
-		t.Errorf("GetExtCandidateID empty = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "")
 }
 
 func TestGetExtCandidateID_FromContext(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(middleware.SetExtCandidateID(r.Context(), "cand-456"))
-	if id := GetExtCandidateID(r); id != "cand-456" {
-		t.Errorf("GetExtCandidateID = %q, want cand-456", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "cand-456")
 }
 
 func TestResolveCandidate_NoContext(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	id, err := ResolveCandidate(r, nil)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if id != "" {
-		t.Errorf("empty context should return empty ID, got %q", id)
-	}
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, id, "")
 }
 
 func TestResolveCandidate_ExtCandidateIDWins(t *testing.T) {
@@ -56,28 +45,20 @@ func TestResolveCandidate_ExtCandidateIDWins(t *testing.T) {
 
 	// ext candidate ID takes priority over user lookup
 	id, err := ResolveCandidate(r, nil)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if id != "ext-cand-789" {
-		t.Errorf("ResolveCandidate = %q, want ext-cand-789", id)
-	}
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, id, "ext-cand-789")
 }
 
 func TestGetUserID_EmptyValue(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(middleware.SetUserID(r.Context(), ""))
-	if id := GetUserID(r); id != "" {
-		t.Errorf("empty user ID should return empty, got %q", id)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "")
 }
 
 func TestGetExtCandidateID_EmptyValue(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(middleware.SetExtCandidateID(r.Context(), ""))
-	if id := GetExtCandidateID(r); id != "" {
-		t.Errorf("empty ext candidate ID should return empty, got %q", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "")
 }
 
 func BenchmarkGetUserID(b *testing.B) {
@@ -100,7 +81,5 @@ func TestResolveCandidate_NilDB_WithUserID(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(middleware.SetUserID(r.Context(), "user-abc"))
 	_, err := ResolveCandidate(r, nil)
-	if err == nil {
-		t.Error("expected error when db is nil and user ID is set")
-	}
+	testkit.AssertTrue(t, err != nil)
 }

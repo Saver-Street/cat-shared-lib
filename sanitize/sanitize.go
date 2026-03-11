@@ -252,3 +252,12 @@ b.WriteRune(r)
 }
 return b.String()
 }
+
+var multiSpace = regexp.MustCompile(`\s+`)
+
+// NormalizeWhitespace collapses all consecutive whitespace (spaces, tabs,
+// newlines) into a single space and trims leading/trailing whitespace.
+// Useful for cleaning user-entered names, titles, and search queries.
+func NormalizeWhitespace(s string) string {
+return strings.TrimSpace(multiSpace.ReplaceAllString(s, " "))
+}

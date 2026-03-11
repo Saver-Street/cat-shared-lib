@@ -512,3 +512,23 @@ testkit.AssertEqual(t, RemoveNonPrintable(tt.input), tt.expect)
 })
 }
 }
+
+func TestNormalizeWhitespace(t *testing.T) {
+tests := []struct {
+name   string
+input  string
+expect string
+}{
+{"multiple spaces", "hello   world", "hello world"},
+{"tabs and newlines", "hello\t\n\tworld", "hello world"},
+{"leading trailing", "  hello  ", "hello"},
+{"already clean", "hello world", "hello world"},
+{"empty", "", ""},
+{"only spaces", "   ", ""},
+}
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+testkit.AssertEqual(t, NormalizeWhitespace(tt.input), tt.expect)
+})
+}
+}

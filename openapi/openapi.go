@@ -10,10 +10,11 @@ import (
 
 // Spec represents an OpenAPI 3.0 specification document.
 type Spec struct {
-	OpenAPI string          `json:"openapi"`
-	Info    Info            `json:"info"`
-	Servers []Server        `json:"servers,omitempty"`
-	Paths   map[string]Path `json:"paths"`
+	OpenAPI    string          `json:"openapi"`
+	Info       Info            `json:"info"`
+	Servers    []Server        `json:"servers,omitempty"`
+	Paths      map[string]Path `json:"paths"`
+	Components *Components     `json:"components,omitempty"`
 }
 
 // Info provides metadata about the API.
@@ -88,6 +89,22 @@ type Schema struct {
 // SecurityReq is a map of security scheme names to scopes.
 type SecurityReq map[string][]string
 
+// Components holds reusable schemas and security scheme definitions.
+type Components struct {
+	Schemas         map[string]*Schema         `json:"schemas,omitempty"`
+	SecuritySchemes map[string]*SecurityScheme `json:"securitySchemes,omitempty"`
+}
+
+// SecurityScheme describes an authentication mechanism.
+type SecurityScheme struct {
+	Type         string `json:"type"`                   // apiKey, http, oauth2, openIdConnect
+	Scheme       string `json:"scheme,omitempty"`       // e.g. "bearer"
+	BearerFormat string `json:"bearerFormat,omitempty"` // e.g. "JWT"
+	Name         string `json:"name,omitempty"`         // for apiKey
+	In           string `json:"in,omitempty"`           // for apiKey: query, header, cookie
+	Description  string `json:"description,omitempty"`
+}
+
 // NewSpec creates a new OpenAPI 3.0 specification with the given info.
 func NewSpec(title, version string) *Spec {
 	return &Spec{
@@ -116,6 +133,50 @@ func (s *Spec) AddPath(path, method string, op *Operation) *Spec {
 	}
 	s.Paths[path][method] = op
 	return s
+}
+
+// AddSchema adds a reusable schema to the components section.
+// Reference it in operations with RefSchema("#/components/schemas/<name>").
+func (s *Spec) AddSchema(name string, schema *Schema) *Spec {
+	if s.Components == nil {
+		s.Components = &Components{}
+	}
+	if s.Components.Schemas == nil {
+		s.Components.Schemas = make(map[string]*Schema)
+	}
+	s.Components.Schemas[name] = schema
+	return s
+}
+
+// AddSecurityScheme adds a reusable security scheme to the components section.
+// Reference it in operations with WithSecurity("<name>").
+func (s *Spec) AddSecurityScheme(name string, scheme *SecurityScheme) *Spec {
+	if s.Components == nil {
+		s.Components = &Components{}
+	}
+	if s.Components.SecuritySchemes == nil {
+		s.Components.SecuritySchemes = make(map[string]*SecurityScheme)
+	}
+	s.Components.SecuritySchemes[name] = scheme
+	return s
+}
+
+// BearerAuth returns a SecurityScheme for HTTP Bearer token authentication.
+func BearerAuth(format string) *SecurityScheme {
+	return &SecurityScheme{
+		Type:         "http",
+		Scheme:       "bearer",
+		BearerFormat: format,
+	}
+}
+
+// APIKeyAuth returns a SecurityScheme for API key authentication.
+func APIKeyAuth(name, in string) *SecurityScheme {
+	return &SecurityScheme{
+		Type: "apiKey",
+		Name: name,
+		In:   in,
+	}
 }
 
 // JSON returns the spec as a JSON byte slice.

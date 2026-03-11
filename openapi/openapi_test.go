@@ -250,3 +250,117 @@ func BenchmarkSpec_JSON(b *testing.B) {
 		s.JSON()
 	}
 }
+
+// ---- Components / Schema / Security Scheme tests ----
+
+func TestSpec_AddSchema(t *testing.T) {
+	s := NewSpec("API", "1.0.0")
+	s.AddSchema("User", ObjectSchema(map[string]*Schema{
+		"id":   IntegerSchema(),
+		"name": StringSchema(),
+	}))
+
+	testkit.AssertNotNil(t, s.Components)
+	testkit.AssertNotNil(t, s.Components.Schemas)
+	testkit.AssertNotNil(t, s.Components.Schemas["User"])
+	testkit.AssertEqual(t, s.Components.Schemas["User"].Type, "object")
+}
+
+func TestSpec_AddSchema_Multiple(t *testing.T) {
+	s := NewSpec("API", "1.0.0")
+	s.AddSchema("User", ObjectSchema(map[string]*Schema{"id": IntegerSchema()}))
+	s.AddSchema("Error", ObjectSchema(map[string]*Schema{"message": StringSchema()}))
+
+	testkit.AssertEqual(t, len(s.Components.Schemas), 2)
+	testkit.AssertNotNil(t, s.Components.Schemas["User"])
+	testkit.AssertNotNil(t, s.Components.Schemas["Error"])
+}
+
+func TestSpec_AddSchema_Chainable(t *testing.T) {
+	s := NewSpec("API", "1.0.0").
+		AddSchema("User", StringSchema()).
+		AddSchema("Error", StringSchema())
+	testkit.AssertEqual(t, len(s.Components.Schemas), 2)
+}
+
+func TestSpec_AddSecurityScheme(t *testing.T) {
+	s := NewSpec("API", "1.0.0")
+	s.AddSecurityScheme("bearerAuth", BearerAuth("JWT"))
+
+	testkit.AssertNotNil(t, s.Components)
+	testkit.AssertNotNil(t, s.Components.SecuritySchemes)
+	scheme := s.Components.SecuritySchemes["bearerAuth"]
+	testkit.AssertNotNil(t, scheme)
+	testkit.AssertEqual(t, scheme.Type, "http")
+	testkit.AssertEqual(t, scheme.Scheme, "bearer")
+	testkit.AssertEqual(t, scheme.BearerFormat, "JWT")
+}
+
+func TestSpec_AddSecurityScheme_APIKey(t *testing.T) {
+	s := NewSpec("API", "1.0.0")
+	s.AddSecurityScheme("apiKey", APIKeyAuth("X-API-Key", "header"))
+
+	scheme := s.Components.SecuritySchemes["apiKey"]
+	testkit.AssertNotNil(t, scheme)
+	testkit.AssertEqual(t, scheme.Type, "apiKey")
+	testkit.AssertEqual(t, scheme.Name, "X-API-Key")
+	testkit.AssertEqual(t, scheme.In, "header")
+}
+
+func TestSpec_AddSecurityScheme_Chainable(t *testing.T) {
+	s := NewSpec("API", "1.0.0").
+		AddSecurityScheme("bearer", BearerAuth("JWT")).
+		AddSecurityScheme("apiKey", APIKeyAuth("X-Key", "header"))
+	testkit.AssertEqual(t, len(s.Components.SecuritySchemes), 2)
+}
+
+func TestSpec_Components_JSON(t *testing.T) {
+	s := NewSpec("API", "1.0.0").
+		AddSchema("User", ObjectSchema(map[string]*Schema{
+			"id":   IntegerSchema(),
+			"name": StringSchema(),
+		})).
+		AddSecurityScheme("bearerAuth", BearerAuth("JWT")).
+		AddPath("/users", "get", NewOperation("List users").
+			AddResponse("200", "Success", RefSchema("#/components/schemas/User")).
+			WithSecurity("bearerAuth"))
+
+	data, err := s.JSON()
+	testkit.AssertNoError(t, err)
+
+	var parsed map[string]any
+	testkit.AssertNoError(t, json.Unmarshal(data, &parsed))
+
+	components, ok := parsed["components"].(map[string]any)
+	testkit.AssertTrue(t, ok)
+	testkit.AssertNotNil(t, components["schemas"])
+	testkit.AssertNotNil(t, components["securitySchemes"])
+}
+
+func TestSpec_NilComponents_OmittedFromJSON(t *testing.T) {
+	s := NewSpec("API", "1.0.0")
+	data, err := s.JSON()
+	testkit.AssertNoError(t, err)
+	testkit.AssertNotContains(t, string(data), "components")
+}
+
+func TestBearerAuth(t *testing.T) {
+	scheme := BearerAuth("JWT")
+	testkit.AssertEqual(t, scheme.Type, "http")
+	testkit.AssertEqual(t, scheme.Scheme, "bearer")
+	testkit.AssertEqual(t, scheme.BearerFormat, "JWT")
+}
+
+func TestAPIKeyAuth(t *testing.T) {
+	scheme := APIKeyAuth("X-API-Key", "header")
+	testkit.AssertEqual(t, scheme.Type, "apiKey")
+	testkit.AssertEqual(t, scheme.Name, "X-API-Key")
+	testkit.AssertEqual(t, scheme.In, "header")
+}
+
+func TestBearerAuth_EmptyFormat(t *testing.T) {
+	scheme := BearerAuth("")
+	testkit.AssertEqual(t, scheme.Type, "http")
+	testkit.AssertEqual(t, scheme.Scheme, "bearer")
+	testkit.AssertEmpty(t, scheme.BearerFormat)
+}

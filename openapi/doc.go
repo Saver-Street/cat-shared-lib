@@ -6,6 +6,10 @@
 // operations with [NewOperation] and attach parameters, request bodies, and
 // responses using the chainable methods on [Operation].
 //
+// Use [Spec.AddSchema] to define reusable schemas in the components section,
+// and reference them with [RefSchema].  [Spec.AddSecurityScheme] registers
+// authentication mechanisms such as [BearerAuth] and [APIKeyAuth].
+//
 // Schema helpers [StringSchema], [IntegerSchema], [BooleanSchema],
 // [ArraySchema], [ObjectSchema], and [RefSchema] simplify JSON Schema
 // construction.

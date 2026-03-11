@@ -197,6 +197,42 @@ func AssertContains(t T, s, substr string) {
 	}
 }
 
+// AssertNotNil fails the test if v is nil.
+func AssertNotNil(t T, v any) {
+	t.Helper()
+	if isNil(v) {
+		t.Errorf("testkit: expected non-nil value, got nil")
+	}
+}
+
+// AssertPanics fails unless fn panics when called.
+func AssertPanics(t T, fn func()) {
+	t.Helper()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("testkit: expected panic, but function returned normally")
+		}
+	}()
+	fn()
+}
+
+// AssertPanicsContains fails unless fn panics with a message containing substr.
+func AssertPanicsContains(t T, fn func(), substr string) {
+	t.Helper()
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Errorf("testkit: expected panic containing %q, but function returned normally", substr)
+			return
+		}
+		msg := fmt.Sprintf("%v", r)
+		if !strings.Contains(msg, substr) {
+			t.Errorf("testkit: panic %q does not contain %q", msg, substr)
+		}
+	}()
+	fn()
+}
+
 // ---- HTTP helpers ----
 
 // NewRequest builds an *http.Request for use in handler tests.

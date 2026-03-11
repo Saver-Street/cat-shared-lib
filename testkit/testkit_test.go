@@ -213,6 +213,65 @@ func TestAssertContains_Fail(t *testing.T) {
 	}
 }
 
+// ---- AssertNotNil tests ----
+
+func TestAssertNotNil_Pass(t *testing.T) {
+	v := 42
+	AssertNotNil(t, &v)
+	AssertNotNil(t, "hello")
+}
+
+func TestAssertNotNil_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertNotNil(mock, nil)
+	if !mock.errored {
+		t.Error("expected error for nil value")
+	}
+}
+
+func TestAssertNotNil_NilPointer(t *testing.T) {
+	mock := &mockT{}
+	var p *int
+	AssertNotNil(mock, p)
+	if !mock.errored {
+		t.Error("expected error for nil pointer")
+	}
+}
+
+// ---- AssertPanics tests ----
+
+func TestAssertPanics_Pass(t *testing.T) {
+	AssertPanics(t, func() { panic("boom") })
+}
+
+func TestAssertPanics_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertPanics(mock, func() {})
+	if !mock.errored {
+		t.Error("expected error when function does not panic")
+	}
+}
+
+func TestAssertPanicsContains_Pass(t *testing.T) {
+	AssertPanicsContains(t, func() { panic("connection refused") }, "refused")
+}
+
+func TestAssertPanicsContains_NoPanic(t *testing.T) {
+	mock := &mockT{}
+	AssertPanicsContains(mock, func() {}, "anything")
+	if !mock.errored {
+		t.Error("expected error when function does not panic")
+	}
+}
+
+func TestAssertPanicsContains_WrongMessage(t *testing.T) {
+	mock := &mockT{}
+	AssertPanicsContains(mock, func() { panic("timeout") }, "refused")
+	if !mock.errored {
+		t.Error("expected error for wrong panic message")
+	}
+}
+
 // ---- JSON tests ----
 
 func TestAssertJSON(t *testing.T) {

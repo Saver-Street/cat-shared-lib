@@ -258,3 +258,16 @@ Message: fmt.Sprintf("%s must be between %v and %v", field, min, max),
 }
 return nil
 }
+
+// EachString applies a string validator to every element in values. It
+// returns the first validation error encountered, using field[i] as the
+// field name for error context. Returns nil if all elements pass.
+func EachString(field string, values []string, validate func(string, string) error) error {
+for i, v := range values {
+key := fmt.Sprintf("%s[%d]", field, i)
+if err := validate(key, v); err != nil {
+return err
+}
+}
+return nil
+}

@@ -15,6 +15,7 @@ import (
 // capturedSend records the last call to the send function.
 type capturedSend struct {
 	addr string
+	auth smtp.Auth
 	from string
 	to   []string
 	msg  []byte
@@ -23,8 +24,9 @@ type capturedSend struct {
 
 func newCapture(returnErr error) (*capturedSend, sendFunc) {
 	c := &capturedSend{err: returnErr}
-	fn := func(addr string, _ smtp.Auth, from string, to []string, msg []byte) error {
+	fn := func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
 		c.addr = addr
+		c.auth = a
 		c.from = from
 		c.to = to
 		c.msg = msg
@@ -450,4 +452,62 @@ func TestSend_DeadlineExceeded(t *testing.T) {
 	})
 	testkit.AssertError(t, err)
 	testkit.AssertErrorContains(t, err, "deadline exceeded")
+}
+
+func TestSend_NoAuth(t *testing.T) {
+	cfg := Config{
+		Host: "smtp.example.com",
+		Port: 587,
+		From: "no-reply@example.com",
+		// Username and Password intentionally empty — no SMTP auth.
+	}
+	m, cap := newMailerWithCapture(cfg, nil)
+	err := m.Send(context.Background(), Message{
+		To:      []string{"a@b.com"},
+		Subject: "Hi",
+		Text:    "body",
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertNil(t, cap.auth)
+	testkit.AssertEqual(t, cap.from, "no-reply@example.com")
+}
+
+func TestSend_WithAuth(t *testing.T) {
+	m, cap := newMailerWithCapture(defaultCfg(), nil)
+	err := m.Send(context.Background(), Message{
+		To:      []string{"a@b.com"},
+		Subject: "Hi",
+		Text:    "body",
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertNotNil(t, cap.auth)
+}
+
+func TestBuildMessage_TextOnly_NoError(t *testing.T) {
+	raw, err := buildMessage("from@example.com", Message{
+		To:   []string{"to@example.com"},
+		Text: "plain text body",
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertContains(t, string(raw), "Content-Type: text/plain")
+	testkit.AssertContains(t, string(raw), "quoted-printable")
+}
+
+func TestBuildMessage_HTMLOnly_NoError(t *testing.T) {
+	raw, err := buildMessage("from@example.com", Message{
+		To:   []string{"to@example.com"},
+		HTML: "<p>hello</p>",
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertContains(t, string(raw), "Content-Type: text/html")
+}
+
+func TestBuildMessage_Multipart_NoError(t *testing.T) {
+	raw, err := buildMessage("from@example.com", Message{
+		To:   []string{"to@example.com"},
+		HTML: "<p>hello</p>",
+		Text: "hello",
+	})
+	testkit.AssertNoError(t, err)
+	testkit.AssertContains(t, string(raw), "multipart/alternative")
 }

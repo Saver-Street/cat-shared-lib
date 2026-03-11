@@ -587,3 +587,28 @@ func TestMapKeys_Empty(t *testing.T) {
 got := MapKeys(map[string]int{}, strings.ToUpper)
 testkit.AssertLen(t, got, 0)
 }
+
+func TestFilter(t *testing.T) {
+nums := []int{1, 2, 3, 4, 5, 6}
+even := Filter(nums, func(n int) bool { return n%2 == 0 })
+testkit.AssertLen(t, even, 3)
+testkit.AssertEqual(t, even[0], 2)
+testkit.AssertEqual(t, even[1], 4)
+testkit.AssertEqual(t, even[2], 6)
+}
+
+func TestFilter_Empty(t *testing.T) {
+result := Filter([]string{}, func(s string) bool { return true })
+testkit.AssertLen(t, result, 0)
+}
+
+func TestFilter_NoneMatch(t *testing.T) {
+result := Filter([]int{1, 3, 5}, func(n int) bool { return n%2 == 0 })
+testkit.AssertLen(t, result, 0)
+}
+
+func TestFilter_Strings(t *testing.T) {
+words := []string{"hello", "", "world", "", "go"}
+nonEmpty := Filter(words, func(s string) bool { return s != "" })
+testkit.AssertLen(t, nonEmpty, 3)
+}

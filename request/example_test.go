@@ -113,3 +113,30 @@ func ExampleParseEnumParam() {
 	// admin
 	// user
 }
+
+func ExampleParseCommaSeparatedInts() {
+	q := url.Values{"ids": {"1,2,3,4"}}
+	ids, err := request.ParseCommaSeparatedInts(q, "ids")
+	fmt.Println(ids, err)
+	// Output:
+	// [1 2 3 4] <nil>
+}
+
+func ExampleParseDateParam() {
+	q := url.Values{"since": {"2024-01-15"}}
+	t, err := request.ParseDateParam(q, "since")
+	fmt.Println(t.Format("2006-01-02"), err)
+	// Output:
+	// 2024-01-15 <nil>
+}
+
+func ExampleRequireUUIDParam() {
+	paramFn := func(r *http.Request, key string) string {
+		return "550e8400-e29b-41d4-a716-446655440000"
+	}
+	r, _ := http.NewRequest("GET", "/users/550e8400-e29b-41d4-a716-446655440000", nil)
+	id, err := request.RequireUUIDParam(r, "id", paramFn)
+	fmt.Println(id, err)
+	// Output:
+	// 550e8400-e29b-41d4-a716-446655440000 <nil>
+}

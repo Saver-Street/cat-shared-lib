@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 // ---- HealthStatus tests ----
@@ -19,51 +21,33 @@ func TestHealthStatus_IsHealthy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		h := HealthStatus{State: tt.state}
-		if got := h.IsHealthy(); got != tt.want {
-			t.Errorf("state=%q: IsHealthy()=%v, want %v", tt.state, got, tt.want)
-		}
+		testkit.AssertEqual(t, h.IsHealthy(), tt.want)
 	}
 }
 
 func TestHealthState_Constants(t *testing.T) {
-	if HealthStateOK != "ok" {
-		t.Errorf("HealthStateOK = %q, want %q", HealthStateOK, "ok")
-	}
-	if HealthStateDegraded != "degraded" {
-		t.Errorf("HealthStateDegraded = %q, want %q", HealthStateDegraded, "degraded")
-	}
-	if HealthStateDown != "down" {
-		t.Errorf("HealthStateDown = %q, want %q", HealthStateDown, "down")
-	}
+	testkit.AssertEqual(t, string(HealthStateOK), "ok")
+	testkit.AssertEqual(t, string(HealthStateDegraded), "degraded")
+	testkit.AssertEqual(t, string(HealthStateDown), "down")
 }
 
 // ---- StandardError tests ----
 
 func TestNewStandardError(t *testing.T) {
 	e := NewStandardError("NOT_FOUND", "resource not found")
-	if e.Code != "NOT_FOUND" {
-		t.Errorf("Code = %q, want NOT_FOUND", e.Code)
-	}
-	if e.Message != "resource not found" {
-		t.Errorf("Message = %q, want 'resource not found'", e.Message)
-	}
-	if e.Details != nil {
-		t.Errorf("Details should be nil, got %v", e.Details)
-	}
+	testkit.AssertEqual(t, e.Code, "NOT_FOUND")
+	testkit.AssertEqual(t, e.Message, "resource not found")
+	testkit.AssertNil(t, e.Details)
 }
 
 func TestNewStandardErrorWithDetails(t *testing.T) {
 	details := map[string]any{"field": "email", "reason": "invalid format"}
 	e := NewStandardErrorWithDetails("VALIDATION_ERROR", "validation failed", details)
-	if e.Code != "VALIDATION_ERROR" {
-		t.Errorf("Code = %q, want VALIDATION_ERROR", e.Code)
-	}
+	testkit.AssertEqual(t, e.Code, "VALIDATION_ERROR")
 	if e.Details == nil {
 		t.Fatal("expected Details to be set")
 	}
-	if e.Details["field"] != "email" {
-		t.Errorf("Details[field] = %v, want email", e.Details["field"])
-	}
+	testkit.AssertEqual(t, e.Details["field"], "email")
 }
 
 func TestStandardError_Error(t *testing.T) {
@@ -85,9 +69,7 @@ func TestStandardError_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.e.Error(); got != tt.wantMsg {
-				t.Errorf("Error() = %q, want %q", got, tt.wantMsg)
-			}
+			testkit.AssertEqual(t, tt.e.Error(), tt.wantMsg)
 		})
 	}
 }
@@ -124,25 +106,15 @@ func TestMockService_HealthCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !status.IsHealthy() {
-		t.Errorf("expected healthy status, got %q", status.State)
-	}
-	if status.Service != "test-svc" {
-		t.Errorf("Service = %q, want test-svc", status.Service)
-	}
+	testkit.AssertTrue(t, status.IsHealthy())
+	testkit.AssertEqual(t, status.Service, "test-svc")
 }
 
 func TestMockService_Info(t *testing.T) {
 	svc := &mockService{name: "jobs-service", version: "2.0.0", env: "production"}
-	if got := svc.Name(); got != "jobs-service" {
-		t.Errorf("Name() = %q, want jobs-service", got)
-	}
-	if got := svc.Version(); got != "2.0.0" {
-		t.Errorf("Version() = %q, want 2.0.0", got)
-	}
-	if got := svc.Environment(); got != "production" {
-		t.Errorf("Environment() = %q, want production", got)
-	}
+	testkit.AssertEqual(t, svc.Name(), "jobs-service")
+	testkit.AssertEqual(t, svc.Version(), "2.0.0")
+	testkit.AssertEqual(t, svc.Environment(), "production")
 }
 
 func TestMockService_RegisterRoutes(t *testing.T) {
@@ -162,10 +134,6 @@ func TestHealthStatus_Checks(t *testing.T) {
 			"cache":    "ok",
 		},
 	}
-	if h.IsHealthy() {
-		t.Error("expected degraded to not be healthy")
-	}
-	if h.Checks["database"] != "connection refused" {
-		t.Errorf("unexpected database check: %q", h.Checks["database"])
-	}
+	testkit.AssertFalse(t, h.IsHealthy())
+	testkit.AssertEqual(t, h.Checks["database"], "connection refused")
 }

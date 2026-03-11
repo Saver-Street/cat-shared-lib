@@ -169,9 +169,7 @@ func TestDo_ContextCanceled(t *testing.T) {
 
 	c := New(WithRetries(2))
 	_, err := c.Get(ctx, srv.URL)
-	if err == nil {
-		t.Fatal("Get() = nil, want error on cancelled context")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestHeaders_AppliedToRequest(t *testing.T) {
@@ -429,9 +427,7 @@ func TestServerError_NotRetried_WhenNoRetries(t *testing.T) {
 
 	c := New() // no retries
 	_, err := c.Get(context.Background(), srv.URL)
-	if err == nil {
-		t.Fatal("Get() = nil, want error for 500")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertEqual(t, attempts.Load(), int32(1))
 }
 
@@ -465,18 +461,14 @@ func (errReader) Read([]byte) (int, error) { return 0, errors.New("read error") 
 
 func TestMarshalJSON_Error(t *testing.T) {
 	_, err := marshalJSON(make(chan int))
-	if err == nil {
-		t.Fatal("expected error marshaling channel")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDecodeResponse_InvalidJSON(t *testing.T) {
 	resp := &Response{StatusCode: 200, Body: []byte("not-json")}
 	var target map[string]any
 	err := decodeResponse(resp, &target)
-	if err == nil {
-		t.Fatal("expected error for invalid JSON body")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestGetJSON_RequestError(t *testing.T) {
@@ -486,17 +478,13 @@ func TestGetJSON_RequestError(t *testing.T) {
 	c := New()
 	var result any
 	err := c.GetJSON(context.Background(), srv.URL, &result)
-	if err == nil {
-		t.Fatal("expected error when server is closed")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestPostJSON_MarshalError(t *testing.T) {
 	c := New()
 	err := c.PostJSON(context.Background(), "http://localhost", make(chan int), nil)
-	if err == nil {
-		t.Fatal("expected marshal error for channel payload")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestPostJSON_RequestError(t *testing.T) {
@@ -506,17 +494,13 @@ func TestPostJSON_RequestError(t *testing.T) {
 	c := New()
 	var result any
 	err := c.PostJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, &result)
-	if err == nil {
-		t.Fatal("expected error when server is closed")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestPutJSON_MarshalError(t *testing.T) {
 	c := New()
 	err := c.PutJSON(context.Background(), "http://localhost", make(chan int), nil)
-	if err == nil {
-		t.Fatal("expected marshal error for channel payload")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestPutJSON_NilTarget(t *testing.T) {
@@ -537,9 +521,7 @@ func TestPutJSON_RequestError(t *testing.T) {
 	c := New()
 	var result any
 	err := c.PutJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, &result)
-	if err == nil {
-		t.Fatal("expected error when server is closed")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDeleteJSON_NilTarget(t *testing.T) {
@@ -559,17 +541,13 @@ func TestDeleteJSON_RequestError(t *testing.T) {
 
 	c := New()
 	err := c.DeleteJSON(context.Background(), srv.URL, nil)
-	if err == nil {
-		t.Fatal("expected error when server is closed")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDo_BodyReadError(t *testing.T) {
 	c := New()
 	_, err := c.Do(context.Background(), http.MethodPost, "http://localhost", errReader{})
-	if err == nil {
-		t.Fatal("expected error reading body")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDoAttempt_ResponseHookError(t *testing.T) {
@@ -629,9 +607,7 @@ func TestDo_InvalidJSONResponse(t *testing.T) {
 	c := New()
 	var result struct{ Name string }
 	err := c.GetJSON(context.Background(), srv.URL, &result)
-	if err == nil {
-		t.Fatal("expected JSON decode error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDeleteJSON_DecodeError(t *testing.T) {
@@ -644,9 +620,7 @@ func TestDeleteJSON_DecodeError(t *testing.T) {
 	c := New()
 	var result map[string]any
 	err := c.DeleteJSON(context.Background(), srv.URL, &result)
-	if err == nil {
-		t.Fatal("expected JSON decode error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDecodeResponse_4xxError(t *testing.T) {
@@ -682,9 +656,7 @@ func TestPostJSON_DecodeResponseError(t *testing.T) {
 	c := New()
 	var result map[string]any
 	err := c.PostJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, &result)
-	if err == nil {
-		t.Fatal("expected JSON decode error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestPutJSON_DecodeResponseError(t *testing.T) {
@@ -697,9 +669,7 @@ func TestPutJSON_DecodeResponseError(t *testing.T) {
 	c := New()
 	var result map[string]any
 	err := c.PutJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, &result)
-	if err == nil {
-		t.Fatal("expected JSON decode error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDoAttempt_RequestHookError(t *testing.T) {
@@ -727,9 +697,7 @@ func TestGetJSON_DecodeError(t *testing.T) {
 	c := New()
 	var result struct{ Name string }
 	err := c.GetJSON(context.Background(), srv.URL, &result)
-	if err == nil {
-		t.Fatal("expected JSON decode error")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDoJSON_UnmarshalablePayload(t *testing.T) {
@@ -765,7 +733,5 @@ func TestDoAttempt_ReadBodyError(t *testing.T) {
 
 	c := New(WithRetries(0))
 	_, err := c.Get(context.Background(), srv.URL)
-	if err == nil {
-		t.Fatal("expected error reading body")
-	}
+	testkit.AssertError(t, err)
 }

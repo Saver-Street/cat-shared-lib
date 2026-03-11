@@ -99,9 +99,7 @@ func TestRequireURLParam_Missing(t *testing.T) {
 func TestRequireURLParam_Empty(t *testing.T) {
 	r := httptest.NewRequest("GET", "/test", nil)
 	_, err := RequireURLParam(r, "id", mockParamFn(map[string]string{"id": ""}))
-	if err == nil {
-		t.Fatal("expected error for empty param")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRequireURLParamInt_ValidInt(t *testing.T) {
@@ -132,17 +130,13 @@ func TestRequireURLParamInt_Zero(t *testing.T) {
 func TestRequireURLParamInt_Negative(t *testing.T) {
 	r := httptest.NewRequest("GET", "/test", nil)
 	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "-5"}))
-	if err == nil {
-		t.Fatal("expected error for negative")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRequireURLParamInt_Missing(t *testing.T) {
 	r := httptest.NewRequest("GET", "/test", nil)
 	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{}))
-	if err == nil {
-		t.Fatal("expected error for missing param")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRequireURLParamInt_MaxInt(t *testing.T) {
@@ -155,9 +149,7 @@ func TestRequireURLParamInt_MaxInt(t *testing.T) {
 func TestRequireURLParamInt_Overflow(t *testing.T) {
 	r := httptest.NewRequest("GET", "/test", nil)
 	_, err := RequireURLParamInt(r, "id", mockParamFn(map[string]string{"id": "99999999999999999999"}))
-	if err == nil {
-		t.Fatal("expected error for overflow value")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestParsePagination_LargePageOffset(t *testing.T) {
@@ -223,17 +215,13 @@ func TestRequireQueryParam_Present(t *testing.T) {
 func TestRequireQueryParam_Missing(t *testing.T) {
 	q := url.Values{}
 	_, err := RequireQueryParam(q, "filter")
-	if err == nil {
-		t.Fatal("expected error for missing param")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRequireQueryParam_Empty(t *testing.T) {
 	q := url.Values{"filter": {""}}
 	_, err := RequireQueryParam(q, "filter")
-	if err == nil {
-		t.Fatal("expected error for empty param")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestParseBoolParam_TrueValues(t *testing.T) {
@@ -320,17 +308,13 @@ func TestRequireQueryParamInt_Valid(t *testing.T) {
 func TestRequireQueryParamInt_Missing(t *testing.T) {
 	q := url.Values{}
 	_, err := RequireQueryParamInt(q, "id")
-	if err == nil {
-		t.Fatal("expected error for missing param")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRequireQueryParamInt_NotAnInt(t *testing.T) {
 	q := url.Values{"id": {"abc"}}
 	_, err := RequireQueryParamInt(q, "id")
-	if err == nil {
-		t.Fatal("expected error for non-integer value")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestParseCommaSeparated_Values(t *testing.T) {
@@ -370,9 +354,7 @@ func TestParseCommaSeparatedInts_Absent(t *testing.T) {
 }
 func TestParseCommaSeparatedInts_Invalid(t *testing.T) {
 	_, err := ParseCommaSeparatedInts(url.Values{"ids": {"1,abc,3"}}, "ids")
-	if err == nil {
-		t.Fatal("expected error")
-	}
+	testkit.AssertError(t, err)
 }
 func TestParseCommaSeparatedInts_Negative(t *testing.T) {
 	got, err := ParseCommaSeparatedInts(url.Values{"ids": {"-1,0,2"}}, "ids")

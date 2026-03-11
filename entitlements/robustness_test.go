@@ -19,9 +19,7 @@ func TestGetUserTierAndUsage_CancelledContext(t *testing.T) {
 	}}
 
 	tier, count, err := GetUserTierAndUsage(ctx, db, "user-cancel")
-	if err == nil {
-		t.Fatal("expected error for cancelled context")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertEqual(t, tier, "free")
 	testkit.AssertEqual(t, count, 0)
 }

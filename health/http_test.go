@@ -220,7 +220,5 @@ func TestAggregateChecker_ReadBodyError(t *testing.T) {
 
 	checker := AggregateChecker("bad-body", srv.URL)
 	err := checker.Check(t.Context())
-	if err == nil {
-		t.Fatal("Check() = nil, want error for body read failure")
-	}
+	testkit.AssertError(t, err)
 }

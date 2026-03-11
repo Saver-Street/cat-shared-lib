@@ -105,6 +105,7 @@ func TestPhone_Invalid(t *testing.T) {
 		"123",                  // too few digits
 		"abc",                  // not digits
 		"12345678901234567890", // too many digits
+		"(123)4567890",         // enough digits but invalid format (parentheses)
 	}
 	for _, p := range invalid {
 		err := Phone("phone", p)

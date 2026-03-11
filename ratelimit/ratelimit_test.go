@@ -151,7 +151,9 @@ func TestAllowN_ExistingKey(t *testing.T) {
 }
 
 func TestStop_Idempotent(t *testing.T) {
-	l := New(Config{})
+	l := New(Config{CleanupInterval: 10 * time.Millisecond})
+	// Let the cleanup ticker fire at least once.
+	time.Sleep(50 * time.Millisecond)
 	l.Stop()
 	l.Stop() // should not panic
 }

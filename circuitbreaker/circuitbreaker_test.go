@@ -419,3 +419,21 @@ func TestFullLifecycle(t *testing.T) {
 		}
 	}
 }
+
+func TestSetState_SameState_Noop(t *testing.T) {
+	cb := New("test")
+	cb.mu.Lock()
+	stateBefore := cb.state
+	countsBefore := cb.counts
+	cb.setState(StateClosed) // already closed → no-op
+	stateAfter := cb.state
+	countsAfter := cb.counts
+	cb.mu.Unlock()
+
+	if stateBefore != stateAfter {
+		t.Errorf("state changed: %v → %v", stateBefore, stateAfter)
+	}
+	if countsBefore != countsAfter {
+		t.Error("counts were reset despite no state change")
+	}
+}

@@ -778,3 +778,18 @@ func TestPatchJSON_NilTarget(t *testing.T) {
 	err := c.PatchJSON(context.Background(), srv.URL, map[string]string{"k": "v"}, nil)
 	testkit.RequireNoError(t, err)
 }
+
+func TestHead(t *testing.T) {
+srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+testkit.AssertEqual(t, r.Method, http.MethodHead)
+w.Header().Set("X-Custom", "value")
+w.WriteHeader(http.StatusOK)
+}))
+defer srv.Close()
+
+c := New()
+resp, err := c.Head(context.Background(), srv.URL)
+testkit.RequireNoError(t, err)
+testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
+testkit.AssertEqual(t, resp.Header.Get("X-Custom"), "value")
+}

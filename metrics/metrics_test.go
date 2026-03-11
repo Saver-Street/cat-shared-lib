@@ -3,7 +3,6 @@ package metrics
 import (
 	"math"
 	"net/http/httptest"
-	"strings"
 	"sync"
 	"testing"
 
@@ -82,15 +81,9 @@ func TestCounter_Write(t *testing.T) {
 	c.Inc()
 
 	output := c.Write()
-	if !strings.Contains(output, "# HELP requests_total Total requests") {
-		t.Error("missing HELP line")
-	}
-	if !strings.Contains(output, "# TYPE requests_total counter") {
-		t.Error("missing TYPE line")
-	}
-	if !strings.Contains(output, "requests_total 2") {
-		t.Errorf("expected value 2 in output: %s", output)
-	}
+	testkit.AssertContains(t, output, "# HELP requests_total Total requests")
+	testkit.AssertContains(t, output, "# TYPE requests_total counter")
+	testkit.AssertContains(t, output, "requests_total 2")
 }
 
 func TestCounter_Write_WithLabels(t *testing.T) {
@@ -98,9 +91,7 @@ func TestCounter_Write_WithLabels(t *testing.T) {
 	c.WithLabels(map[string]string{"method": "GET"}).Add(10)
 
 	output := c.Write()
-	if !strings.Contains(output, `method="GET"`) {
-		t.Errorf("expected label in output: %s", output)
-	}
+	testkit.AssertContains(t, output, `method="GET"`)
 }
 
 func TestGauge_SetAndValue(t *testing.T) {
@@ -147,12 +138,8 @@ func TestGauge_Write(t *testing.T) {
 	g.Set(0.85)
 
 	output := g.Write()
-	if !strings.Contains(output, "# TYPE cpu_usage gauge") {
-		t.Error("missing TYPE line")
-	}
-	if !strings.Contains(output, "cpu_usage 0.85") {
-		t.Errorf("expected value in output: %s", output)
-	}
+	testkit.AssertContains(t, output, "# TYPE cpu_usage gauge")
+	testkit.AssertContains(t, output, "cpu_usage 0.85")
 }
 
 func TestHistogram_Observe(t *testing.T) {
@@ -197,24 +184,12 @@ func TestHistogram_Write(t *testing.T) {
 	h.Observe(0.8)
 
 	output := h.Write()
-	if !strings.Contains(output, "# TYPE latency histogram") {
-		t.Error("missing TYPE line")
-	}
-	if !strings.Contains(output, `latency_bucket{le="0.1"} 1`) {
-		t.Errorf("wrong bucket count for 0.1: %s", output)
-	}
-	if !strings.Contains(output, `latency_bucket{le="0.5"} 2`) {
-		t.Errorf("wrong bucket count for 0.5: %s", output)
-	}
-	if !strings.Contains(output, `latency_bucket{le="1"} 3`) {
-		t.Errorf("wrong bucket count for 1.0: %s", output)
-	}
-	if !strings.Contains(output, `latency_bucket{le="+Inf"} 3`) {
-		t.Errorf("wrong +Inf bucket: %s", output)
-	}
-	if !strings.Contains(output, "latency_count 3") {
-		t.Errorf("wrong count: %s", output)
-	}
+	testkit.AssertContains(t, output, "# TYPE latency histogram")
+	testkit.AssertContains(t, output, `latency_bucket{le="0.1"} 1`)
+	testkit.AssertContains(t, output, `latency_bucket{le="0.5"} 2`)
+	testkit.AssertContains(t, output, `latency_bucket{le="1"} 3`)
+	testkit.AssertContains(t, output, `latency_bucket{le="+Inf"} 3`)
+	testkit.AssertContains(t, output, "latency_count 3")
 }
 
 func TestTimer_ObserveDuration(t *testing.T) {
@@ -240,12 +215,8 @@ func TestRegistry_Expose(t *testing.T) {
 	r.Register(g)
 
 	output := r.Expose()
-	if !strings.Contains(output, "req_total 1") {
-		t.Errorf("missing counter in output: %s", output)
-	}
-	if !strings.Contains(output, "active 5") {
-		t.Errorf("missing gauge in output: %s", output)
-	}
+	testkit.AssertContains(t, output, "req_total 1")
+	testkit.AssertContains(t, output, "active 5")
 }
 
 func TestRegistry_Handler(t *testing.T) {
@@ -261,9 +232,7 @@ func TestRegistry_Handler(t *testing.T) {
 		t.Errorf("expected 200, got %d", rr.Code)
 	}
 	ct := rr.Header().Get("Content-Type")
-	if !strings.Contains(ct, "text/plain") {
-		t.Errorf("expected text/plain content type, got %q", ct)
-	}
+	testkit.AssertContains(t, ct, "text/plain")
 }
 
 func TestConcurrent_Counter(t *testing.T) {

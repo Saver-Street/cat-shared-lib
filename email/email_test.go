@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 // capturedSend records the last call to the send function.
@@ -82,9 +84,7 @@ func TestSend_PlainText(t *testing.T) {
 	if len(cap.to) != 1 || cap.to[0] != "recv@example.com" {
 		t.Errorf("to = %v", cap.to)
 	}
-	if !strings.Contains(string(cap.msg), "Subject:") {
-		t.Error("expected Subject header in message")
-	}
+	testkit.AssertContains(t, string(cap.msg), "Subject:")
 }
 
 func TestSend_HTMLOnly(t *testing.T) {
@@ -98,9 +98,7 @@ func TestSend_HTMLOnly(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	body := string(cap.msg)
-	if !strings.Contains(body, "text/html") {
-		t.Error("expected text/html content-type")
-	}
+	testkit.AssertContains(t, body, "text/html")
 }
 
 func TestSend_Multipart(t *testing.T) {
@@ -115,15 +113,9 @@ func TestSend_Multipart(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	body := string(cap.msg)
-	if !strings.Contains(body, "multipart/alternative") {
-		t.Error("expected multipart/alternative")
-	}
-	if !strings.Contains(body, "text/plain") {
-		t.Error("expected text/plain part")
-	}
-	if !strings.Contains(body, "text/html") {
-		t.Error("expected text/html part")
-	}
+	testkit.AssertContains(t, body, "multipart/alternative")
+	testkit.AssertContains(t, body, "text/plain")
+	testkit.AssertContains(t, body, "text/html")
 }
 
 func TestSend_WithCC(t *testing.T) {
@@ -169,9 +161,7 @@ func TestSend_WithBCC(t *testing.T) {
 		t.Error("expected BCC in envelope recipients")
 	}
 	// BCC should not appear in headers.
-	if strings.Contains(string(cap.msg), "bcc@b.com") {
-		t.Error("BCC address should not appear in message headers")
-	}
+	testkit.AssertNotContains(t, string(cap.msg), "bcc@b.com")
 }
 
 func TestSend_SMTPError(t *testing.T) {
@@ -184,9 +174,7 @@ func TestSend_SMTPError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from SMTP")
 	}
-	if !strings.Contains(err.Error(), "connection refused") {
-		t.Errorf("unexpected error: %v", err)
-	}
+	testkit.AssertErrorContains(t, err, "connection refused")
 }
 
 func TestSend_ExtraHeaders(t *testing.T) {
@@ -200,9 +188,7 @@ func TestSend_ExtraHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(string(cap.msg), "X-Custom: value") {
-		t.Error("expected custom header in message")
-	}
+	testkit.AssertContains(t, string(cap.msg), "X-Custom: value")
 }
 
 func TestSend_Addr(t *testing.T) {
@@ -306,9 +292,7 @@ func TestBuildMessage_SubjectEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(string(raw), "Subject:") {
-		t.Error("expected Subject header")
-	}
+	testkit.AssertContains(t, string(raw), "Subject:")
 }
 
 func TestParseHTMLTemplates_NoFiles(t *testing.T) {
@@ -335,9 +319,7 @@ func TestParseHTMLTemplates_ValidFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("render error: %v", err)
 	}
-	if !strings.Contains(out, "Hello World") {
-		t.Errorf("unexpected output: %q", out)
-	}
+	testkit.AssertContains(t, out, "Hello World")
 }
 
 func TestWriteQP_FailingWriter(t *testing.T) {
@@ -391,9 +373,7 @@ func TestBuildMessage_HTMLOnly_Content(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(string(raw), "quoted-printable") {
-		t.Error("expected quoted-printable encoding")
-	}
+	testkit.AssertContains(t, string(raw), "quoted-printable")
 }
 
 func TestBuildMessage_TextOnly_Content(t *testing.T) {
@@ -405,9 +385,7 @@ func TestBuildMessage_TextOnly_Content(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(string(raw), "text/plain") {
-		t.Error("expected text/plain content-type")
-	}
+	testkit.AssertContains(t, string(raw), "text/plain")
 }
 
 func TestBuildMessage_DateHeader(t *testing.T) {
@@ -417,9 +395,7 @@ func TestBuildMessage_DateHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(string(raw), "Date:") {
-		t.Error("expected Date header")
-	}
+	testkit.AssertContains(t, string(raw), "Date:")
 }
 
 func TestBuildMessage_MIMEVersion(t *testing.T) {
@@ -429,9 +405,7 @@ func TestBuildMessage_MIMEVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(string(raw), "MIME-Version: 1.0") {
-		t.Error("expected MIME-Version header")
-	}
+	testkit.AssertContains(t, string(raw), "MIME-Version: 1.0")
 }
 
 func TestSend_MultipleRecipients(t *testing.T) {
@@ -472,9 +446,7 @@ func TestWritePart_CreatePartError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error when underlying writer fails")
 	}
-	if !strings.Contains(err.Error(), "create part") {
-		t.Errorf("error = %v, want to mention 'create part'", err)
-	}
+	testkit.AssertErrorContains(t, err, "create part")
 }
 
 func TestSend_WithAllRecipientTypes(t *testing.T) {

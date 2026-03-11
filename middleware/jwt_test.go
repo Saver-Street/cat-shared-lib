@@ -5,39 +5,33 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestGetUserID_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if id := GetUserID(r); id != "" {
-		t.Errorf("empty context = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "")
 }
 
 func TestGetUserID_Set(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(r.Context(), UserIDKey, "user-abc")
 	r = r.WithContext(ctx)
-	if id := GetUserID(r); id != "user-abc" {
-		t.Errorf("GetUserID = %q, want user-abc", id)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "user-abc")
 }
 
 func TestGetUserRole_Set(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(r.Context(), UserRoleKey, "admin")
 	r = r.WithContext(ctx)
-	if role := GetUserRole(r); role != "admin" {
-		t.Errorf("GetUserRole = %q, want admin", role)
-	}
+	testkit.AssertEqual(t, GetUserRole(r), "admin")
 }
 
 func TestSetUserID_RoundTrip(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetUserID(r.Context(), "u-999"))
-	if id := GetUserID(r); id != "u-999" {
-		t.Errorf("round trip SetUserID/GetUserID = %q, want u-999", id)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "u-999")
 }
 
 func TestRequireAuth_Missing(t *testing.T) {
@@ -48,9 +42,7 @@ func TestRequireAuth_Missing(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest(http.MethodGet, "/protected", nil)
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want 401", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestRequireAuth_Present(t *testing.T) {
@@ -62,9 +54,7 @@ func TestRequireAuth_Present(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/protected", nil)
 	r = r.WithContext(SetUserID(r.Context(), "user-1"))
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusOK)
 }
 
 func TestRequireAdmin_NotAdmin(t *testing.T) {
@@ -78,9 +68,7 @@ func TestRequireAdmin_NotAdmin(t *testing.T) {
 	ctx = SetUserRole(ctx, "user")
 	r = r.WithContext(ctx)
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want 403", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusForbidden)
 }
 
 func TestRequireAdmin_IsAdmin(t *testing.T) {
@@ -94,52 +82,40 @@ func TestRequireAdmin_IsAdmin(t *testing.T) {
 	ctx = SetUserRole(ctx, "admin")
 	r = r.WithContext(ctx)
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusOK)
 }
 
 func TestGetUserID_WrongType(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(r.Context(), UserIDKey, 12345)
 	r = r.WithContext(ctx)
-	if id := GetUserID(r); id != "" {
-		t.Errorf("non-string context value: GetUserID = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "")
 }
 
 func TestGetUserRole_WrongType(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(r.Context(), UserRoleKey, 42)
 	r = r.WithContext(ctx)
-	if role := GetUserRole(r); role != "" {
-		t.Errorf("non-string context value: GetUserRole = %q, want empty", role)
-	}
+	testkit.AssertEqual(t, GetUserRole(r), "")
 }
 
 func TestGetUserEmail_WrongType(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(r.Context(), UserEmailKey, true)
 	r = r.WithContext(ctx)
-	if email := GetUserEmail(r); email != "" {
-		t.Errorf("non-string context value: GetUserEmail = %q, want empty", email)
-	}
+	testkit.AssertEqual(t, GetUserEmail(r), "")
 }
 
 func TestGetExtCandidateID_WrongType(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(r.Context(), ExtCandidateIDKey, []byte("bytes"))
 	r = r.WithContext(ctx)
-	if id := GetExtCandidateID(r); id != "" {
-		t.Errorf("non-string context value: GetExtCandidateID = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "")
 }
 
 func TestGetUserRole_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if role := GetUserRole(r); role != "" {
-		t.Errorf("empty context role = %q, want empty", role)
-	}
+	testkit.AssertEqual(t, GetUserRole(r), "")
 }
 
 func TestSetUserID_Overwrite(t *testing.T) {
@@ -147,25 +123,19 @@ func TestSetUserID_Overwrite(t *testing.T) {
 	ctx := SetUserID(r.Context(), "first")
 	ctx = SetUserID(ctx, "second")
 	r = r.WithContext(ctx)
-	if id := GetUserID(r); id != "second" {
-		t.Errorf("overwritten user ID = %q, want second", id)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "second")
 }
 
 func TestSetExtCandidateID_RoundTrip(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetExtCandidateID(r.Context(), "cand-42"))
-	if id := GetExtCandidateID(r); id != "cand-42" {
-		t.Errorf("round trip SetExtCandidateID/GetExtCandidateID = %q, want cand-42", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "cand-42")
 }
 
 func TestSetExtCandidateID_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetExtCandidateID(r.Context(), ""))
-	if id := GetExtCandidateID(r); id != "" {
-		t.Errorf("empty SetExtCandidateID = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "")
 }
 
 func TestSetExtCandidateID_Overwrite(t *testing.T) {
@@ -173,9 +143,7 @@ func TestSetExtCandidateID_Overwrite(t *testing.T) {
 	ctx := SetExtCandidateID(r.Context(), "first")
 	ctx = SetExtCandidateID(ctx, "second")
 	r = r.WithContext(ctx)
-	if id := GetExtCandidateID(r); id != "second" {
-		t.Errorf("overwritten ext candidate ID = %q, want second", id)
-	}
+	testkit.AssertEqual(t, GetExtCandidateID(r), "second")
 }
 
 func TestContextChain_MultipleSetters(t *testing.T) {
@@ -186,18 +154,10 @@ func TestContextChain_MultipleSetters(t *testing.T) {
 	ctx = SetExtCandidateID(ctx, "cand-chain")
 	r = r.WithContext(ctx)
 
-	if id := GetUserID(r); id != "uid-1" {
-		t.Errorf("chained user ID = %q, want uid-1", id)
-	}
-	if role := GetUserRole(r); role != "admin" {
-		t.Errorf("chained role = %q, want admin", role)
-	}
-	if email := GetUserEmail(r); email != "admin@test.com" {
-		t.Errorf("chained email = %q, want admin@test.com", email)
-	}
-	if cid := GetExtCandidateID(r); cid != "cand-chain" {
-		t.Errorf("chained ext candidate ID = %q, want cand-chain", cid)
-	}
+	testkit.AssertEqual(t, GetUserID(r), "uid-1")
+	testkit.AssertEqual(t, GetUserRole(r), "admin")
+	testkit.AssertEqual(t, GetUserEmail(r), "admin@test.com")
+	testkit.AssertEqual(t, GetExtCandidateID(r), "cand-chain")
 }
 
 func TestRequireAuth_EmptyStringUserID(t *testing.T) {
@@ -209,9 +169,7 @@ func TestRequireAuth_EmptyStringUserID(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetUserID(r.Context(), ""))
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("empty user ID: status = %d, want 401", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusUnauthorized)
 }
 
 func BenchmarkGetUserID(b *testing.B) {
@@ -350,31 +308,23 @@ func BenchmarkRequireRole(b *testing.B) {
 func TestSetExtUserID_RoundTrip(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetExtUserID(r.Context(), "ext-user-99"))
-	if id := GetExtUserID(r); id != "ext-user-99" {
-		t.Errorf("SetExtUserID/GetExtUserID = %q, want ext-user-99", id)
-	}
+	testkit.AssertEqual(t, GetExtUserID(r), "ext-user-99")
 }
 
 func TestGetExtUserID_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if id := GetExtUserID(r); id != "" {
-		t.Errorf("GetExtUserID without value = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetExtUserID(r), "")
 }
 
 func TestSetExtTokenID_RoundTrip(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetExtTokenID(r.Context(), "tok-abc"))
-	if id := GetExtTokenID(r); id != "tok-abc" {
-		t.Errorf("SetExtTokenID/GetExtTokenID = %q, want tok-abc", id)
-	}
+	testkit.AssertEqual(t, GetExtTokenID(r), "tok-abc")
 }
 
 func TestGetExtTokenID_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if id := GetExtTokenID(r); id != "" {
-		t.Errorf("GetExtTokenID without value = %q, want empty", id)
-	}
+	testkit.AssertEqual(t, GetExtTokenID(r), "")
 }
 
 func TestRequireRole_AllowsMatchingRole(t *testing.T) {
@@ -386,9 +336,7 @@ func TestRequireRole_AllowsMatchingRole(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetUserID(SetUserRole(r.Context(), "moderator"), "user-1"))
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusOK {
-		t.Errorf("matching role: status = %d, want 200", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusOK)
 }
 
 func TestRequireRole_RejectsWrongRole(t *testing.T) {
@@ -400,9 +348,7 @@ func TestRequireRole_RejectsWrongRole(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(SetUserID(SetUserRole(r.Context(), "user"), "user-1"))
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusForbidden {
-		t.Errorf("wrong role: status = %d, want 403", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusForbidden)
 }
 
 func TestRequireRole_RejectsUnauthenticated(t *testing.T) {
@@ -413,41 +359,31 @@ func TestRequireRole_RejectsUnauthenticated(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("unauthenticated: status = %d, want 401", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestGetSetSubscriptionTier(t *testing.T) {
 	ctx := SetSubscriptionTier(context.Background(), "pro")
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(ctx)
-	if got := GetSubscriptionTier(r); got != "pro" {
-		t.Errorf("GetSubscriptionTier = %q, want pro", got)
-	}
+	testkit.AssertEqual(t, GetSubscriptionTier(r), "pro")
 }
 
 func TestGetSubscriptionTier_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if got := GetSubscriptionTier(r); got != "" {
-		t.Errorf("GetSubscriptionTier unset = %q, want empty", got)
-	}
+	testkit.AssertEqual(t, GetSubscriptionTier(r), "")
 }
 
 func TestGetSetSubscriptionStatus(t *testing.T) {
 	ctx := SetSubscriptionStatus(context.Background(), "active")
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(ctx)
-	if got := GetSubscriptionStatus(r); got != "active" {
-		t.Errorf("GetSubscriptionStatus = %q, want active", got)
-	}
+	testkit.AssertEqual(t, GetSubscriptionStatus(r), "active")
 }
 
 func TestGetSubscriptionStatus_Empty(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
-	if got := GetSubscriptionStatus(r); got != "" {
-		t.Errorf("GetSubscriptionStatus unset = %q, want empty", got)
-	}
+	testkit.AssertEqual(t, GetSubscriptionStatus(r), "")
 }
 
 func TestSubscriptionTier_AllValues(t *testing.T) {
@@ -456,9 +392,7 @@ func TestSubscriptionTier_AllValues(t *testing.T) {
 		ctx := SetSubscriptionTier(context.Background(), tier)
 		r, _ := http.NewRequest(http.MethodGet, "/", nil)
 		r = r.WithContext(ctx)
-		if got := GetSubscriptionTier(r); got != tier {
-			t.Errorf("tier %q: got %q", tier, got)
-		}
+		testkit.AssertEqual(t, GetSubscriptionTier(r), tier)
 	}
 }
 
@@ -473,9 +407,7 @@ func TestRequireSubscriptionTier_AllowsSufficientTier(t *testing.T) {
 		r = r.WithContext(ctx)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, r)
-		if w.Code != http.StatusOK {
-			t.Errorf("tier %q: expected 200, got %d", tier, w.Code)
-		}
+		testkit.AssertStatus(t, w, http.StatusOK)
 	}
 }
 
@@ -490,9 +422,7 @@ func TestRequireSubscriptionTier_RejectsInsufficientTier(t *testing.T) {
 		r = r.WithContext(ctx)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, r)
-		if w.Code != http.StatusForbidden {
-			t.Errorf("tier %q: expected 403, got %d", tier, w.Code)
-		}
+		testkit.AssertStatus(t, w, http.StatusForbidden)
 	}
 }
 
@@ -503,9 +433,7 @@ func TestRequireSubscriptionTier_RejectsUnauthenticated(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestRequireSubscriptionTier_RejectsUnknownTier(t *testing.T) {
@@ -518,7 +446,5 @@ func TestRequireSubscriptionTier_RejectsUnknownTier(t *testing.T) {
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
-	if w.Code != http.StatusForbidden {
-		t.Errorf("expected 403 for unknown tier, got %d", w.Code)
-	}
+	testkit.AssertStatus(t, w, http.StatusForbidden)
 }

@@ -53,18 +53,18 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 
 | Package | Description | Coverage |
 |---|---|---|
-| `middleware` | JWT auth (HS256), request ID, logging, recovery, rate limiting, brute-force | 99.7% |
-| `config` | Env var parsing with defaults, validation, required checks | 100% |
+| `middleware` | JWT auth (HS256), request ID, logging, recovery, rate limiting, ETag, caching | 99.7% |
+| `config` | Env var parsing with defaults, validation, byte sizes, URLs, ports | 100% |
 | `database` | PostgreSQL connection pool, transaction helpers | 96.6% |
-| `validation` | Email, UUID, phone, URL validators with clear error messages | 100% |
+| `validation` | Email, UUID, phone, URL, slug, alphanumeric, hex, numeric, range validators | 100% |
 | `cache` | Generic in-memory LRU cache with per-entry TTL | 98% |
 | `retry` | Exponential backoff with jitter and context cancellation | 100% |
-| `crypto` | bcrypt password hashing, secure token generation, HMAC-SHA256 | 100% |
+| `crypto` | bcrypt password hashing, secure token generation, HMAC-SHA256, SHA-256 | 100% |
 | `email` | SMTP mailer with HTML/text template support | 92.6% |
 | `tracing` | OpenTelemetry distributed tracing setup and helpers | 98.5% |
 | `migration` | Database migration runner with rollback support | 100% |
-| `response` | JSON response helpers, pagination headers | 100% |
-| `request` | HTTP request parsing, URL param extraction, pagination | 100% |
+| `response` | JSON response helpers, pagination, SSE, file downloads, streaming | 100% |
+| `request` | HTTP request parsing, URL param extraction, JSON body decoding | 100% |
 | `health` | Standardized health check handlers with concurrent checkers | 99.2% |
 | `httpclient` | Resilient HTTP client with retries and circuit breaker | 100% |
 | `apperror` | Standardized error types with HTTP status codes | 100% |
@@ -78,9 +78,9 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 | `identity` | Candidate resolution + context getters | 100% |
 | `metrics` | Prometheus metrics helpers | 100% |
 | `openapi` | OpenAPI/Swagger spec serving | 100% |
-| `sanitize` | Filename sanitization, NilIfEmpty, IsDuplicateKey, Deref | 100% |
+| `sanitize` | Filename sanitization, HTML escaping, whitespace normalization, Deref | 100% |
 | `scan` | Generic database row scanning (Rows, Row, First) | 100% |
-| `security` | Suspicious input detection, PII redaction | 100% |
+| `security` | Suspicious input detection, PII redaction, URL credential scrubbing | 100% |
 | `server` | HTTP server with graceful shutdown (SIGINT/SIGTERM) | 100% |
 | `shutdown` | OS signal-based graceful shutdown coordinator | 100% |
 | `testkit` | Mock server, call recorder, and other test helpers | 100% |
@@ -141,11 +141,17 @@ handler := middleware.Chain(
     middleware.Recovery,
     middleware.RequestID,
     middleware.SecureHeaders,       // X-Content-Type-Options, X-Frame-Options
+    middleware.HSTS(365*24*time.Hour, true), // Strict-Transport-Security
     middleware.NoCache,             // Cache-Control, Pragma, Expires
+    middleware.ETag,                // Automatic ETag + 304 Not Modified
     middleware.MaxBody(1<<20),      // 1 MiB request body limit
     middleware.Timeout(30*time.Second),
     middleware.Logging(logger),
+    middleware.AllowMethods("GET", "POST", "PUT", "DELETE"),
 )(apiHandler)
+
+// --- Per-route caching ---
+mux.Handle("/static/", middleware.CacheControl(time.Hour, true)(staticHandler))
 ```
 
 ---
@@ -169,8 +175,15 @@ debug   := config.Bool("DEBUG", false)
 timeout := config.Duration("TIMEOUT", 30*time.Second)
 origins := config.StringSlice("CORS_ORIGINS", []string{"http://localhost:3000"})
 
+// Additional typed helpers
+apiURL, err  := config.URL("API_URL", "https://api.example.com")
+listenAddr, err := config.Addr("LISTEN_ADDR", ":8080")
+maxUpload, err := config.Bytes("MAX_UPLOAD", 10*1024*1024) // supports "64MB"
+tcpPort, err := config.Port("TCP_PORT", 3000)
+
 // Panic-free required string (returns error instead)
 secret, err := config.StringRequired("JWT_SECRET")
+allowed, err := config.StringSliceRequired("ALLOWED_ORIGINS")
 ```
 
 ---
@@ -228,7 +241,14 @@ errs := validation.Collect(
     validation.URL("website",       req.Website),
     validation.MinLength("password",req.Password, 8),
     validation.MaxLength("bio",     req.Bio, 500),
+    validation.ExactLength("pin",   req.Pin, 6),
     validation.OneOf("role",        req.Role, []string{"admin","user","guest"}),
+    validation.Slug("handle",       req.Handle),
+    validation.NoWhitespace("apiKey", req.APIKey),
+    validation.Alphanumeric("code", req.Code),
+    validation.Numeric("zip",       req.Zip),
+    validation.Hex("color",         req.Color),
+    validation.Between("age",       req.Age, 18, 120),
 )
 if len(errs) > 0 {
     // Each error is a *validation.ValidationError with .Field and .Message
@@ -682,6 +702,11 @@ testkit.AssertError(t, err)
 testkit.AssertErrorContains(t, err, "not found")
 testkit.AssertContains(t, body, "success")
 testkit.AssertStatus(t, rr, http.StatusOK)
+testkit.AssertGreater(t, elapsed, 0)
+testkit.AssertLess(t, latency, maxAllowed)
+testkit.AssertHasPrefix(t, path, "/api/")
+testkit.AssertHasSuffix(t, file, ".json")
+testkit.AssertMapHasKey(t, headers, "Content-Type")
 
 // Require* helpers use t.Fatalf (fatal — stops test on failure):
 testkit.RequireNoError(t, err)   // guard: stop test if err is non-nil
@@ -707,15 +732,21 @@ security.RedactPII(data)                   // mask PII fields in maps
 security.SanitizeHeader(s)                 // strip CRLF from headers
 security.IsRelativeURL("/dashboard")       // safe redirect check
 security.MaskEmail("alice@example.com")    // → "a****@example.com"
+security.RedactURL("https://u:p@host/db") // → "https://REDACTED@host/db"
+security.SanitizeFilename("../../etc/passwd") // → "passwd"
 ```
 
 **`sanitize`** — Input sanitization and string processing.
 
 ```go
 sanitize.StripHTML("<b>Hello</b>")         // → "Hello"
+sanitize.EscapeHTML("<script>")            // → "&lt;script&gt;"
 sanitize.Mask("sk-abc123def456", 6)        // → "*********def456"
 sanitize.Slugify("My Blog Post!")          // → "my-blog-post"
+sanitize.Truncate("long string", 8)       // → "long st…"
 sanitize.TrimStrings([]string{" a ", ""})  // → ["a"]
+sanitize.NormalizeWhitespace("a  b\tc")   // → "a b c"
+sanitize.RemoveNonPrintable("a\x00b")     // → "ab"
 sanitize.Deref(ptr, "default")            // generic pointer dereference
 ```
 

@@ -74,12 +74,8 @@ func TestSend_PlainText(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if cap.from != "no-reply@example.com" {
-		t.Errorf("from = %q", cap.from)
-	}
-	if len(cap.to) != 1 || cap.to[0] != "recv@example.com" {
-		t.Errorf("to = %v", cap.to)
-	}
+	testkit.AssertEqual(t, cap.from, "no-reply@example.com")
+	testkit.AssertEqual(t, cap.to, []string{"recv@example.com"})
 	testkit.AssertContains(t, string(cap.msg), "Subject:")
 }
 
@@ -131,9 +127,7 @@ func TestSend_WithCC(t *testing.T) {
 			found = true
 		}
 	}
-	if !found {
-		t.Error("expected CC in recipients list")
-	}
+	testkit.AssertTrue(t, found)
 }
 
 func TestSend_WithBCC(t *testing.T) {
@@ -153,9 +147,7 @@ func TestSend_WithBCC(t *testing.T) {
 			found = true
 		}
 	}
-	if !found {
-		t.Error("expected BCC in envelope recipients")
-	}
+	testkit.AssertTrue(t, found)
 	// BCC should not appear in headers.
 	testkit.AssertNotContains(t, string(cap.msg), "bcc@b.com")
 }
@@ -167,9 +159,7 @@ func TestSend_SMTPError(t *testing.T) {
 		Subject: "Hi",
 		Text:    "body",
 	})
-	if err == nil {
-		t.Fatal("expected error from SMTP")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertErrorContains(t, err, "connection refused")
 }
 
@@ -192,16 +182,12 @@ func TestSend_Addr(t *testing.T) {
 	m.Send(context.Background(), Message{
 		To: []string{"a@b.com"}, Subject: "s", Text: "t",
 	})
-	if cap.addr != "smtp.example.com:587" {
-		t.Errorf("unexpected addr %q", cap.addr)
-	}
+	testkit.AssertEqual(t, cap.addr, "smtp.example.com:587")
 }
 
 func TestConfig_DefaultTimeout(t *testing.T) {
 	m := NewMailer(Config{Host: "h", Port: 25})
-	if m.cfg.Timeout == 0 {
-		t.Error("expected non-zero default timeout")
-	}
+	testkit.AssertTrue(t, m.cfg.Timeout > 0)
 }
 
 // ---- Template helpers ----
@@ -211,16 +197,12 @@ func TestParseHTMLString(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tmpl == nil {
-		t.Fatal("expected non-nil template")
-	}
+	testkit.AssertNotNil(t, tmpl)
 }
 
 func TestParseHTMLString_Invalid(t *testing.T) {
 	_, err := ParseHTMLString("bad", `{{.Unclosed`)
-	if err == nil {
-		t.Fatal("expected error for invalid template")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRenderHTML(t *testing.T) {
@@ -229,17 +211,13 @@ func TestRenderHTML(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out != "<h1>Hello World</h1>" {
-		t.Errorf("unexpected output: %q", out)
-	}
+	testkit.AssertEqual(t, out, "<h1>Hello World</h1>")
 }
 
 func TestRenderHTML_MissingTemplate(t *testing.T) {
 	tmpl, _ := ParseHTMLString("a", `hello`)
 	_, err := RenderHTML(tmpl, "nonexistent", nil)
-	if err == nil {
-		t.Fatal("expected error for missing template name")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestParseTextString(t *testing.T) {
@@ -247,16 +225,12 @@ func TestParseTextString(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tmpl == nil {
-		t.Fatal("expected non-nil template")
-	}
+	testkit.AssertNotNil(t, tmpl)
 }
 
 func TestParseTextString_Invalid(t *testing.T) {
 	_, err := ParseTextString("bad", `{{.Unclosed`)
-	if err == nil {
-		t.Fatal("expected error for invalid template")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestRenderText(t *testing.T) {
@@ -265,17 +239,13 @@ func TestRenderText(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out != "Hello Jordan" {
-		t.Errorf("unexpected output: %q", out)
-	}
+	testkit.AssertEqual(t, out, "Hello Jordan")
 }
 
 func TestRenderText_MissingTemplate(t *testing.T) {
 	tmpl, _ := ParseTextString("a", `hello`)
 	_, err := RenderText(tmpl, "nonexistent", nil)
-	if err == nil {
-		t.Fatal("expected error for missing template name")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestBuildMessage_SubjectEncoding(t *testing.T) {
@@ -293,9 +263,7 @@ func TestBuildMessage_SubjectEncoding(t *testing.T) {
 
 func TestParseHTMLTemplates_NoFiles(t *testing.T) {
 	_, err := ParseHTMLTemplates("/nonexistent/file.html")
-	if err == nil {
-		t.Fatal("expected error for nonexistent file")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestParseHTMLTemplates_ValidFile(t *testing.T) {
@@ -320,17 +288,13 @@ func TestParseHTMLTemplates_ValidFile(t *testing.T) {
 
 func TestWriteQP_FailingWriter(t *testing.T) {
 	err := writeQP(&failWriter{}, "hello")
-	if err == nil {
-		t.Fatal("expected error from failing writer")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestEncodeBase64(t *testing.T) {
 	data := []byte("hello world")
 	got := encodeBase64(data)
-	if got == "" {
-		t.Fatal("expected non-empty base64 output")
-	}
+	testkit.AssertNotEqual(t, got, "")
 	// Verify it's valid base64 by checking for expected chars.
 	for _, c := range got {
 		isValid := (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
@@ -342,9 +306,7 @@ func TestEncodeBase64(t *testing.T) {
 }
 
 func TestEncodeBase64_Empty(t *testing.T) {
-	if encodeBase64([]byte{}) != "" {
-		t.Error("expected empty string for empty input")
-	}
+	testkit.AssertEqual(t, encodeBase64([]byte{}), "")
 }
 
 func TestSend_NilAuth(t *testing.T) {
@@ -414,9 +376,7 @@ func TestSend_MultipleRecipients(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(cap.to) != 2 {
-		t.Errorf("expected 2 recipients, got %d", len(cap.to))
-	}
+	testkit.AssertLen(t, cap.to, 2)
 }
 
 // failWriter always returns an error from Write.
@@ -430,18 +390,14 @@ func TestWriteQP_LongStringFailingWriter(t *testing.T) {
 	// A string longer than 76 chars forces quotedprintable to flush during Write.
 	longStr := strings.Repeat("a", 100)
 	err := writeQP(&failWriter{}, longStr)
-	if err == nil {
-		t.Fatal("expected error from failing writer on long string")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestWritePart_CreatePartError(t *testing.T) {
 	// A multipart.Writer on top of a failWriter will fail when creating a part.
 	mw := multipart.NewWriter(&failWriter{})
 	err := writePart(mw, "text/plain; charset=utf-8", "body text")
-	if err == nil {
-		t.Fatal("expected error when underlying writer fails")
-	}
+	testkit.AssertError(t, err)
 	testkit.AssertErrorContains(t, err, "create part")
 }
 
@@ -463,13 +419,7 @@ func TestSend_WithAllRecipientTypes(t *testing.T) {
 	for _, r := range cap.to {
 		recipientSet[r] = true
 	}
-	if !recipientSet["to@example.com"] {
-		t.Error("expected To address in recipients")
-	}
-	if !recipientSet["cc@example.com"] {
-		t.Error("expected CC address in recipients")
-	}
-	if !recipientSet["bcc@example.com"] {
-		t.Error("expected BCC address in recipients")
-	}
+	testkit.AssertTrue(t, recipientSet["to@example.com"])
+	testkit.AssertTrue(t, recipientSet["cc@example.com"])
+	testkit.AssertTrue(t, recipientSet["bcc@example.com"])
 }

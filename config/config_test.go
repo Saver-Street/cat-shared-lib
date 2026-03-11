@@ -349,3 +349,44 @@ _, err := Port("CONFIG_TEST_PORT_INV", 3000)
 testkit.AssertError(t, err)
 testkit.AssertContains(t, err.Error(), "invalid port number")
 }
+
+func TestAddr_Default(t *testing.T) {
+v, err := Addr("CFG_TEST_ADDR_UNSET", ":8080")
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, ":8080")
+}
+
+func TestAddr_Valid(t *testing.T) {
+t.Setenv("CFG_TEST_ADDR", "localhost:3000")
+v, err := Addr("CFG_TEST_ADDR", ":8080")
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, "localhost:3000")
+}
+
+func TestAddr_ValidIP(t *testing.T) {
+t.Setenv("CFG_TEST_ADDR_IP", "0.0.0.0:443")
+v, err := Addr("CFG_TEST_ADDR_IP", ":8080")
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, "0.0.0.0:443")
+}
+
+func TestAddr_EmptyHost(t *testing.T) {
+t.Setenv("CFG_TEST_ADDR_EH", ":9090")
+v, err := Addr("CFG_TEST_ADDR_EH", ":8080")
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, ":9090")
+}
+
+func TestAddr_InvalidNoPort(t *testing.T) {
+t.Setenv("CFG_TEST_ADDR_NP", "localhost")
+_, err := Addr("CFG_TEST_ADDR_NP", ":8080")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "invalid address")
+}
+
+func TestAddr_InvalidPort(t *testing.T) {
+t.Setenv("CFG_TEST_ADDR_BAD", "localhost:99999")
+_, err := Addr("CFG_TEST_ADDR_BAD", ":8080")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "port must be between")
+}

@@ -91,6 +91,7 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 | `stringutil` | String utilities: case conversion, padding, word wrap, blank check | 100% |
 | `pubsub` | Typed, in-process publish/subscribe event bus | 100% |
 | `worker` | Bounded, context-aware worker pool for concurrent job processing | 100% |
+| `schedule` | Lightweight in-process periodic task scheduler with named tasks | 100% |
 
 ---
 

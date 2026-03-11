@@ -55,17 +55,13 @@ func defaultCfg() Config {
 func TestSend_NoRecipients(t *testing.T) {
 	m, _ := newMailerWithCapture(defaultCfg(), nil)
 	err := m.Send(context.Background(), Message{Subject: "Hi", Text: "body"})
-	if !errors.Is(err, ErrNoRecipients) {
-		t.Fatalf("expected ErrNoRecipients, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrNoRecipients)
 }
 
 func TestSend_EmptyBody(t *testing.T) {
 	m, _ := newMailerWithCapture(defaultCfg(), nil)
 	err := m.Send(context.Background(), Message{To: []string{"a@b.com"}, Subject: "Hi"})
-	if !errors.Is(err, ErrEmptyBody) {
-		t.Fatalf("expected ErrEmptyBody, got %v", err)
-	}
+	testkit.AssertErrorIs(t, err, ErrEmptyBody)
 }
 
 func TestSend_PlainText(t *testing.T) {

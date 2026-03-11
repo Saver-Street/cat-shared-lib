@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -83,9 +82,7 @@ func TestRegister_Validation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := r.Register(tt.inst)
-			if !errors.Is(err, tt.want) {
-				t.Errorf("Register() = %v, want %v", err, tt.want)
-			}
+			testkit.AssertErrorIs(t, err, tt.want)
 		})
 	}
 }
@@ -134,20 +131,12 @@ func TestDeregister_LastInstance(t *testing.T) {
 func TestDeregister_Errors(t *testing.T) {
 	r := NewRegistry()
 
-	if err := r.Deregister("", "1"); !errors.Is(err, ErrEmptyService) {
-		t.Errorf("Deregister('', '1') = %v, want %v", err, ErrEmptyService)
-	}
-	if err := r.Deregister("svc", ""); !errors.Is(err, ErrEmptyInstanceID) {
-		t.Errorf("Deregister('svc', '') = %v, want %v", err, ErrEmptyInstanceID)
-	}
-	if err := r.Deregister("nonexistent", "1"); !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("Deregister(nonexistent) = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, r.Deregister("", "1"), ErrEmptyService)
+	testkit.AssertErrorIs(t, r.Deregister("svc", ""), ErrEmptyInstanceID)
+	testkit.AssertErrorIs(t, r.Deregister("nonexistent", "1"), ErrServiceNotFound)
 
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a"})
-	if err := r.Deregister("svc", "nonexistent"); !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("Deregister(bad id) = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, r.Deregister("svc", "nonexistent"), ErrServiceNotFound)
 }
 
 func TestResolve_RoundRobin(t *testing.T) {
@@ -197,25 +186,19 @@ func TestResolve_AllUnhealthy(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a", Status: StatusUnhealthy})
 
 	_, err := r.Resolve("svc")
-	if !errors.Is(err, ErrNoHealthyInstances) {
-		t.Errorf("Resolve() = %v, want %v", err, ErrNoHealthyInstances)
-	}
+	testkit.AssertErrorIs(t, err, ErrNoHealthyInstances)
 }
 
 func TestResolve_ServiceNotFound(t *testing.T) {
 	r := NewRegistry()
 	_, err := r.Resolve("nonexistent")
-	if !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("Resolve() = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, err, ErrServiceNotFound)
 }
 
 func TestResolve_EmptyService(t *testing.T) {
 	r := NewRegistry()
 	_, err := r.Resolve("")
-	if !errors.Is(err, ErrEmptyService) {
-		t.Errorf("Resolve('') = %v, want %v", err, ErrEmptyService)
-	}
+	testkit.AssertErrorIs(t, err, ErrEmptyService)
 }
 
 func TestResolveAll(t *testing.T) {
@@ -248,9 +231,7 @@ func TestResolveHealthy_NoneHealthy(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a", Status: StatusDraining})
 
 	_, err := r.ResolveHealthy("svc")
-	if !errors.Is(err, ErrNoHealthyInstances) {
-		t.Errorf("ResolveHealthy() = %v, want %v", err, ErrNoHealthyInstances)
-	}
+	testkit.AssertErrorIs(t, err, ErrNoHealthyInstances)
 }
 
 func TestSetStatus(t *testing.T) {
@@ -291,20 +272,12 @@ func TestSetStatus_Callback(t *testing.T) {
 func TestSetStatus_Errors(t *testing.T) {
 	r := NewRegistry()
 
-	if err := r.SetStatus("", "1", StatusHealthy); !errors.Is(err, ErrEmptyService) {
-		t.Errorf("SetStatus('', ...) = %v, want %v", err, ErrEmptyService)
-	}
-	if err := r.SetStatus("svc", "", StatusHealthy); !errors.Is(err, ErrEmptyInstanceID) {
-		t.Errorf("SetStatus(..., '', ...) = %v, want %v", err, ErrEmptyInstanceID)
-	}
-	if err := r.SetStatus("nonexistent", "1", StatusHealthy); !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("SetStatus(nonexistent) = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, r.SetStatus("", "1", StatusHealthy), ErrEmptyService)
+	testkit.AssertErrorIs(t, r.SetStatus("svc", "", StatusHealthy), ErrEmptyInstanceID)
+	testkit.AssertErrorIs(t, r.SetStatus("nonexistent", "1", StatusHealthy), ErrServiceNotFound)
 
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a"})
-	if err := r.SetStatus("svc", "bad-id", StatusHealthy); !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("SetStatus(bad id) = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, r.SetStatus("svc", "bad-id", StatusHealthy), ErrServiceNotFound)
 }
 
 func TestHeartbeat(t *testing.T) {
@@ -328,15 +301,9 @@ func TestHeartbeat(t *testing.T) {
 
 func TestHeartbeat_Errors(t *testing.T) {
 	r := NewRegistry()
-	if err := r.Heartbeat("", "1"); !errors.Is(err, ErrEmptyService) {
-		t.Errorf("Heartbeat('') = %v, want %v", err, ErrEmptyService)
-	}
-	if err := r.Heartbeat("svc", ""); !errors.Is(err, ErrEmptyInstanceID) {
-		t.Errorf("Heartbeat('svc', '') = %v, want %v", err, ErrEmptyInstanceID)
-	}
-	if err := r.Heartbeat("svc", "1"); !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("Heartbeat(nonexistent) = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, r.Heartbeat("", "1"), ErrEmptyService)
+	testkit.AssertErrorIs(t, r.Heartbeat("svc", ""), ErrEmptyInstanceID)
+	testkit.AssertErrorIs(t, r.Heartbeat("svc", "1"), ErrServiceNotFound)
 }
 
 func TestMarkStale(t *testing.T) {
@@ -355,9 +322,7 @@ func TestMarkStale(t *testing.T) {
 	}
 
 	_, err := r.Resolve("svc")
-	if !errors.Is(err, ErrNoHealthyInstances) {
-		t.Errorf("Resolve() = %v, want %v after MarkStale", err, ErrNoHealthyInstances)
-	}
+	testkit.AssertErrorIs(t, err, ErrNoHealthyInstances)
 }
 
 func TestMarkStale_DoesNotAffectAlreadyUnhealthy(t *testing.T) {
@@ -467,29 +432,21 @@ func TestRegister_StatusChangeCallback(t *testing.T) {
 func TestResolveAll_EmptyService(t *testing.T) {
 	r := NewRegistry()
 	_, err := r.ResolveAll("")
-	if !errors.Is(err, ErrEmptyService) {
-		t.Errorf("ResolveAll('') = %v, want %v", err, ErrEmptyService)
-	}
+	testkit.AssertErrorIs(t, err, ErrEmptyService)
 }
 
 func TestResolveAll_ServiceNotFound(t *testing.T) {
 	r := NewRegistry()
 	_, err := r.ResolveAll("nonexistent")
-	if !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("ResolveAll(nonexistent) = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, err, ErrServiceNotFound)
 }
 
 func TestResolveHealthy_ErrorPropagation(t *testing.T) {
 	r := NewRegistry()
 	_, err := r.ResolveHealthy("")
-	if !errors.Is(err, ErrEmptyService) {
-		t.Errorf("ResolveHealthy('') = %v, want %v", err, ErrEmptyService)
-	}
+	testkit.AssertErrorIs(t, err, ErrEmptyService)
 	_, err = r.ResolveHealthy("nonexistent")
-	if !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("ResolveHealthy(nonexistent) = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, err, ErrServiceNotFound)
 }
 
 func TestHeartbeat_InstanceNotFound(t *testing.T) {
@@ -497,9 +454,7 @@ func TestHeartbeat_InstanceNotFound(t *testing.T) {
 	_ = r.Register(Instance{Service: "svc", ID: "1", Addr: "http://a"})
 	// Service exists but instance ID does not.
 	err := r.Heartbeat("svc", "nonexistent")
-	if !errors.Is(err, ErrServiceNotFound) {
-		t.Errorf("Heartbeat(svc, nonexistent) = %v, want %v", err, ErrServiceNotFound)
-	}
+	testkit.AssertErrorIs(t, err, ErrServiceNotFound)
 }
 
 func TestMarkStale_WithCallback(t *testing.T) {

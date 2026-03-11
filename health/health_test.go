@@ -17,9 +17,7 @@ func TestHandler_NoCheckers(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 
 	var s Status
 	if err := json.NewDecoder(rr.Body).Decode(&s); err != nil {
@@ -39,9 +37,7 @@ func TestHandler_AllHealthy(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
@@ -60,9 +56,7 @@ func TestHandler_Degraded(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-	if rr.Code != http.StatusServiceUnavailable {
-		t.Fatalf("expected 503, got %d", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusServiceUnavailable)
 
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
@@ -107,9 +101,7 @@ func TestHandler_SlowChecker(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 }
 
 func TestHandler_MultipleUnhealthy(t *testing.T) {
@@ -124,9 +116,7 @@ func TestHandler_MultipleUnhealthy(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-	if rr.Code != http.StatusServiceUnavailable {
-		t.Fatalf("expected 503, got %d", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusServiceUnavailable)
 
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
@@ -158,9 +148,7 @@ func TestHandler_SingleChecker(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
 	testkit.AssertEqual(t, s.Checks["single"], "ok")
@@ -229,9 +217,7 @@ func TestHandler_PanicChecker(t *testing.T) {
 	// Must not propagate the panic — should return degraded.
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-	if rr.Code != http.StatusServiceUnavailable {
-		t.Fatalf("expected 503, got %d", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusServiceUnavailable)
 	var s Status
 	json.NewDecoder(rr.Body).Decode(&s)
 	testkit.AssertEqual(t, s.Status, "degraded")

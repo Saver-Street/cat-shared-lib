@@ -356,9 +356,7 @@ func TestPaginated_EnvelopeFields(t *testing.T) {
 	w := httptest.NewRecorder()
 	Paginated(w, []string{"a", "b", "c"}, 50, 2, 3)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Code)
-	}
+	testkit.RequireEqual(t, w.Code, http.StatusOK)
 	var got PagedResult[string]
 	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
 		t.Fatalf("decode: %v", err)

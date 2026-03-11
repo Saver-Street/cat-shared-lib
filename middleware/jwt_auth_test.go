@@ -268,9 +268,7 @@ func TestJWTAuth_EmptyEmailAndRole(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Fatalf("got status %d, want 200", rr.Code)
-	}
+	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 	testkit.AssertEqual(t, gotEmail, "")
 	testkit.AssertEqual(t, gotRole, "")
 }

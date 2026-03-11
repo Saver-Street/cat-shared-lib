@@ -68,9 +68,7 @@ func TestListenAndServe_GracefulShutdown(t *testing.T) {
 	resp, err := http.Get("http://" + addr + "/")
 	testkit.RequireNoError(t, err)
 	resp.Body.Close()
-	if resp.StatusCode != 200 {
-		t.Fatalf("expected 200, got %d", resp.StatusCode)
-	}
+	testkit.RequireEqual(t, resp.StatusCode, 200)
 
 	// Send SIGTERM to self to trigger shutdown
 	proc, err := os.FindProcess(os.Getpid())

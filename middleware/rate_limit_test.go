@@ -160,9 +160,7 @@ func TestRateLimiter_RetryAfterHeader(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/api/test", nil)
 	r.RemoteAddr = "header-ip:0"
 	rl.Middleware(next).ServeHTTP(w, r)
-	if w.Code != http.StatusTooManyRequests {
-		t.Fatalf("expected 429, got %d", w.Code)
-	}
+	testkit.RequireEqual(t, w.Code, http.StatusTooManyRequests)
 	testkit.AssertNotEqual(t, w.Header().Get("Retry-After"), "")
 }
 

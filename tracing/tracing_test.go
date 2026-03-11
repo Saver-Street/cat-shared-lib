@@ -298,6 +298,34 @@ func TestExporterType_Constants(t *testing.T) {
 	}
 }
 
+func TestShutdown_NilProvider(t *testing.T) {
+	var p *Provider
+	if err := p.Shutdown(context.Background()); err != nil {
+		t.Errorf("expected nil error for nil provider, got %v", err)
+	}
+}
+
+func TestShutdown_NilTP(t *testing.T) {
+	p := &Provider{tp: nil}
+	if err := p.Shutdown(context.Background()); err != nil {
+		t.Errorf("expected nil error for nil tp, got %v", err)
+	}
+}
+
+func TestShutdown_CancelledContext(t *testing.T) {
+	tp, err := NewProvider(context.Background(), Config{
+		ServiceName: "svc",
+		Exporter:    ExporterNoop,
+	})
+	if err != nil {
+		t.Fatalf("NewProvider: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	// A cancelled context may cause the underlying provider shutdown to fail.
+	_ = tp.Shutdown(ctx)
+}
+
 func TestStartWithTracer_SpanKind(t *testing.T) {
 	tp := newTestProvider(t)
 	tr := tp.Tracer("t")

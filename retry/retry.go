@@ -69,6 +69,12 @@ func Do(ctx context.Context, cfg Config, fn func(ctx context.Context) error) err
 			return nil
 		}
 
+		// Stop immediately on permanent errors.
+		var pe *PermanentError
+		if errors.As(lastErr, &pe) {
+			return pe.Err
+		}
+
 		// Check if this error is retryable.
 		if cfg.RetryIf != nil && !cfg.RetryIf(lastErr) {
 			return lastErr
@@ -119,15 +125,88 @@ func Simple(ctx context.Context, maxAttempts int, fn func(ctx context.Context) e
 // time to timeout. It derives a child context with the deadline and delegates
 // to Do.
 func WithTimeout(ctx context.Context, timeout time.Duration, cfg Config, fn func(ctx context.Context) error) error {
-ctx, cancel := context.WithTimeout(ctx, timeout)
-defer cancel()
-return Do(ctx, cfg, fn)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	return Do(ctx, cfg, fn)
 }
 
 // Delay calculates the backoff delay for the given attempt number (0-based)
 // using the provided Config. This is useful for logging or implementing
 // custom retry loops without using Do directly.
 func Delay(cfg Config, attempt int) time.Duration {
-cfg.defaults()
-return calcDelay(cfg, attempt)
+	cfg.defaults()
+	return calcDelay(cfg, attempt)
+}
+
+// PermanentError wraps an error to signal that it should not be retried.
+type PermanentError struct {
+	Err error
+}
+
+func (e *PermanentError) Error() string { return e.Err.Error() }
+func (e *PermanentError) Unwrap() error { return e.Err }
+
+// Permanent wraps err so that Do and DoWithResult stop retrying immediately.
+func Permanent(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &PermanentError{Err: err}
+}
+
+// IsPermanent reports whether err (or any error in its chain) is a PermanentError.
+func IsPermanent(err error) bool {
+	var pe *PermanentError
+	return errors.As(err, &pe)
+}
+
+// DoWithResult executes fn up to MaxAttempts times, returning the result
+// value on success. It follows the same backoff and cancellation semantics
+// as Do. If fn returns a [PermanentError], retries stop immediately.
+func DoWithResult[T any](ctx context.Context, cfg Config, fn func(ctx context.Context) (T, error)) (T, error) {
+	cfg.defaults()
+
+	var (
+		lastErr error
+		zero    T
+	)
+	for attempt := 0; attempt < cfg.MaxAttempts; attempt++ {
+		if err := ctx.Err(); err != nil {
+			if lastErr != nil {
+				return zero, errors.Join(lastErr, err)
+			}
+			return zero, err
+		}
+
+		result, err := fn(ctx)
+		if err == nil {
+			return result, nil
+		}
+		lastErr = err
+
+		// Stop immediately on permanent errors.
+		var pe *PermanentError
+		if errors.As(err, &pe) {
+			return zero, pe.Err
+		}
+
+		if cfg.RetryIf != nil && !cfg.RetryIf(lastErr) {
+			return zero, lastErr
+		}
+
+		if attempt == cfg.MaxAttempts-1 {
+			break
+		}
+
+		delay := calcDelay(cfg, attempt)
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return zero, errors.Join(lastErr, ctx.Err())
+		case <-timer.C:
+		}
+	}
+
+	return zero, lastErr
 }

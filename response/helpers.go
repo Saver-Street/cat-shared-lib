@@ -231,3 +231,15 @@ if err := xml.NewEncoder(w).Encode(data); err != nil {
 slog.Error("response: failed to encode XML", "error", err)
 }
 }
+
+// NotModified sends a 304 Not Modified response with no body.
+// Typically used in conjunction with ETag or Last-Modified headers.
+func NotModified(w http.ResponseWriter) {
+w.WriteHeader(http.StatusNotModified)
+}
+
+// SeeOther sends a 303 See Other redirect to the given URL.
+// Used after POST/PUT/DELETE to redirect the client to a GET endpoint.
+func SeeOther(w http.ResponseWriter, r *http.Request, url string) {
+http.Redirect(w, r, url, http.StatusSeeOther)
+}

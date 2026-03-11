@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func setEnv(t *testing.T, key, val string) {
@@ -144,12 +146,9 @@ func TestStringSlice_EmptyParts(t *testing.T) {
 
 func TestMustString_Panics(t *testing.T) {
 	os.Unsetenv("CONFIG_TEST_MUST_MISS")
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("MustString should panic for missing var")
-		}
-	}()
-	MustString("CONFIG_TEST_MUST_MISS")
+	testkit.AssertPanics(t, func() {
+		MustString("CONFIG_TEST_MUST_MISS")
+	})
 }
 
 func TestMustString_Returns(t *testing.T) {
@@ -198,22 +197,16 @@ func TestMustInt_Success(t *testing.T) {
 
 func TestMustInt_PanicsMissing(t *testing.T) {
 	os.Unsetenv("CONFIG_TEST_MUST_INT_MISS")
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("MustInt should panic for missing var")
-		}
-	}()
-	MustInt("CONFIG_TEST_MUST_INT_MISS")
+	testkit.AssertPanics(t, func() {
+		MustInt("CONFIG_TEST_MUST_INT_MISS")
+	})
 }
 
 func TestMustInt_PanicsInvalid(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_MUST_INT_BAD", "not-a-number")
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("MustInt should panic for invalid integer")
-		}
-	}()
-	MustInt("CONFIG_TEST_MUST_INT_BAD")
+	testkit.AssertPanics(t, func() {
+		MustInt("CONFIG_TEST_MUST_INT_BAD")
+	})
 }
 
 func BenchmarkString(b *testing.B) {

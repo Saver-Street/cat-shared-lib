@@ -7,6 +7,12 @@
 // entries in order.  Each migration is applied exactly once; duplicate IDs
 // cause [ErrDuplicateID].
 //
+// [ValidateMigrations] checks a set of migrations for common issues before
+// applying them: non-positive IDs ([ErrInvalidID]), duplicate IDs
+// ([ErrDuplicateID]), empty names ([ErrEmptyName]), empty Up SQL
+// ([ErrEmptyUp]), and missing Down SQL ([ErrMissingDown]).  It returns a
+// [*ValidationError] containing all issues found.
+//
 // [Runner.Rollback] reverses the most recently applied migration,
 // [Runner.Applied] returns the list of applied [Record] entries, and
 // [Runner.Status] reports which migrations are pending or applied.

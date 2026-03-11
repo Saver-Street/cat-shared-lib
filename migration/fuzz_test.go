@@ -265,3 +265,33 @@ func FuzzRollbackSequence(f *testing.F) {
 		_ = r.Rollback(context.Background(), migrations, n)
 	})
 }
+
+func FuzzValidateMigrations(f *testing.F) {
+	f.Add(1, "create_users", "CREATE TABLE users()", "DROP TABLE users", 2, "create_posts", "CREATE TABLE posts()", "DROP TABLE posts")
+	f.Add(0, "", "", "", -1, "", "", "")
+	f.Add(1, "a", "SELECT 1", "", 1, "a", "SELECT 1", "")
+	f.Add(1<<30, "big", "UP", "DOWN", -(1 << 30), "neg", "UP2", "DOWN2")
+
+	f.Fuzz(func(t *testing.T, id1 int, n1, u1, d1 string, id2 int, n2, u2, d2 string) {
+		migrations := []Migration{
+			{ID: id1, Name: n1, Up: u1, Down: d1},
+			{ID: id2, Name: n2, Up: u2, Down: d2},
+		}
+		err := ValidateMigrations(migrations)
+
+		// If all fields are valid and IDs are unique, should pass.
+		allValid := id1 > 0 && id2 > 0 && n1 != "" && n2 != "" &&
+			u1 != "" && u2 != "" && d1 != "" && d2 != "" && id1 != id2
+		if allValid && err != nil {
+			t.Errorf("expected nil error for valid migrations, got %v", err)
+		}
+
+		// If error, must be a *ValidationError.
+		if err != nil {
+			var ve *ValidationError
+			if !errors.As(err, &ve) {
+				t.Errorf("expected *ValidationError, got %T", err)
+			}
+		}
+	})
+}

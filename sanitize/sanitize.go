@@ -238,3 +238,17 @@ return "…"
 }
 return string(runes[:maxLen-1]) + "…"
 }
+
+// RemoveNonPrintable strips control characters and non-printable runes from s,
+// keeping only printable Unicode characters and ASCII whitespace (space, tab,
+// newline). Useful for cleaning user input before storage or display.
+func RemoveNonPrintable(s string) string {
+var b strings.Builder
+b.Grow(len(s))
+for _, r := range s {
+if unicode.IsPrint(r) || r == '\n' || r == '\t' {
+b.WriteRune(r)
+}
+}
+return b.String()
+}

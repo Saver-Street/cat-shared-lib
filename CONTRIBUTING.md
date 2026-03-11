@@ -21,7 +21,10 @@ make test-v          # Run tests (verbose)
 make test-race       # Run tests with race detector
 make lint            # Run linters (go vet + staticcheck)
 make cover           # Generate coverage report
+make cover-html      # Generate HTML coverage report
 make check-coverage  # Verify all packages meet 95% threshold
+make bench           # Run all benchmarks
+make fuzz            # Run all fuzz tests (5s smoke run per target)
 ```
 
 ### Package Structure
@@ -74,8 +77,44 @@ validation/      # Field validation (email, UUID, phone, URL)
 3. Add a `doc.go` with a package-level godoc comment
 4. Write comprehensive tests (target 100% coverage)
 5. Add `example_test.go` with runnable godoc examples
-6. Update README.md package table
-7. Tag new version after merge
+6. Add `fuzz_test.go` for packages that parse or validate input
+7. Add `bench_test.go` for performance-critical functions
+8. Update README.md package table
+9. Tag new version after merge
+
+### Testing Strategy
+
+This library uses a multi-tier testing approach:
+
+| Test Type | File | Purpose | When to Add |
+|-----------|------|---------|-------------|
+| Unit tests | `*_test.go` | Correctness, edge cases, error paths | Every package (≥95% coverage) |
+| Example tests | `example_test.go` | Living documentation via `godoc` | Every package |
+| Fuzz tests | `fuzz_test.go` | Robustness against arbitrary input | Parsers, validators, crypto, serializers |
+| Benchmarks | `bench_test.go` | Performance regression detection | Hot-path functions (middleware, parsing, encoding) |
+
+**Fuzz tests** use Go's built-in fuzzing (`go test -fuzz`). Seed with representative
+inputs and verify the function never panics:
+
+```go
+func FuzzMyParser(f *testing.F) {
+    f.Add("valid input")
+    f.Add("")
+    f.Fuzz(func(t *testing.T, input string) {
+        _ = MyParser(input) // must not panic
+    })
+}
+```
+
+**Benchmarks** use `b.Loop()` (Go 1.25+) for iteration:
+
+```go
+func BenchmarkMyFunc(b *testing.B) {
+    for b.Loop() {
+        MyFunc("input")
+    }
+}
+```
 
 ### Code Style
 - Follow standard Go conventions (`gofmt`, `go vet`)

@@ -224,3 +224,17 @@ return strings.Trim(slug, "-")
 func EscapeHTML(s string) string {
 return html.EscapeString(s)
 }
+
+// Truncate shortens s to at most maxLen runes. If the string exceeds maxLen,
+// it is trimmed and "…" is appended (the ellipsis counts toward maxLen).
+// Useful for display names, log messages, and UI labels.
+func Truncate(s string, maxLen int) string {
+runes := []rune(s)
+if len(runes) <= maxLen {
+return s
+}
+if maxLen <= 1 {
+return "…"
+}
+return string(runes[:maxLen-1]) + "…"
+}

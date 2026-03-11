@@ -467,3 +467,27 @@ testkit.AssertEqual(t, EscapeHTML(tt.input), tt.expect)
 })
 }
 }
+
+func TestTruncate_Short(t *testing.T) {
+testkit.AssertEqual(t, Truncate("hello", 10), "hello")
+}
+
+func TestTruncate_Exact(t *testing.T) {
+testkit.AssertEqual(t, Truncate("hello", 5), "hello")
+}
+
+func TestTruncate_Long(t *testing.T) {
+testkit.AssertEqual(t, Truncate("hello world", 8), "hello w…")
+}
+
+func TestTruncate_MaxOne(t *testing.T) {
+testkit.AssertEqual(t, Truncate("hello", 1), "…")
+}
+
+func TestTruncate_Unicode(t *testing.T) {
+testkit.AssertEqual(t, Truncate("héllo wörld", 6), "héllo…")
+}
+
+func TestTruncate_Empty(t *testing.T) {
+testkit.AssertEqual(t, Truncate("", 5), "")
+}

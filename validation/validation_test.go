@@ -271,273 +271,340 @@ func TestMatch_Trimmed(t *testing.T) {
 }
 
 func TestExactLength_Valid(t *testing.T) {
-testkit.AssertNoError(t, ExactLength("country", "US", 2))
+	testkit.AssertNoError(t, ExactLength("country", "US", 2))
 }
 
 func TestExactLength_TooShort(t *testing.T) {
-err := ExactLength("country", "U", 2)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "exactly 2 characters")
+	err := ExactLength("country", "U", 2)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "exactly 2 characters")
 }
 
 func TestExactLength_TooLong(t *testing.T) {
-err := ExactLength("country", "USA", 2)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "exactly 2 characters")
+	err := ExactLength("country", "USA", 2)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "exactly 2 characters")
 }
 
 func TestExactLength_Trimmed(t *testing.T) {
-testkit.AssertNoError(t, ExactLength("pin", "  1234  ", 4))
+	testkit.AssertNoError(t, ExactLength("pin", "  1234  ", 4))
 }
 
 func TestNoWhitespace_Valid(t *testing.T) {
-testkit.AssertNoError(t, NoWhitespace("username", "alice_123"))
+	testkit.AssertNoError(t, NoWhitespace("username", "alice_123"))
 }
 
 func TestNoWhitespace_Space(t *testing.T) {
-err := NoWhitespace("username", "alice bob")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "must not contain whitespace")
+	err := NoWhitespace("username", "alice bob")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "must not contain whitespace")
 }
 
 func TestNoWhitespace_Tab(t *testing.T) {
-testkit.AssertError(t, NoWhitespace("key", "abc\tdef"))
+	testkit.AssertError(t, NoWhitespace("key", "abc\tdef"))
 }
 
 func TestNoWhitespace_Empty(t *testing.T) {
-err := NoWhitespace("username", "")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "is required")
+	err := NoWhitespace("username", "")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "is required")
 }
 
 func TestNoWhitespace_Newline(t *testing.T) {
-testkit.AssertError(t, NoWhitespace("token", "abc\ndef"))
+	testkit.AssertError(t, NoWhitespace("token", "abc\ndef"))
 }
 
 func TestAlphanumeric_Valid(t *testing.T) {
-testkit.AssertNoError(t, Alphanumeric("code", "ABC123"))
+	testkit.AssertNoError(t, Alphanumeric("code", "ABC123"))
 }
 
 func TestAlphanumeric_Invalid(t *testing.T) {
-err := Alphanumeric("code", "ABC-123")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "only letters and digits")
+	err := Alphanumeric("code", "ABC-123")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "only letters and digits")
 }
 
 func TestAlphanumeric_Empty(t *testing.T) {
-err := Alphanumeric("code", "")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "is required")
+	err := Alphanumeric("code", "")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "is required")
 }
 
 func TestAlphanumeric_Trimmed(t *testing.T) {
-testkit.AssertNoError(t, Alphanumeric("code", "  abc123  "))
+	testkit.AssertNoError(t, Alphanumeric("code", "  abc123  "))
 }
 
 func TestNumeric_Valid(t *testing.T) {
-testkit.AssertNoError(t, Numeric("zip", "90210"))
+	testkit.AssertNoError(t, Numeric("zip", "90210"))
 }
 
 func TestNumeric_Invalid(t *testing.T) {
-err := Numeric("zip", "90-210")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "only digits")
+	err := Numeric("zip", "90-210")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "only digits")
 }
 
 func TestNumeric_Empty(t *testing.T) {
-err := Numeric("zip", "")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "is required")
+	err := Numeric("zip", "")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "is required")
 }
 
 func TestNumeric_Letters(t *testing.T) {
-err := Numeric("zip", "ABC")
-testkit.AssertError(t, err)
+	err := Numeric("zip", "ABC")
+	testkit.AssertError(t, err)
 }
 
 func TestNumeric_Trimmed(t *testing.T) {
-testkit.AssertNoError(t, Numeric("zip", "  12345  "))
+	testkit.AssertNoError(t, Numeric("zip", "  12345  "))
 }
 
 func TestBetween_Valid(t *testing.T) {
-testkit.AssertNoError(t, Between("age", 25, 18, 65))
+	testkit.AssertNoError(t, Between("age", 25, 18, 65))
 }
 
 func TestBetween_AtMin(t *testing.T) {
-testkit.AssertNoError(t, Between("age", 18, 18, 65))
+	testkit.AssertNoError(t, Between("age", 18, 18, 65))
 }
 
 func TestBetween_AtMax(t *testing.T) {
-testkit.AssertNoError(t, Between("age", 65, 18, 65))
+	testkit.AssertNoError(t, Between("age", 65, 18, 65))
 }
 
 func TestBetween_BelowMin(t *testing.T) {
-err := Between("age", 10, 18, 65)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "must be between 18 and 65")
+	err := Between("age", 10, 18, 65)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "must be between 18 and 65")
 }
 
 func TestBetween_AboveMax(t *testing.T) {
-err := Between("age", 70, 18, 65)
-testkit.AssertError(t, err)
+	err := Between("age", 70, 18, 65)
+	testkit.AssertError(t, err)
 }
 
 func TestBetween_Float(t *testing.T) {
-testkit.AssertNoError(t, Between("rate", 0.5, 0.0, 1.0))
+	testkit.AssertNoError(t, Between("rate", 0.5, 0.0, 1.0))
 }
 
 func TestBetween_String(t *testing.T) {
-testkit.AssertNoError(t, Between("grade", "B", "A", "F"))
+	testkit.AssertNoError(t, Between("grade", "B", "A", "F"))
 }
 
 func TestEachString_Valid(t *testing.T) {
-tags := []string{"abc", "def", "ghi"}
-err := EachString("tags", tags, Alphanumeric)
-testkit.AssertNoError(t, err)
+	tags := []string{"abc", "def", "ghi"}
+	err := EachString("tags", tags, Alphanumeric)
+	testkit.AssertNoError(t, err)
 }
 
 func TestEachString_Invalid(t *testing.T) {
-tags := []string{"abc", "d-e-f", "ghi"}
-err := EachString("tags", tags, Alphanumeric)
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "tags[1]")
+	tags := []string{"abc", "d-e-f", "ghi"}
+	err := EachString("tags", tags, Alphanumeric)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "tags[1]")
 }
 
 func TestEachString_Empty(t *testing.T) {
-err := EachString("tags", []string{}, Alphanumeric)
-testkit.AssertNoError(t, err)
+	err := EachString("tags", []string{}, Alphanumeric)
+	testkit.AssertNoError(t, err)
 }
 
 func TestEachString_Email(t *testing.T) {
-emails := []string{"a@b.com", "c@d.org"}
-err := EachString("emails", emails, Email)
-testkit.AssertNoError(t, err)
+	emails := []string{"a@b.com", "c@d.org"}
+	err := EachString("emails", emails, Email)
+	testkit.AssertNoError(t, err)
 }
 
 func TestLowercase_Valid(t *testing.T) {
-testkit.AssertNoError(t, Lowercase("code", "abc-123"))
+	testkit.AssertNoError(t, Lowercase("code", "abc-123"))
 }
 
 func TestLowercase_Invalid(t *testing.T) {
-err := Lowercase("code", "abcDef")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "lowercase")
+	err := Lowercase("code", "abcDef")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "lowercase")
 }
 
 func TestLowercase_Empty(t *testing.T) {
-testkit.AssertNoError(t, Lowercase("code", ""))
+	testkit.AssertNoError(t, Lowercase("code", ""))
 }
 
 func TestUppercase_Valid(t *testing.T) {
-testkit.AssertNoError(t, Uppercase("code", "ABC-123"))
+	testkit.AssertNoError(t, Uppercase("code", "ABC-123"))
 }
 
 func TestUppercase_Invalid(t *testing.T) {
-err := Uppercase("code", "ABCdef")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "uppercase")
+	err := Uppercase("code", "ABCdef")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "uppercase")
 }
 
 func TestUppercase_Empty(t *testing.T) {
-testkit.AssertNoError(t, Uppercase("code", ""))
+	testkit.AssertNoError(t, Uppercase("code", ""))
 }
 
 func TestStartsWith_Valid(t *testing.T) {
-testkit.AssertNoError(t, StartsWith("path", "/api/v1/users", "/api/"))
+	testkit.AssertNoError(t, StartsWith("path", "/api/v1/users", "/api/"))
 }
 
 func TestStartsWith_Invalid(t *testing.T) {
-err := StartsWith("path", "/web/index", "/api/")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "start with")
+	err := StartsWith("path", "/web/index", "/api/")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "start with")
 }
 
 func TestEndsWith_Valid(t *testing.T) {
-testkit.AssertNoError(t, EndsWith("file", "report.pdf", ".pdf"))
+	testkit.AssertNoError(t, EndsWith("file", "report.pdf", ".pdf"))
 }
 
 func TestEndsWith_Invalid(t *testing.T) {
-err := EndsWith("file", "report.txt", ".pdf")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "end with")
+	err := EndsWith("file", "report.txt", ".pdf")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "end with")
 }
 
 func TestNotOneOf_Valid(t *testing.T) {
-testkit.AssertNoError(t, NotOneOf("username", "alice", []string{"admin", "root", "system"}))
+	testkit.AssertNoError(t, NotOneOf("username", "alice", []string{"admin", "root", "system"}))
 }
 
 func TestNotOneOf_Invalid(t *testing.T) {
-err := NotOneOf("username", "admin", []string{"admin", "root", "system"})
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "admin")
+	err := NotOneOf("username", "admin", []string{"admin", "root", "system"})
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "admin")
 }
 
 func TestNotOneOf_Empty(t *testing.T) {
-testkit.AssertNoError(t, NotOneOf("username", "anything", []string{}))
+	testkit.AssertNoError(t, NotOneOf("username", "anything", []string{}))
 }
 
 func TestJSON_Valid(t *testing.T) {
-testkit.AssertNoError(t, JSON(`{"key":"val"}`))
-testkit.AssertNoError(t, JSON(`[1,2,3]`))
-testkit.AssertNoError(t, JSON(`"hello"`))
-testkit.AssertNoError(t, JSON(`42`))
-testkit.AssertNoError(t, JSON(`true`))
-testkit.AssertNoError(t, JSON(`null`))
+	testkit.AssertNoError(t, JSON(`{"key":"val"}`))
+	testkit.AssertNoError(t, JSON(`[1,2,3]`))
+	testkit.AssertNoError(t, JSON(`"hello"`))
+	testkit.AssertNoError(t, JSON(`42`))
+	testkit.AssertNoError(t, JSON(`true`))
+	testkit.AssertNoError(t, JSON(`null`))
 }
 
 func TestJSON_Invalid(t *testing.T) {
-testkit.AssertError(t, JSON(`{bad}`))
-testkit.AssertError(t, JSON(`not json`))
-testkit.AssertError(t, JSON(``))
-testkit.AssertErrorContains(t, JSON(`{`), "invalid JSON")
+	testkit.AssertError(t, JSON(`{bad}`))
+	testkit.AssertError(t, JSON(`not json`))
+	testkit.AssertError(t, JSON(``))
+	testkit.AssertErrorContains(t, JSON(`{`), "invalid JSON")
 }
 
 func TestBase64_Valid(t *testing.T) {
-testkit.AssertNoError(t, Base64("aGVsbG8="))
-testkit.AssertNoError(t, Base64(""))
-testkit.AssertNoError(t, Base64("dGVzdA=="))
+	testkit.AssertNoError(t, Base64("aGVsbG8="))
+	testkit.AssertNoError(t, Base64(""))
+	testkit.AssertNoError(t, Base64("dGVzdA=="))
 }
 
 func TestBase64_Invalid(t *testing.T) {
-testkit.AssertError(t, Base64("not!valid!base64"))
-testkit.AssertErrorContains(t, Base64("abc"), "invalid base64")
+	testkit.AssertError(t, Base64("not!valid!base64"))
+	testkit.AssertErrorContains(t, Base64("abc"), "invalid base64")
 }
 
 func TestIP_Valid(t *testing.T) {
-testkit.AssertNoError(t, IP("192.168.1.1"))
-testkit.AssertNoError(t, IP("::1"))
-testkit.AssertNoError(t, IP("2001:db8::1"))
+	testkit.AssertNoError(t, IP("192.168.1.1"))
+	testkit.AssertNoError(t, IP("::1"))
+	testkit.AssertNoError(t, IP("2001:db8::1"))
 }
 
 func TestIP_Invalid(t *testing.T) {
-testkit.AssertError(t, IP("not-an-ip"))
-testkit.AssertError(t, IP(""))
-testkit.AssertErrorContains(t, IP("999.999.999.999"), "invalid IP")
+	testkit.AssertError(t, IP("not-an-ip"))
+	testkit.AssertError(t, IP(""))
+	testkit.AssertErrorContains(t, IP("999.999.999.999"), "invalid IP")
 }
 
 func TestIPv4_Valid(t *testing.T) {
-testkit.AssertNoError(t, IPv4("192.168.1.1"))
-testkit.AssertNoError(t, IPv4("10.0.0.1"))
+	testkit.AssertNoError(t, IPv4("192.168.1.1"))
+	testkit.AssertNoError(t, IPv4("10.0.0.1"))
 }
 
 func TestIPv4_RejectsIPv6(t *testing.T) {
-testkit.AssertError(t, IPv4("::1"))
-testkit.AssertError(t, IPv4("2001:db8::1"))
+	testkit.AssertError(t, IPv4("::1"))
+	testkit.AssertError(t, IPv4("2001:db8::1"))
 }
 
 func TestIPv4_Invalid(t *testing.T) {
-testkit.AssertError(t, IPv4("not-an-ip"))
-testkit.AssertErrorContains(t, IPv4(""), "invalid IPv4")
+	testkit.AssertError(t, IPv4("not-an-ip"))
+	testkit.AssertErrorContains(t, IPv4(""), "invalid IPv4")
 }
 
 func TestCIDR_Valid(t *testing.T) {
-testkit.AssertNoError(t, CIDR("192.168.1.0/24"))
-testkit.AssertNoError(t, CIDR("10.0.0.0/8"))
-testkit.AssertNoError(t, CIDR("::1/128"))
+	testkit.AssertNoError(t, CIDR("192.168.1.0/24"))
+	testkit.AssertNoError(t, CIDR("10.0.0.0/8"))
+	testkit.AssertNoError(t, CIDR("::1/128"))
 }
 
 func TestCIDR_Invalid(t *testing.T) {
-testkit.AssertError(t, CIDR("192.168.1.1"))
-testkit.AssertError(t, CIDR("not-cidr"))
-testkit.AssertErrorContains(t, CIDR(""), "invalid CIDR")
+	testkit.AssertError(t, CIDR("192.168.1.1"))
+	testkit.AssertError(t, CIDR("not-cidr"))
+	testkit.AssertErrorContains(t, CIDR(""), "invalid CIDR")
+}
+
+func TestHostname_Valid(t *testing.T) {
+	testkit.AssertNoError(t, Hostname("host", "example.com"))
+	testkit.AssertNoError(t, Hostname("host", "sub.example.com"))
+	testkit.AssertNoError(t, Hostname("host", "my-host"))
+	testkit.AssertNoError(t, Hostname("host", "a"))
+}
+
+func TestHostname_Invalid(t *testing.T) {
+	testkit.AssertError(t, Hostname("host", ""))
+	testkit.AssertError(t, Hostname("host", "-invalid.com"))
+	testkit.AssertError(t, Hostname("host", "invalid-.com"))
+	testkit.AssertError(t, Hostname("host", strings.Repeat("a", 254)))
+	testkit.AssertError(t, Hostname("host", "under_score.com"))
+}
+
+func TestHexColor_Valid(t *testing.T) {
+	testkit.AssertNoError(t, HexColor("color", "#fff"))
+	testkit.AssertNoError(t, HexColor("color", "#FFF"))
+	testkit.AssertNoError(t, HexColor("color", "#ff00ff"))
+	testkit.AssertNoError(t, HexColor("color", "#123456"))
+}
+
+func TestHexColor_Invalid(t *testing.T) {
+	testkit.AssertError(t, HexColor("color", ""))
+	testkit.AssertError(t, HexColor("color", "fff"))
+	testkit.AssertError(t, HexColor("color", "#ff"))
+	testkit.AssertError(t, HexColor("color", "#gggggg"))
+	testkit.AssertError(t, HexColor("color", "#12345"))
+}
+
+func TestValidator_Chain(t *testing.T) {
+	v := NewValidator().
+		Check(Required("name", "Alice")).
+		Check(Email("email", "alice@example.com")).
+		Check(MinLength("name", "Alice", 2))
+
+	testkit.AssertTrue(t, v.Valid())
+	testkit.AssertNil(t, v.Errors())
+}
+
+func TestValidator_WithErrors(t *testing.T) {
+	v := NewValidator().
+		Check(Required("name", "")).
+		Check(Email("email", "bad"))
+
+	testkit.AssertFalse(t, v.Valid())
+	testkit.AssertEqual(t, len(v.Errors()), 2)
+}
+
+func TestValidator_CheckIf(t *testing.T) {
+	website := ""
+	v := NewValidator().
+		Check(Required("name", "Alice")).
+		CheckIf(website != "", URL("website", website))
+
+	testkit.AssertTrue(t, v.Valid())
+}
+
+func TestValidator_CheckIf_Active(t *testing.T) {
+	website := "not-a-url"
+	v := NewValidator().
+		CheckIf(website != "", URL("website", website))
+
+	testkit.AssertFalse(t, v.Valid())
+	testkit.AssertEqual(t, len(v.Errors()), 1)
 }

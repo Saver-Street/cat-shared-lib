@@ -15,9 +15,7 @@ func TestHashPassword_Basic(t *testing.T) {
 	if hash == "" {
 		t.Fatal("expected non-empty hash")
 	}
-	if hash == "secret123" {
-		t.Fatal("hash must not equal plaintext")
-	}
+	testkit.AssertNotEqual(t, hash, "secret123")
 }
 
 func TestHashPassword_Empty(t *testing.T) {
@@ -31,9 +29,7 @@ func TestHashPasswordWithCost(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	cost, _ := BcryptCost(hash)
-	if cost != 4 {
-		t.Errorf("expected cost 4, got %d", cost)
-	}
+	testkit.AssertEqual(t, cost, 4)
 }
 
 func TestCheckPassword_Match(t *testing.T) {
@@ -57,9 +53,7 @@ func TestCheckPassword_Empty(t *testing.T) {
 
 func TestCheckPassword_BadHash(t *testing.T) {
 	err := CheckPassword("password", "notahash")
-	if err == nil {
-		t.Fatal("expected error for invalid hash")
-	}
+	testkit.AssertTrue(t, err != nil)
 }
 
 func TestGenerateToken(t *testing.T) {
@@ -72,20 +66,14 @@ func TestGenerateToken(t *testing.T) {
 	}
 	// Two tokens should differ
 	tok2, _ := GenerateToken(32)
-	if tok == tok2 {
-		t.Error("expected tokens to differ")
-	}
+	testkit.AssertNotEqual(t, tok, tok2)
 }
 
 func TestGenerateToken_InvalidLen(t *testing.T) {
 	_, err := GenerateToken(0)
-	if err == nil {
-		t.Fatal("expected error for zero length")
-	}
+	testkit.AssertTrue(t, err != nil)
 	_, err = GenerateToken(-1)
-	if err == nil {
-		t.Fatal("expected error for negative length")
-	}
+	testkit.AssertTrue(t, err != nil)
 }
 
 func TestGenerateToken_URLSafe(t *testing.T) {
@@ -105,16 +93,12 @@ func TestGenerateHexToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(tok) != 32 {
-		t.Errorf("expected 32 hex chars, got %d", len(tok))
-	}
+	testkit.AssertEqual(t, len(tok), 32)
 }
 
 func TestGenerateHexToken_InvalidLen(t *testing.T) {
 	_, err := GenerateHexToken(0)
-	if err == nil {
-		t.Fatal("expected error for zero length")
-	}
+	testkit.AssertTrue(t, err != nil)
 }
 
 func TestHMACSHA256(t *testing.T) {
@@ -126,43 +110,29 @@ func TestHMACSHA256(t *testing.T) {
 	}
 	// Same inputs → same output
 	sig2 := HMACSHA256(key, msg)
-	if sig != sig2 {
-		t.Error("HMAC is not deterministic")
-	}
+	testkit.AssertEqual(t, sig, sig2)
 	// Different key → different sig
 	sig3 := HMACSHA256([]byte("other"), msg)
-	if sig == sig3 {
-		t.Error("different keys should produce different MACs")
-	}
+	testkit.AssertNotEqual(t, sig, sig3)
 }
 
 func TestVerifyHMACSHA256_Valid(t *testing.T) {
 	key := []byte("k")
 	msg := []byte("m")
 	sig := HMACSHA256(key, msg)
-	if !VerifyHMACSHA256(key, msg, sig) {
-		t.Error("expected valid signature to verify")
-	}
+	testkit.AssertTrue(t, VerifyHMACSHA256(key, msg, sig))
 }
 
 func TestVerifyHMACSHA256_Invalid(t *testing.T) {
 	key := []byte("k")
 	msg := []byte("m")
-	if VerifyHMACSHA256(key, msg, "badsig") {
-		t.Error("expected invalid signature to fail")
-	}
+	testkit.AssertFalse(t, VerifyHMACSHA256(key, msg, "badsig"))
 }
 
 func TestEqual(t *testing.T) {
-	if !Equal("abc", "abc") {
-		t.Error("expected equal strings to be equal")
-	}
-	if Equal("abc", "def") {
-		t.Error("expected different strings to be not equal")
-	}
-	if Equal("", "x") {
-		t.Error("expected empty vs non-empty to be not equal")
-	}
+	testkit.AssertTrue(t, Equal("abc", "abc"))
+	testkit.AssertFalse(t, Equal("abc", "def"))
+	testkit.AssertFalse(t, Equal("", "x"))
 }
 
 func TestBcryptCost(t *testing.T) {
@@ -171,41 +141,27 @@ func TestBcryptCost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if cost != 4 {
-		t.Errorf("expected 4, got %d", cost)
-	}
+	testkit.AssertEqual(t, cost, 4)
 }
 
 func TestBcryptCost_Invalid(t *testing.T) {
 	_, err := BcryptCost("notahash")
-	if err == nil {
-		t.Fatal("expected error for invalid hash")
-	}
+	testkit.AssertTrue(t, err != nil)
 }
 
 func TestNeedsRehash(t *testing.T) {
 	hash, _ := HashPasswordWithCost("pw", 4)
-	if !NeedsRehash(hash, 10) {
-		t.Error("cost 4 should need rehash to 10")
-	}
-	if NeedsRehash(hash, 4) {
-		t.Error("cost 4 should not need rehash to 4")
-	}
-	if NeedsRehash(hash, 3) {
-		t.Error("cost 4 should not need rehash to 3")
-	}
+	testkit.AssertTrue(t, NeedsRehash(hash, 10))
+	testkit.AssertFalse(t, NeedsRehash(hash, 4))
+	testkit.AssertFalse(t, NeedsRehash(hash, 3))
 }
 
 func TestHashPasswordWithCost_InvalidCost(t *testing.T) {
 	_, err := HashPasswordWithCost("password", 100) // cost too high
-	if err == nil {
-		t.Fatal("expected error for invalid bcrypt cost")
-	}
+	testkit.AssertTrue(t, err != nil)
 	testkit.AssertErrorContains(t, err, "crypto: hash password")
 }
 
 func TestNeedsRehash_InvalidHash(t *testing.T) {
-	if !NeedsRehash("badhash", 10) {
-		t.Error("invalid hash should trigger rehash")
-	}
+	testkit.AssertTrue(t, NeedsRehash("badhash", 10))
 }

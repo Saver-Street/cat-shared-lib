@@ -210,13 +210,13 @@ func Slug(field, value string) error {
 // The value is not trimmed — leading, trailing, and embedded whitespace
 // all cause a validation error. Useful for usernames, API keys, and slugs.
 func NoWhitespace(field, value string) error {
-if value == "" {
-return &ValidationError{Field: field, Message: field + " is required"}
-}
-if strings.ContainsAny(value, " \t\n\r") {
-return &ValidationError{Field: field, Message: field + " must not contain whitespace"}
-}
-return nil
+	if value == "" {
+		return &ValidationError{Field: field, Message: field + " is required"}
+	}
+	if strings.ContainsAny(value, " \t\n\r") {
+		return &ValidationError{Field: field, Message: field + " must not contain whitespace"}
+	}
+	return nil
 }
 
 var alphaNumericRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
@@ -224,14 +224,14 @@ var alphaNumericRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 // Alphanumeric validates that value (after trimming) contains only ASCII
 // letters and digits. Useful for codes, reference IDs, and usernames.
 func Alphanumeric(field, value string) error {
-v := strings.TrimSpace(value)
-if v == "" {
-return &ValidationError{Field: field, Message: field + " is required"}
-}
-if !alphaNumericRe.MatchString(v) {
-return &ValidationError{Field: field, Message: field + " must contain only letters and digits"}
-}
-return nil
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return &ValidationError{Field: field, Message: field + " is required"}
+	}
+	if !alphaNumericRe.MatchString(v) {
+		return &ValidationError{Field: field, Message: field + " must contain only letters and digits"}
+	}
+	return nil
 }
 
 var numericRe = regexp.MustCompile(`^[0-9]+$`)
@@ -240,125 +240,200 @@ var numericRe = regexp.MustCompile(`^[0-9]+$`)
 // (0-9). Useful for ZIP codes, phone PINs, and numeric reference codes
 // that should be treated as strings rather than integers.
 func Numeric(field, value string) error {
-v := strings.TrimSpace(value)
-if v == "" {
-return &ValidationError{Field: field, Message: field + " is required"}
-}
-if !numericRe.MatchString(v) {
-return &ValidationError{Field: field, Message: field + " must contain only digits"}
-}
-return nil
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return &ValidationError{Field: field, Message: field + " is required"}
+	}
+	if !numericRe.MatchString(v) {
+		return &ValidationError{Field: field, Message: field + " must contain only digits"}
+	}
+	return nil
 }
 
 // Between validates that value is in the inclusive range [min, max].
 // Works with any ordered type (int, float64, string, etc.).
 func Between[V cmp.Ordered](field string, value, min, max V) error {
-if value < min || value > max {
-return &ValidationError{
-Field:   field,
-Message: fmt.Sprintf("%s must be between %v and %v", field, min, max),
-}
-}
-return nil
+	if value < min || value > max {
+		return &ValidationError{
+			Field:   field,
+			Message: fmt.Sprintf("%s must be between %v and %v", field, min, max),
+		}
+	}
+	return nil
 }
 
 // EachString applies a string validator to every element in values. It
 // returns the first validation error encountered, using field[i] as the
 // field name for error context. Returns nil if all elements pass.
 func EachString(field string, values []string, validate func(string, string) error) error {
-for i, v := range values {
-key := fmt.Sprintf("%s[%d]", field, i)
-if err := validate(key, v); err != nil {
-return err
-}
-}
-return nil
+	for i, v := range values {
+		key := fmt.Sprintf("%s[%d]", field, i)
+		if err := validate(key, v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Lowercase validates that value contains only lowercase letters, digits,
 // and common punctuation — no uppercase letters.
 func Lowercase(field, value string) error {
-if value != strings.ToLower(value) {
-return fmt.Errorf("%s must be lowercase", field)
-}
-return nil
+	if value != strings.ToLower(value) {
+		return fmt.Errorf("%s must be lowercase", field)
+	}
+	return nil
 }
 
 // Uppercase validates that value contains only uppercase letters, digits,
 // and common punctuation — no lowercase letters.
 func Uppercase(field, value string) error {
-if value != strings.ToUpper(value) {
-return fmt.Errorf("%s must be uppercase", field)
-}
-return nil
+	if value != strings.ToUpper(value) {
+		return fmt.Errorf("%s must be uppercase", field)
+	}
+	return nil
 }
 
 // StartsWith validates that value starts with the given prefix.
 func StartsWith(field, value, prefix string) error {
-if !strings.HasPrefix(value, prefix) {
-return fmt.Errorf("%s must start with %q", field, prefix)
-}
-return nil
+	if !strings.HasPrefix(value, prefix) {
+		return fmt.Errorf("%s must start with %q", field, prefix)
+	}
+	return nil
 }
 
 // EndsWith validates that value ends with the given suffix.
 func EndsWith(field, value, suffix string) error {
-if !strings.HasSuffix(value, suffix) {
-return fmt.Errorf("%s must end with %q", field, suffix)
-}
-return nil
+	if !strings.HasSuffix(value, suffix) {
+		return fmt.Errorf("%s must end with %q", field, suffix)
+	}
+	return nil
 }
 
 // NotOneOf validates that value is NOT in the blocked list. Useful for
 // rejecting reserved words, banned usernames, or unsafe values.
 func NotOneOf(field, value string, blocked []string) error {
-for _, b := range blocked {
-if value == b {
-return fmt.Errorf("%s must not be %q", field, value)
-}
-}
-return nil
+	for _, b := range blocked {
+		if value == b {
+			return fmt.Errorf("%s must not be %q", field, value)
+		}
+	}
+	return nil
 }
 
 // JSON validates that s is syntactically valid JSON.
 func JSON(s string) error {
-if !json.Valid([]byte(s)) {
-return fmt.Errorf("invalid JSON")
-}
-return nil
+	if !json.Valid([]byte(s)) {
+		return fmt.Errorf("invalid JSON")
+	}
+	return nil
 }
 
 // Base64 validates that s is valid standard base64 (RFC 4648).
 func Base64(s string) error {
-_, err := base64.StdEncoding.DecodeString(s)
-if err != nil {
-return fmt.Errorf("invalid base64")
-}
-return nil
+	_, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("invalid base64")
+	}
+	return nil
 }
 
 // IP validates that s is a valid IPv4 or IPv6 address.
 func IP(s string) error {
-if net.ParseIP(s) == nil {
-return fmt.Errorf("invalid IP address")
-}
-return nil
+	if net.ParseIP(s) == nil {
+		return fmt.Errorf("invalid IP address")
+	}
+	return nil
 }
 
 // IPv4 validates that s is a valid IPv4 address.
 func IPv4(s string) error {
-ip := net.ParseIP(s)
-if ip == nil || ip.To4() == nil {
-return fmt.Errorf("invalid IPv4 address")
-}
-return nil
+	ip := net.ParseIP(s)
+	if ip == nil || ip.To4() == nil {
+		return fmt.Errorf("invalid IPv4 address")
+	}
+	return nil
 }
 
 // CIDR validates that s is valid CIDR notation (e.g., "192.168.1.0/24").
 func CIDR(s string) error {
-_, _, err := net.ParseCIDR(s)
-if err != nil {
-return fmt.Errorf("invalid CIDR notation")
+	_, _, err := net.ParseCIDR(s)
+	if err != nil {
+		return fmt.Errorf("invalid CIDR notation")
+	}
+	return nil
 }
-return nil
+
+// hostnameRe matches valid RFC 952/1123 hostnames.
+var hostnameRe = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$`)
+
+// Hostname validates that s is a valid hostname per RFC 952/1123.
+func Hostname(field, value string) error {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return &ValidationError{Field: field, Message: field + " is required"}
+	}
+	if len(v) > 253 {
+		return &ValidationError{Field: field, Message: "hostname exceeds maximum length of 253 characters"}
+	}
+	if !hostnameRe.MatchString(v) {
+		return &ValidationError{Field: field, Message: "invalid hostname format"}
+	}
+	return nil
+}
+
+// hexColorRe matches 3- or 6-digit hex color codes with a leading #.
+var hexColorRe = regexp.MustCompile(`^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
+
+// HexColor validates that value is a valid hex color code (#RGB or #RRGGBB).
+func HexColor(field, value string) error {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return &ValidationError{Field: field, Message: field + " is required"}
+	}
+	if !hexColorRe.MatchString(v) {
+		return &ValidationError{Field: field, Message: "invalid hex color format (expected #RGB or #RRGGBB)"}
+	}
+	return nil
+}
+
+// Validator accumulates validation errors for batch checking.
+// Create with NewValidator, chain Check calls, then call Errors.
+type Validator struct {
+	errs []error
+}
+
+// NewValidator creates a new Validator instance.
+func NewValidator() *Validator {
+	return &Validator{}
+}
+
+// Check adds err to the error list if err is non-nil. Returns the
+// Validator for chaining.
+func (v *Validator) Check(err error) *Validator {
+	if err != nil {
+		v.errs = append(v.errs, err)
+	}
+	return v
+}
+
+// CheckIf conditionally runs a validation only when condition is true.
+// This avoids unnecessary validation of optional or dependent fields.
+func (v *Validator) CheckIf(condition bool, err error) *Validator {
+	if condition && err != nil {
+		v.errs = append(v.errs, err)
+	}
+	return v
+}
+
+// Valid returns true if no errors have been accumulated.
+func (v *Validator) Valid() bool {
+	return len(v.errs) == 0
+}
+
+// Errors returns all accumulated validation errors, or nil if valid.
+func (v *Validator) Errors() []error {
+	if len(v.errs) == 0 {
+		return nil
+	}
+	return v.errs
 }

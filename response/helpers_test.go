@@ -2,6 +2,7 @@ package response
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"net/http"
@@ -495,4 +496,20 @@ testkit.AssertEqual(t, w.Code, http.StatusOK)
 testkit.AssertEqual(t, w.Header().Get("Content-Type"), "text/csv")
 testkit.AssertEqual(t, w.Header().Get("Content-Disposition"), `attachment; filename="report.csv"`)
 testkit.AssertEqual(t, w.Body.String(), "csv,data\n1,2\n")
+}
+
+func TestXML(t *testing.T) {
+type Item struct {
+XMLName xml.Name `xml:"item"`
+Name    string   `xml:"name"`
+Value   int      `xml:"value"`
+}
+w := httptest.NewRecorder()
+XML(w, http.StatusOK, Item{Name: "test", Value: 42})
+
+testkit.AssertStatus(t, w, http.StatusOK)
+testkit.AssertHeader(t, w, "Content-Type", "application/xml; charset=utf-8")
+testkit.AssertContains(t, w.Body.String(), "<?xml")
+testkit.AssertContains(t, w.Body.String(), "<name>test</name>")
+testkit.AssertContains(t, w.Body.String(), "<value>42</value>")
 }

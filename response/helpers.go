@@ -3,6 +3,7 @@ package response
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -210,5 +211,16 @@ w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, f
 w.WriteHeader(http.StatusOK)
 if _, err := io.Copy(w, r); err != nil {
 slog.Error("response: download copy failed", "error", err)
+}
+}
+
+// XML sends an XML response with the given status code. The response
+// includes an XML declaration header.
+func XML(w http.ResponseWriter, status int, data any) {
+w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+w.WriteHeader(status)
+w.Write([]byte(xml.Header))
+if err := xml.NewEncoder(w).Encode(data); err != nil {
+slog.Error("response: failed to encode XML", "error", err)
 }
 }

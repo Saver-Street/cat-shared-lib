@@ -669,16 +669,31 @@ if featureflags.Enabled("NEW_BILLING_FLOW") {
 }
 ```
 
-**`testkit`** — Lightweight test helpers.
+**`testkit`** — Lightweight test helpers and assertion library.
 
 ```go
+// Assert* helpers use t.Errorf (non-fatal):
+testkit.AssertEqual(t, got, want)
+testkit.AssertNoError(t, err)
+testkit.AssertError(t, err)
+testkit.AssertErrorContains(t, err, "not found")
+testkit.AssertContains(t, body, "success")
+testkit.AssertStatus(t, rr, http.StatusOK)
+
+// Require* helpers use t.Fatalf (fatal — stops test on failure):
+testkit.RequireNoError(t, err)   // guard: stop test if err is non-nil
+testkit.RequireEqual(t, got, want)
+testkit.RequireNotNil(t, obj)    // guard: stop test if obj is nil
+testkit.RequireLen(t, items, 3)  // guard: stop test if wrong length
+
+// Mock server for HTTP client tests:
 ms := testkit.NewMockServer(t)
 ms.Handle(func(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(map[string]any{"ok": true})
 })
 client.GetJSON(ctx, ms.URL+"/path", &result)
-assert.Equal(t, 1, ms.RequestCount())
+testkit.AssertEqual(t, ms.RequestCount(), 1)
 ```
 
 ---

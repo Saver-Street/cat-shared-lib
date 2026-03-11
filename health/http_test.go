@@ -221,3 +221,52 @@ func TestHTTPChecker_DegradedInHandler(t *testing.T) {
 		t.Errorf("status = %q, want degraded", status.Status)
 	}
 }
+
+func TestHTTPChecker_InvalidURL(t *testing.T) {
+	checker := HTTPChecker(HTTPCheckerConfig{
+		Name: "bad-url",
+		URL:  "http://\x7f",
+	})
+
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Fatal("Check() = nil, want error for invalid URL")
+	}
+	if !strings.Contains(err.Error(), "creating request") {
+		t.Errorf("error = %v, want 'creating request'", err)
+	}
+}
+
+func TestAggregateChecker_InvalidURL(t *testing.T) {
+	checker := AggregateChecker("bad", "http://\x7f")
+
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Fatal("Check() = nil, want error for invalid URL")
+	}
+	if !strings.Contains(err.Error(), "creating request") {
+		t.Errorf("error = %v, want 'creating request'", err)
+	}
+}
+
+func TestAggregateChecker_ReadBodyError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Advertise a large body then close the connection to trigger read error.
+		w.Header().Set("Content-Length", "9999")
+		w.WriteHeader(http.StatusOK)
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+		if hj, ok := w.(http.Hijacker); ok {
+			conn, _, _ := hj.Hijack()
+			_ = conn.Close()
+		}
+	}))
+	defer srv.Close()
+
+	checker := AggregateChecker("bad-body", srv.URL)
+	err := checker.Check(t.Context())
+	if err == nil {
+		t.Fatal("Check() = nil, want error for body read failure")
+	}
+}

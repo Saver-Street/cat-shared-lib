@@ -32,9 +32,7 @@ func TestCounter_IncAndValue(t *testing.T) {
 	c.Inc()
 	c.Inc()
 
-	if c.Value() != 3 {
-		t.Errorf("expected 3, got %d", c.Value())
-	}
+	testkit.AssertEqual(t, c.Value(), int64(3))
 }
 
 func TestCounter_Add(t *testing.T) {
@@ -43,19 +41,13 @@ func TestCounter_Add(t *testing.T) {
 	c.Add(50)
 	c.Add(-10) // Should be ignored.
 
-	if c.Value() != 150 {
-		t.Errorf("expected 150, got %d", c.Value())
-	}
+	testkit.AssertEqual(t, c.Value(), int64(150))
 }
 
 func TestCounter_Name_Help(t *testing.T) {
 	c := NewCounter("test_counter", "A counter")
-	if c.Name() != "test_counter" {
-		t.Error("wrong name")
-	}
-	if c.Help() != "A counter" {
-		t.Error("wrong help")
-	}
+	testkit.AssertEqual(t, c.Name(), "test_counter")
+	testkit.AssertEqual(t, c.Help(), "A counter")
 }
 
 func TestCounter_WithLabels(t *testing.T) {
@@ -64,15 +56,11 @@ func TestCounter_WithLabels(t *testing.T) {
 	v.Add(5)
 
 	v2 := c.WithLabels(map[string]string{"method": "GET", "path": "/api"})
-	if v2.Load() != 5 {
-		t.Errorf("expected 5 for same labels, got %d", v2.Load())
-	}
+	testkit.AssertEqual(t, v2.Load(), int64(5))
 
 	v3 := c.WithLabels(map[string]string{"method": "POST", "path": "/api"})
 	v3.Add(1)
-	if v3.Load() != 1 {
-		t.Errorf("expected 1 for different labels, got %d", v3.Load())
-	}
+	testkit.AssertEqual(t, v3.Load(), int64(1))
 }
 
 func TestCounter_Write(t *testing.T) {
@@ -97,9 +85,7 @@ func TestCounter_Write_WithLabels(t *testing.T) {
 func TestGauge_SetAndValue(t *testing.T) {
 	g := NewGauge("temperature", "Current temperature")
 	g.Set(42.5)
-	if g.Value() != 42.5 {
-		t.Errorf("expected 42.5, got %f", g.Value())
-	}
+	testkit.AssertEqual(t, g.Value(), 42.5)
 }
 
 func TestGauge_IncDec(t *testing.T) {
@@ -125,12 +111,8 @@ func TestGauge_Add(t *testing.T) {
 
 func TestGauge_Name_Help(t *testing.T) {
 	g := NewGauge("test_gauge", "A gauge")
-	if g.Name() != "test_gauge" {
-		t.Error("wrong name")
-	}
-	if g.Help() != "A gauge" {
-		t.Error("wrong help")
-	}
+	testkit.AssertEqual(t, g.Name(), "test_gauge")
+	testkit.AssertEqual(t, g.Help(), "A gauge")
 }
 
 func TestGauge_Write(t *testing.T) {
@@ -148,9 +130,7 @@ func TestHistogram_Observe(t *testing.T) {
 	h.Observe(0.5)
 	h.Observe(1.0)
 
-	if h.Count() != 3 {
-		t.Errorf("expected count 3, got %d", h.Count())
-	}
+	testkit.AssertEqual(t, h.Count(), uint64(3))
 	if math.Abs(h.Sum()-1.6) > 0.001 {
 		t.Errorf("expected sum 1.6, got %f", h.Sum())
 	}
@@ -162,19 +142,13 @@ func TestHistogram_CustomBuckets(t *testing.T) {
 	h.Observe(7)
 	h.Observe(0.5)
 
-	if h.Count() != 3 {
-		t.Errorf("expected 3, got %d", h.Count())
-	}
+	testkit.AssertEqual(t, h.Count(), uint64(3))
 }
 
 func TestHistogram_Name_Help(t *testing.T) {
 	h := NewHistogram("test_hist", "A histogram", nil)
-	if h.Name() != "test_hist" {
-		t.Error("wrong name")
-	}
-	if h.Help() != "A histogram" {
-		t.Error("wrong help")
-	}
+	testkit.AssertEqual(t, h.Name(), "test_hist")
+	testkit.AssertEqual(t, h.Help(), "A histogram")
 }
 
 func TestHistogram_Write(t *testing.T) {
@@ -200,9 +174,7 @@ func TestTimer_ObserveDuration(t *testing.T) {
 	if d <= 0 {
 		t.Error("expected positive duration")
 	}
-	if h.Count() != 1 {
-		t.Errorf("expected 1 observation, got %d", h.Count())
-	}
+	testkit.AssertEqual(t, h.Count(), uint64(1))
 }
 
 func TestRegistry_Expose(t *testing.T) {
@@ -228,9 +200,7 @@ func TestRegistry_Handler(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != 200 {
-		t.Errorf("expected 200, got %d", rr.Code)
-	}
+	testkit.AssertEqual(t, rr.Code, 200)
 	ct := rr.Header().Get("Content-Type")
 	testkit.AssertContains(t, ct, "text/plain")
 }
@@ -249,9 +219,7 @@ func TestConcurrent_Counter(t *testing.T) {
 	}
 	wg.Wait()
 
-	if c.Value() != 10000 {
-		t.Errorf("expected 10000, got %d", c.Value())
-	}
+	testkit.AssertEqual(t, c.Value(), int64(10000))
 }
 
 func TestConcurrent_Gauge(t *testing.T) {
@@ -286,16 +254,12 @@ func TestConcurrent_Histogram(t *testing.T) {
 	}
 	wg.Wait()
 
-	if h.Count() != 1000 {
-		t.Errorf("expected 1000, got %d", h.Count())
-	}
+	testkit.AssertEqual(t, h.Count(), uint64(1000))
 }
 
 func TestLabelsKey(t *testing.T) {
 	key := labelsKey(map[string]string{"b": "2", "a": "1"})
-	if key != `a="1",b="2"` {
-		t.Errorf("expected sorted key, got %q", key)
-	}
+	testkit.AssertEqual(t, key, `a="1",b="2"`)
 }
 
 func BenchmarkCounter_Inc(b *testing.B) {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -52,12 +53,8 @@ func TestGetUserTierAndUsage_ActiveProUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tier != "pro" {
-		t.Errorf("tier = %q, want pro", tier)
-	}
-	if count != 42 {
-		t.Errorf("count = %d, want 42", count)
-	}
+	testkit.AssertEqual(t, tier, "pro")
+	testkit.AssertEqual(t, count, 42)
 }
 
 func TestGetUserTierAndUsage_PastDueDowngradesToFree(t *testing.T) {
@@ -78,12 +75,8 @@ func TestGetUserTierAndUsage_PastDueDowngradesToFree(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tier != "free" {
-		t.Errorf("past_due user tier = %q, want free", tier)
-	}
-	if count != 5 {
-		t.Errorf("count = %d, want 5", count)
-	}
+	testkit.AssertEqual(t, tier, "free")
+	testkit.AssertEqual(t, count, 5)
 }
 
 func TestGetUserTierAndUsage_NilStatus(t *testing.T) {
@@ -103,12 +96,8 @@ func TestGetUserTierAndUsage_NilStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tier != "starter" {
-		t.Errorf("tier = %q, want starter", tier)
-	}
-	if count != 10 {
-		t.Errorf("count = %d, want 10", count)
-	}
+	testkit.AssertEqual(t, tier, "starter")
+	testkit.AssertEqual(t, count, 10)
 }
 
 func TestGetUserTierAndUsage_UserNotFound(t *testing.T) {
@@ -122,12 +111,8 @@ func TestGetUserTierAndUsage_UserNotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nonexistent user")
 	}
-	if tier != "free" {
-		t.Errorf("tier = %q, want free (default)", tier)
-	}
-	if count != 0 {
-		t.Errorf("count = %d, want 0", count)
-	}
+	testkit.AssertEqual(t, tier, "free")
+	testkit.AssertEqual(t, count, 0)
 }
 
 func TestGetUserTierAndUsage_DBError(t *testing.T) {
@@ -141,9 +126,7 @@ func TestGetUserTierAndUsage_DBError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if tier != "free" {
-		t.Errorf("tier = %q, want free on error", tier)
-	}
+	testkit.AssertEqual(t, tier, "free")
 }
 
 func TestGetUserTierAndUsage_AppCountQueryFails(t *testing.T) {
@@ -163,13 +146,9 @@ func TestGetUserTierAndUsage_AppCountQueryFails(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tier != "pro" {
-		t.Errorf("tier = %q, want pro", tier)
-	}
+	testkit.AssertEqual(t, tier, "pro")
 	// count defaults to 0 when the app count query fails (error is swallowed)
-	if count != 0 {
-		t.Errorf("count = %d, want 0 on count query failure", count)
-	}
+	testkit.AssertEqual(t, count, 0)
 }
 
 func TestGetUserTier_ReturnsOnlyTier(t *testing.T) {
@@ -190,9 +169,7 @@ func TestGetUserTier_ReturnsOnlyTier(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tier != "concierge" {
-		t.Errorf("GetUserTier = %q, want concierge", tier)
-	}
+	testkit.AssertEqual(t, tier, "concierge")
 }
 
 func TestGetUserTier_PropagatesError(t *testing.T) {
@@ -206,9 +183,7 @@ func TestGetUserTier_PropagatesError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if tier != "free" {
-		t.Errorf("tier = %q, want free on error", tier)
-	}
+	testkit.AssertEqual(t, tier, "free")
 }
 
 func TestGetUserTierAndUsage_EmptyUserID(t *testing.T) {
@@ -222,12 +197,8 @@ func TestGetUserTierAndUsage_EmptyUserID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty user ID")
 	}
-	if tier != "free" {
-		t.Errorf("tier = %q, want free (default)", tier)
-	}
-	if count != 0 {
-		t.Errorf("count = %d, want 0", count)
-	}
+	testkit.AssertEqual(t, tier, "free")
+	testkit.AssertEqual(t, count, 0)
 }
 
 func BenchmarkGetUserTierAndUsage(b *testing.B) {
@@ -290,8 +261,5 @@ func TestGetUserTierAndUsage_NonPastDueStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// "canceled" status should NOT downgrade to free (only "past_due" does)
-	if tier != "pro" {
-		t.Errorf("canceled status tier = %q, want pro", tier)
-	}
+	testkit.AssertEqual(t, tier, "pro")
 }

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -353,4 +354,137 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 	}
 
 	testkit.AssertContains(t, buf.String(), "server shutdown error")
+}
+
+func TestAddHook(t *testing.T) {
+	var cfg Config
+	cfg.AddHook("db", func(_ context.Context) error { return nil })
+	cfg.AddHook("cache", func(_ context.Context) error { return nil })
+	testkit.AssertEqual(t, len(cfg.OnShutdown), 2)
+}
+
+func TestRunHooks_Sequential(t *testing.T) {
+	var order []string
+	hooks := []Hook{
+		{Name: "first", Fn: func(_ context.Context) error { order = append(order, "first"); return nil }},
+		{Name: "second", Fn: func(_ context.Context) error { order = append(order, "second"); return nil }},
+	}
+	err := RunHooks(context.Background(), nil, hooks)
+	testkit.AssertNoError(t, err)
+	testkit.AssertEqual(t, len(order), 2)
+	testkit.AssertEqual(t, order[0], "first")
+	testkit.AssertEqual(t, order[1], "second")
+}
+
+func TestRunHooks_Error(t *testing.T) {
+	hooks := []Hook{
+		{Name: "fail", Fn: func(_ context.Context) error { return errors.New("boom") }},
+		{Name: "ok", Fn: func(_ context.Context) error { return nil }},
+	}
+	err := RunHooks(context.Background(), nil, hooks)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "boom")
+}
+
+func TestRunHooksParallel_AllOK(t *testing.T) {
+	hooks := []Hook{
+		{Name: "a", Fn: func(_ context.Context) error { return nil }},
+		{Name: "b", Fn: func(_ context.Context) error { return nil }},
+	}
+	err := RunHooksParallel(context.Background(), nil, hooks)
+	testkit.AssertNoError(t, err)
+}
+
+func TestRunHooksParallel_WithErrors(t *testing.T) {
+	hooks := []Hook{
+		{Name: "fail1", Fn: func(_ context.Context) error { return errors.New("err1") }},
+		{Name: "fail2", Fn: func(_ context.Context) error { return errors.New("err2") }},
+	}
+	err := RunHooksParallel(context.Background(), nil, hooks)
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "err1")
+}
+
+func TestRunHooks_NilLogger(t *testing.T) {
+	hooks := []Hook{
+		{Name: "test", Fn: func(_ context.Context) error { return nil }},
+	}
+	err := RunHooks(context.Background(), nil, hooks)
+	testkit.AssertNoError(t, err)
+}
+
+func TestDrainer_ActiveAndCompleted(t *testing.T) {
+	d := &Drainer{}
+	testkit.AssertEqual(t, d.Active(), int64(0))
+	testkit.AssertEqual(t, d.Completed(), int64(0))
+
+	d.Add()
+	d.Add()
+	testkit.AssertEqual(t, d.Active(), int64(2))
+	testkit.AssertEqual(t, d.Completed(), int64(0))
+
+	d.Done()
+	testkit.AssertEqual(t, d.Active(), int64(1))
+	testkit.AssertEqual(t, d.Completed(), int64(1))
+
+	d.Done()
+	testkit.AssertEqual(t, d.Active(), int64(0))
+	testkit.AssertEqual(t, d.Completed(), int64(2))
+}
+
+func TestDrainer_ActiveDuringMiddleware(t *testing.T) {
+	d := &Drainer{}
+	inHandler := make(chan struct{})
+	canFinish := make(chan struct{})
+
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(inHandler)
+		<-canFinish
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler := d.Middleware(inner)
+
+	go func() {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		handler.ServeHTTP(rec, req)
+	}()
+
+	<-inHandler
+	testkit.AssertEqual(t, d.Active(), int64(1))
+	close(canFinish)
+	d.Wait()
+	testkit.AssertEqual(t, d.Active(), int64(0))
+	testkit.AssertEqual(t, d.Completed(), int64(1))
+}
+
+func TestDrainer_WaitWithContext_Success(t *testing.T) {
+	d := &Drainer{}
+	d.Add()
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		d.Done()
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	err := d.WaitWithContext(ctx)
+	testkit.AssertNoError(t, err)
+}
+
+func TestDrainer_WaitWithContext_Cancelled(t *testing.T) {
+	d := &Drainer{}
+	d.Add()
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	err := d.WaitWithContext(ctx)
+	testkit.AssertError(t, err)
+	d.Done() // clean up
+}
+
+func TestDrainer_WaitWithContext_AlreadyDrained(t *testing.T) {
+	d := &Drainer{}
+	ctx := context.Background()
+	err := d.WaitWithContext(ctx)
+	testkit.AssertNoError(t, err)
 }

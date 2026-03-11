@@ -25,7 +25,7 @@ func TestString_Set(t *testing.T) {
 func TestStringRequired_Missing(t *testing.T) {
 	os.Unsetenv("CONFIG_TEST_REQ_MISS")
 	_, err := StringRequired("CONFIG_TEST_REQ_MISS")
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 }
 
 func TestStringRequired_Present(t *testing.T) {

@@ -81,5 +81,5 @@ func TestResolveCandidate_NilDB_WithUserID(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 	r = r.WithContext(middleware.SetUserID(r.Context(), "user-abc"))
 	_, err := ResolveCandidate(r, nil)
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 }

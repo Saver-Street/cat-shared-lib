@@ -210,7 +210,7 @@ func TestListenAndServe_BindError(t *testing.T) {
 	cfg := Config{Timeout: time.Second}
 
 	err = ListenAndServe(srv, cfg)
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 }
 
 // fakeResponseWriter is a minimal http.ResponseWriter for unit tests.
@@ -347,7 +347,7 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 
 	select {
 	case err := <-errCh:
-		testkit.AssertTrue(t, err != nil)
+		testkit.AssertError(t, err)
 	case <-time.After(10 * time.Second):
 		t.Fatal("test timed out")
 	}

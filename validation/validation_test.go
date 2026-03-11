@@ -143,25 +143,25 @@ func TestURL_Invalid(t *testing.T) {
 
 func TestRequired(t *testing.T) {
 	testkit.AssertNoError(t, Required("name", "hello"))
-	testkit.AssertTrue(t, Required("name", "") != nil)
-	testkit.AssertTrue(t, Required("name", "   ") != nil)
+	testkit.AssertError(t, Required("name", ""))
+	testkit.AssertError(t, Required("name", "   "))
 }
 
 func TestMinLength(t *testing.T) {
 	testkit.AssertNoError(t, MinLength("name", "hello", 3))
-	testkit.AssertTrue(t, MinLength("name", "hi", 3) != nil)
-	testkit.AssertTrue(t, MinLength("name", "   hi   ", 3) != nil)
+	testkit.AssertError(t, MinLength("name", "hi", 3))
+	testkit.AssertError(t, MinLength("name", "   hi   ", 3))
 }
 
 func TestMaxLength(t *testing.T) {
 	testkit.AssertNoError(t, MaxLength("name", "hi", 5))
-	testkit.AssertTrue(t, MaxLength("name", "toolongvalue", 5) != nil)
+	testkit.AssertError(t, MaxLength("name", "toolongvalue", 5))
 }
 
 func TestOneOf(t *testing.T) {
 	allowed := []string{"admin", "user", "guest"}
 	testkit.AssertNoError(t, OneOf("role", "admin", allowed))
-	testkit.AssertTrue(t, OneOf("role", "superadmin", allowed) != nil)
+	testkit.AssertError(t, OneOf("role", "superadmin", allowed))
 }
 
 func TestCollect_AllPass(t *testing.T) {
@@ -204,7 +204,7 @@ func TestURL_TrimmedInput(t *testing.T) {
 
 func TestURL_BadParse(t *testing.T) {
 	err := URL("url", "://")
-	testkit.AssertTrue(t, err != nil)
+	testkit.AssertError(t, err)
 }
 
 func TestSlug_Valid(t *testing.T) {

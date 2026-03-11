@@ -202,44 +202,44 @@ func HTML(w http.ResponseWriter, code int, body string) {
 // status code. It is useful for proxying file downloads, serving generated
 // content, or streaming large payloads without buffering in memory.
 func Stream(w http.ResponseWriter, code int, contentType string, r io.Reader) {
-w.Header().Set("Content-Type", contentType)
-w.WriteHeader(code)
-if _, err := io.Copy(w, r); err != nil {
-slog.Error("response: stream copy failed", "error", err)
-}
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(code)
+	if _, err := io.Copy(w, r); err != nil {
+		slog.Error("response: stream copy failed", "error", err)
+	}
 }
 
 // Download writes an io.Reader as a file download response. It sets
 // Content-Disposition to "attachment" with the given filename, and
 // streams the content using the specified content type.
 func Download(w http.ResponseWriter, contentType, filename string, r io.Reader) {
-w.Header().Set("Content-Type", contentType)
-w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
-w.WriteHeader(http.StatusOK)
-if _, err := io.Copy(w, r); err != nil {
-slog.Error("response: download copy failed", "error", err)
-}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	w.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(w, r); err != nil {
+		slog.Error("response: download copy failed", "error", err)
+	}
 }
 
 // XML sends an XML response with the given status code. The response
 // includes an XML declaration header.
 func XML(w http.ResponseWriter, status int, data any) {
-w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-w.WriteHeader(status)
-w.Write([]byte(xml.Header))
-if err := xml.NewEncoder(w).Encode(data); err != nil {
-slog.Error("response: failed to encode XML", "error", err)
-}
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.WriteHeader(status)
+	w.Write([]byte(xml.Header))
+	if err := xml.NewEncoder(w).Encode(data); err != nil {
+		slog.Error("response: failed to encode XML", "error", err)
+	}
 }
 
 // NotModified sends a 304 Not Modified response with no body.
 // Typically used in conjunction with ETag or Last-Modified headers.
 func NotModified(w http.ResponseWriter) {
-w.WriteHeader(http.StatusNotModified)
+	w.WriteHeader(http.StatusNotModified)
 }
 
 // SeeOther sends a 303 See Other redirect to the given URL.
 // Used after POST/PUT/DELETE to redirect the client to a GET endpoint.
 func SeeOther(w http.ResponseWriter, r *http.Request, url string) {
-http.Redirect(w, r, url, http.StatusSeeOther)
+	http.Redirect(w, r, url, http.StatusSeeOther)
 }

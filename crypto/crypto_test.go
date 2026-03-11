@@ -187,3 +187,35 @@ func TestGenerateToken_UsesDefaultReader(t *testing.T) {
 	// Verify default reader works (crypto/rand).
 	testkit.AssertEqual(t, randReader, rand.Reader)
 }
+
+func TestGenerateUUID_Format(t *testing.T) {
+id, err := GenerateUUID()
+testkit.RequireNoError(t, err)
+// UUID v4 format: 8-4-4-4-12
+testkit.AssertEqual(t, len(id), 36)
+testkit.AssertEqual(t, id[8], byte('-'))
+testkit.AssertEqual(t, id[13], byte('-'))
+testkit.AssertEqual(t, id[18], byte('-'))
+testkit.AssertEqual(t, id[23], byte('-'))
+}
+
+func TestGenerateUUID_Version4(t *testing.T) {
+id, err := GenerateUUID()
+testkit.RequireNoError(t, err)
+// Version nibble should be '4'
+testkit.AssertEqual(t, id[14], byte('4'))
+}
+
+func TestGenerateUUID_Unique(t *testing.T) {
+a, err := GenerateUUID()
+testkit.RequireNoError(t, err)
+b, err := GenerateUUID()
+testkit.RequireNoError(t, err)
+testkit.AssertNotEqual(t, a, b)
+}
+
+func BenchmarkGenerateUUID(b *testing.B) {
+for b.Loop() {
+GenerateUUID()
+}
+}

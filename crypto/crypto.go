@@ -131,3 +131,19 @@ func NeedsRehash(hash string, desiredCost int) bool {
 	}
 	return cost < desiredCost
 }
+
+// GenerateUUID returns a new random UUID v4 string. It uses crypto/rand
+// for cryptographically secure random bytes.
+func GenerateUUID() (string, error) {
+var uuid [16]byte
+if _, err := io.ReadFull(rand.Reader, uuid[:]); err != nil {
+return "", fmt.Errorf("crypto: generate uuid: %w", err)
+}
+// Set version 4 (bits 12-15 of time_hi_and_version)
+uuid[6] = (uuid[6] & 0x0f) | 0x40
+// Set variant (bits 6-7 of clock_seq_hi)
+uuid[8] = (uuid[8] & 0x3f) | 0x80
+
+return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:16]), nil
+}

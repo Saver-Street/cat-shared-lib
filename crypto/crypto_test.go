@@ -235,3 +235,25 @@ func TestHashSHA256_Deterministic(t *testing.T) {
 	data := []byte("test data")
 	testkit.AssertEqual(t, HashSHA256(data), HashSHA256(data))
 }
+
+func TestRandomString_Length(t *testing.T) {
+	for _, n := range []int{0, 1, 8, 16, 32, 64} {
+		s := RandomString(n)
+		testkit.AssertLen(t, []byte(s), n)
+	}
+}
+
+func TestRandomString_Alphanumeric(t *testing.T) {
+	s := RandomString(1000)
+	for _, c := range s {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+			t.Fatalf("unexpected character %q in random string", c)
+		}
+	}
+}
+
+func TestRandomString_Unique(t *testing.T) {
+	a := RandomString(32)
+	b := RandomString(32)
+	testkit.AssertNotEqual(t, a, b)
+}

@@ -203,54 +203,54 @@ var multiHyphen = regexp.MustCompile(`-{2,}`)
 // replaces non-alphanumeric characters with hyphens, collapses consecutive
 // hyphens, and trims leading/trailing hyphens.
 func Slugify(s string) string {
-s = strings.TrimSpace(s)
-s = strings.ToLower(s)
+	s = strings.TrimSpace(s)
+	s = strings.ToLower(s)
 
-var b strings.Builder
-b.Grow(len(s))
-for _, r := range s {
-if unicode.IsLetter(r) || unicode.IsDigit(r) {
-b.WriteRune(r)
-} else {
-b.WriteByte('-')
-}
-}
-slug := multiHyphen.ReplaceAllString(b.String(), "-")
-return strings.Trim(slug, "-")
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('-')
+		}
+	}
+	slug := multiHyphen.ReplaceAllString(b.String(), "-")
+	return strings.Trim(slug, "-")
 }
 
 // EscapeHTML escapes special HTML characters (<, >, &, ', ") so the string
 // can be safely embedded in HTML content without risk of injection.
 func EscapeHTML(s string) string {
-return html.EscapeString(s)
+	return html.EscapeString(s)
 }
 
 // Truncate shortens s to at most maxLen runes. If the string exceeds maxLen,
 // it is trimmed and "…" is appended (the ellipsis counts toward maxLen).
 // Useful for display names, log messages, and UI labels.
 func Truncate(s string, maxLen int) string {
-runes := []rune(s)
-if len(runes) <= maxLen {
-return s
-}
-if maxLen <= 1 {
-return "…"
-}
-return string(runes[:maxLen-1]) + "…"
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	if maxLen <= 1 {
+		return "…"
+	}
+	return string(runes[:maxLen-1]) + "…"
 }
 
 // RemoveNonPrintable strips control characters and non-printable runes from s,
 // keeping only printable Unicode characters and ASCII whitespace (space, tab,
 // newline). Useful for cleaning user input before storage or display.
 func RemoveNonPrintable(s string) string {
-var b strings.Builder
-b.Grow(len(s))
-for _, r := range s {
-if unicode.IsPrint(r) || r == '\n' || r == '\t' {
-b.WriteRune(r)
-}
-}
-return b.String()
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if unicode.IsPrint(r) || r == '\n' || r == '\t' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 var multiSpace = regexp.MustCompile(`\s+`)
@@ -259,128 +259,128 @@ var multiSpace = regexp.MustCompile(`\s+`)
 // newlines) into a single space and trims leading/trailing whitespace.
 // Useful for cleaning user-entered names, titles, and search queries.
 func NormalizeWhitespace(s string) string {
-return strings.TrimSpace(multiSpace.ReplaceAllString(s, " "))
+	return strings.TrimSpace(multiSpace.ReplaceAllString(s, " "))
 }
 
 // CamelToSnake converts a camelCase or PascalCase string to snake_case.
 // Consecutive uppercase letters (e.g., "HTTPClient") are treated as a
 // single acronym ("http_client"). Empty input returns "".
 func CamelToSnake(s string) string {
-if s == "" {
-return ""
-}
-var b strings.Builder
-runes := []rune(s)
-for i, r := range runes {
-if unicode.IsUpper(r) {
-if i > 0 {
-prev := runes[i-1]
-// Insert underscore before an uppercase letter when the
-// previous character is lowercase, OR when the previous
-// character is uppercase and the next is lowercase (end
-// of an acronym like "HTTP" in "HTTPClient").
-if unicode.IsLower(prev) ||
-(unicode.IsUpper(prev) && i+1 < len(runes) && unicode.IsLower(runes[i+1])) {
-b.WriteRune('_')
-}
-}
-b.WriteRune(unicode.ToLower(r))
-} else {
-b.WriteRune(r)
-}
-}
-return b.String()
+	if s == "" {
+		return ""
+	}
+	var b strings.Builder
+	runes := []rune(s)
+	for i, r := range runes {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				prev := runes[i-1]
+				// Insert underscore before an uppercase letter when the
+				// previous character is lowercase, OR when the previous
+				// character is uppercase and the next is lowercase (end
+				// of an acronym like "HTTP" in "HTTPClient").
+				if unicode.IsLower(prev) ||
+					(unicode.IsUpper(prev) && i+1 < len(runes) && unicode.IsLower(runes[i+1])) {
+					b.WriteRune('_')
+				}
+			}
+			b.WriteRune(unicode.ToLower(r))
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // SnakeToCamel converts a snake_case string to camelCase. The first
 // character remains lowercase. Empty segments (from consecutive
 // underscores) are skipped.
 func SnakeToCamel(s string) string {
-parts := strings.Split(s, "_")
-var b strings.Builder
-for i, p := range parts {
-if p == "" {
-continue
-}
-if i == 0 || b.Len() == 0 {
-b.WriteString(strings.ToLower(p))
-} else {
-runes := []rune(strings.ToLower(p))
-runes[0] = unicode.ToUpper(runes[0])
-b.WriteString(string(runes))
-}
-}
-return b.String()
+	parts := strings.Split(s, "_")
+	var b strings.Builder
+	for i, p := range parts {
+		if p == "" {
+			continue
+		}
+		if i == 0 || b.Len() == 0 {
+			b.WriteString(strings.ToLower(p))
+		} else {
+			runes := []rune(strings.ToLower(p))
+			runes[0] = unicode.ToUpper(runes[0])
+			b.WriteString(string(runes))
+		}
+	}
+	return b.String()
 }
 
 // MapKeys applies a transform function to every key in the map, returning a
 // new map with transformed keys and original values. If two keys collide
 // after transformation, the last value wins.
 func MapKeys[V any](m map[string]V, transform func(string) string) map[string]V {
-out := make(map[string]V, len(m))
-for k, v := range m {
-out[transform(k)] = v
-}
-return out
+	out := make(map[string]V, len(m))
+	for k, v := range m {
+		out[transform(k)] = v
+	}
+	return out
 }
 
 // Filter returns a new slice containing only the elements for which keep
 // returns true. The original slice is not modified.
 func Filter[T any](items []T, keep func(T) bool) []T {
-result := make([]T, 0, len(items))
-for _, item := range items {
-if keep(item) {
-result = append(result, item)
-}
-}
-return result
+	result := make([]T, 0, len(items))
+	for _, item := range items {
+		if keep(item) {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // Unique returns a new slice with duplicate elements removed, preserving
 // the order of first occurrence.
 func Unique[T comparable](items []T) []T {
-seen := make(map[T]struct{}, len(items))
-result := make([]T, 0, len(items))
-for _, item := range items {
-if _, ok := seen[item]; !ok {
-seen[item] = struct{}{}
-result = append(result, item)
-}
-}
-return result
+	seen := make(map[T]struct{}, len(items))
+	result := make([]T, 0, len(items))
+	for _, item := range items {
+		if _, ok := seen[item]; !ok {
+			seen[item] = struct{}{}
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // Map applies fn to each element of items and returns the transformed slice.
 func Map[T any, U any](items []T, fn func(T) U) []U {
-if items == nil {
-return nil
-}
-result := make([]U, len(items))
-for i, item := range items {
-result[i] = fn(item)
-}
-return result
+	if items == nil {
+		return nil
+	}
+	result := make([]U, len(items))
+	for i, item := range items {
+		result[i] = fn(item)
+	}
+	return result
 }
 
 // Compact removes zero-value elements from a slice, returning a new slice
 // containing only non-zero elements in their original order.
 func Compact[T comparable](items []T) []T {
-var zero T
-result := make([]T, 0, len(items))
-for _, item := range items {
-if item != zero {
-result = append(result, item)
-}
-}
-return result
+	var zero T
+	result := make([]T, 0, len(items))
+	for _, item := range items {
+		if item != zero {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // Contains reports whether item is present in the slice.
 func Contains[T comparable](items []T, item T) bool {
-for _, v := range items {
-if v == item {
-return true
-}
-}
-return false
+	for _, v := range items {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }

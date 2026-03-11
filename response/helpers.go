@@ -214,7 +214,7 @@ func Stream(w http.ResponseWriter, code int, contentType string, r io.Reader) {
 // streams the content using the specified content type.
 func Download(w http.ResponseWriter, contentType, filename string, r io.Reader) {
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename)) //nolint:gocritic // HTTP header requires this quoting style, not Go %q
 	w.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(w, r); err != nil {
 		slog.Error("response: download copy failed", "error", err)

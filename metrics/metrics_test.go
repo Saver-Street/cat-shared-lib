@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestNewRegistry(t *testing.T) {
@@ -20,12 +22,9 @@ func TestRegistry_Register_Duplicate_Panics(t *testing.T) {
 	c := NewCounter("test_total", "test help")
 	r.Register(c)
 
-	defer func() {
-		if recover() == nil {
-			t.Error("expected panic on duplicate registration")
-		}
-	}()
-	r.Register(NewCounter("test_total", "duplicate"))
+	testkit.AssertPanics(t, func() {
+		r.Register(NewCounter("test_total", "duplicate"))
+	})
 }
 
 func TestCounter_IncAndValue(t *testing.T) {

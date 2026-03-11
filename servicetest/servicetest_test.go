@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 // ---- HTTPTestServer tests ----
@@ -442,12 +444,9 @@ func TestFixtures_MustLoad(t *testing.T) {
 
 func TestFixtures_MustLoad_Panics(t *testing.T) {
 	f := NewFixtures()
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for missing fixture")
-		}
-	}()
-	f.MustLoad("nonexistent")
+	testkit.AssertPanics(t, func() {
+		f.MustLoad("nonexistent")
+	})
 }
 
 func TestFixtures_RegisterJSON(t *testing.T) {

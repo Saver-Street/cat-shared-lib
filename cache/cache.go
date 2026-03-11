@@ -5,6 +5,7 @@ package cache
 import (
 	"container/list"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -18,6 +19,9 @@ type Config struct {
 	// CleanupInterval is how often expired entries are swept. Default: 1 minute.
 	// Set to 0 to disable background cleanup.
 	CleanupInterval time.Duration
+	// OnEvict is called when an entry is removed due to LRU eviction,
+	// TTL expiration, or explicit deletion. May be nil.
+	OnEvict func(key any, value any)
 }
 
 func (c *Config) defaults() {
@@ -49,6 +53,8 @@ type Cache[K comparable, V any] struct {
 	stopCh  chan struct{}
 	stopped bool
 	now     func() time.Time
+	hits    atomic.Int64
+	misses  atomic.Int64
 }
 
 // New creates a new LRU cache. Call Stop when the cache is no longer needed
@@ -110,6 +116,7 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 
 	el, ok := c.items[key]
 	if !ok {
+		c.misses.Add(1)
 		var zero V
 		return zero, false
 	}
@@ -117,11 +124,13 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	e := el.Value.(*entry[K, V])
 	if !e.expiresAt.IsZero() && c.now().After(e.expiresAt) {
 		c.removeElement(el)
+		c.misses.Add(1)
 		var zero V
 		return zero, false
 	}
 
 	c.order.MoveToFront(el)
+	c.hits.Add(1)
 	return e.value, true
 }
 
@@ -202,6 +211,9 @@ func (c *Cache[K, V]) removeElement(el *list.Element) {
 	e := el.Value.(*entry[K, V])
 	delete(c.items, e.key)
 	c.order.Remove(el)
+	if c.config.OnEvict != nil {
+		c.config.OnEvict(e.key, e.value)
+	}
 }
 
 func (c *Cache[K, V]) cleanupLoop() {
@@ -236,10 +248,41 @@ func (c *Cache[K, V]) removeExpired() {
 // The fill function is called while the cache lock is NOT held to avoid
 // blocking other cache operations during slow computations.
 func (c *Cache[K, V]) GetOrSet(key K, fill func() V) V {
-if v, ok := c.Get(key); ok {
-return v
+	if v, ok := c.Get(key); ok {
+		return v
+	}
+	v := fill()
+	c.Set(key, v)
+	return v
 }
-v := fill()
-c.Set(key, v)
-return v
+
+// Stats holds cache statistics.
+type Stats struct {
+	Hits    int64   `json:"hits"`
+	Misses  int64   `json:"misses"`
+	Size    int     `json:"size"`
+	HitRate float64 `json:"hit_rate"`
+}
+
+// Stats returns a snapshot of cache hit/miss statistics.
+func (c *Cache[K, V]) Stats() Stats {
+	hits := c.hits.Load()
+	misses := c.misses.Load()
+	total := hits + misses
+	var hitRate float64
+	if total > 0 {
+		hitRate = float64(hits) / float64(total)
+	}
+	return Stats{
+		Hits:    hits,
+		Misses:  misses,
+		Size:    c.Len(),
+		HitRate: hitRate,
+	}
+}
+
+// ResetStats resets the hit/miss counters to zero.
+func (c *Cache[K, V]) ResetStats() {
+	c.hits.Store(0)
+	c.misses.Store(0)
 }

@@ -110,3 +110,62 @@ func Handler(service, version string, checkers ...Checker) http.HandlerFunc {
 		}
 	}
 }
+
+// HandlerWithTimeout works like Handler but uses the given timeout for checker
+// execution instead of the default 5 seconds.
+func HandlerWithTimeout(service, version string, timeout time.Duration, checkers ...Checker) http.HandlerFunc {
+	startTime := time.Now()
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		status := Status{
+			Status:  "ok",
+			Service: service,
+			Version: version,
+			Uptime:  time.Since(startTime).Round(time.Second).String(),
+		}
+
+		if len(checkers) > 0 {
+			status.Checks = make(map[string]string, len(checkers))
+			ctx, cancel := context.WithTimeout(r.Context(), timeout)
+			defer cancel()
+
+			var mu sync.Mutex
+			var wg sync.WaitGroup
+			for _, c := range checkers {
+				wg.Add(1)
+				go func(c Checker) {
+					defer wg.Done()
+					var checkErr error
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								checkErr = fmt.Errorf("panic: %v", r)
+							}
+						}()
+						checkErr = c.Check(ctx)
+					}()
+					mu.Lock()
+					defer mu.Unlock()
+					if checkErr != nil {
+						status.Checks[c.Name()] = checkErr.Error()
+						status.Status = "degraded"
+					} else {
+						status.Checks[c.Name()] = "ok"
+					}
+				}(c)
+			}
+			wg.Wait()
+		}
+
+		code := http.StatusOK
+		if status.Status != "ok" {
+			code = http.StatusServiceUnavailable
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		if err := json.NewEncoder(w).Encode(status); err != nil {
+			slog.Error("health: failed to encode response", "error", err)
+		}
+	}
+}

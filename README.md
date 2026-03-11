@@ -137,18 +137,15 @@ mux.Handle("/editor/", middleware.RequireRole("editor")(handler))
 mux.Handle("/premium/",middleware.RequireSubscriptionTier("pro")(handler))
 
 // --- Stack middleware (outermost first) ---
-handler := middleware.Recovery(
-    middleware.RequestID(
-        middleware.Logging(logger)(
-            middleware.RateLimit(middleware.RateLimitConfig{
-                RequestsPerSecond: 100,
-                Burst:             20,
-            })(
-                middleware.RequireAuth(apiHandler),
-            ),
-        ),
-    ),
-)
+handler := middleware.Chain(
+    middleware.Recovery,
+    middleware.RequestID,
+    middleware.SecureHeaders,       // X-Content-Type-Options, X-Frame-Options
+    middleware.NoCache,             // Cache-Control, Pragma, Expires
+    middleware.MaxBody(1<<20),      // 1 MiB request body limit
+    middleware.Timeout(30*time.Second),
+    middleware.Logging(logger),
+)(apiHandler)
 ```
 
 ---
@@ -535,6 +532,12 @@ id, err := request.RequireURLParamInt(r, "id", chi.URLParam)
 
 // Optional query param with default
 status := request.OptionalQueryParam(r.URL.Query(), "status", "active")
+
+// Extract Bearer token from Authorization header
+token, ok := request.ExtractBearerToken(r)
+
+// Check Content-Type
+if request.IsJSON(r) { /* decode JSON body */ }
 ```
 
 ---
@@ -694,6 +697,26 @@ ms.Handle(func(w http.ResponseWriter, r *http.Request) {
 })
 client.GetJSON(ctx, ms.URL+"/path", &result)
 testkit.AssertEqual(t, ms.RequestCount(), 1)
+```
+
+**`security`** — Input validation, PII redaction, and security helpers.
+
+```go
+security.ContainsSuspiciousInput(input)    // SQL/XSS detection
+security.RedactPII(data)                   // mask PII fields in maps
+security.SanitizeHeader(s)                 // strip CRLF from headers
+security.IsRelativeURL("/dashboard")       // safe redirect check
+security.MaskEmail("alice@example.com")    // → "a****@example.com"
+```
+
+**`sanitize`** — Input sanitization and string processing.
+
+```go
+sanitize.StripHTML("<b>Hello</b>")         // → "Hello"
+sanitize.Mask("sk-abc123def456", 6)        // → "*********def456"
+sanitize.Slugify("My Blog Post!")          // → "my-blog-post"
+sanitize.TrimStrings([]string{" a ", ""})  // → ["a"]
+sanitize.Deref(ptr, "default")            // generic pointer dereference
 ```
 
 ---

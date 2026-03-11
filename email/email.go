@@ -97,14 +97,20 @@ var ErrNoRecipients = errors.New("email: message must have at least one recipien
 // ErrEmptyBody is returned when both HTML and Text are empty.
 var ErrEmptyBody = errors.New("email: message must have HTML or Text body")
 
-// Send sends msg via SMTP. It respects context cancellation during the dial
-// phase.
-func (m *Mailer) Send(_ context.Context, msg Message) error {
+// Send sends msg via SMTP. It checks context cancellation before initiating
+// the network call, allowing callers to abort early via context timeout or
+// cancel.
+func (m *Mailer) Send(ctx context.Context, msg Message) error {
 	if len(msg.To) == 0 {
 		return ErrNoRecipients
 	}
 	if msg.HTML == "" && msg.Text == "" {
 		return ErrEmptyBody
+	}
+
+	// Respect context cancellation before the potentially slow SMTP send.
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("email: %w", err)
 	}
 
 	raw, err := buildMessage(m.cfg.From, msg)

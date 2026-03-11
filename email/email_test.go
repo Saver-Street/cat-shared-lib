@@ -423,3 +423,31 @@ func TestSend_WithAllRecipientTypes(t *testing.T) {
 	testkit.AssertTrue(t, recipientSet["cc@example.com"])
 	testkit.AssertTrue(t, recipientSet["bcc@example.com"])
 }
+
+func TestSend_CancelledContext(t *testing.T) {
+	m, _ := newMailerWithCapture(defaultCfg(), nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := m.Send(ctx, Message{
+		To:      []string{"a@b.com"},
+		Subject: "Hi",
+		Text:    "body",
+	})
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "context canceled")
+}
+
+func TestSend_DeadlineExceeded(t *testing.T) {
+	m, _ := newMailerWithCapture(defaultCfg(), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 0)
+	defer cancel()
+
+	err := m.Send(ctx, Message{
+		To:      []string{"a@b.com"},
+		Subject: "Hi",
+		Text:    "body",
+	})
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "deadline exceeded")
+}

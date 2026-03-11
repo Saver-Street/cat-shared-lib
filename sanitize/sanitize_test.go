@@ -6,126 +6,85 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestDocFilename_Normal(t *testing.T) {
-	got := DocFilename("report.pdf")
-	if got != "report.pdf" {
-		t.Errorf("got %q, want report.pdf", got)
-	}
+	testkit.AssertEqual(t, DocFilename("report.pdf"), "report.pdf")
 }
 
 func TestDocFilename_Empty(t *testing.T) {
-	got := DocFilename("")
-	if got != "unnamed" {
-		t.Errorf("got %q, want unnamed", got)
-	}
+	testkit.AssertEqual(t, DocFilename(""), "unnamed")
 }
 
 func TestDocFilename_PathTraversal(t *testing.T) {
-	got := DocFilename("../../../etc/passwd")
-	if got != "passwd" {
-		t.Errorf("got %q, want passwd (base only)", got)
-	}
+	testkit.AssertEqual(t, DocFilename("../../../etc/passwd"), "passwd")
 }
 
 func TestDocFilename_ControlChars(t *testing.T) {
-	got := DocFilename("file\x00name\x01.txt")
-	if got != "filename.txt" {
-		t.Errorf("got %q, want filename.txt (control chars stripped)", got)
-	}
+	testkit.AssertEqual(t, DocFilename("file\x00name\x01.txt"), "filename.txt")
 }
 
 func TestDocFilename_AllControlChars(t *testing.T) {
-	got := DocFilename("\x01\x02\x03")
-	if got != "unnamed" {
-		t.Errorf("got %q, want unnamed (all chars stripped)", got)
-	}
+	testkit.AssertEqual(t, DocFilename("\x01\x02\x03"), "unnamed")
 }
 
 func TestDocFilename_DEL(t *testing.T) {
-	got := DocFilename("file\x7fname.txt")
-	if got != "filename.txt" {
-		t.Errorf("got %q, want filename.txt (DEL stripped)", got)
-	}
+	testkit.AssertEqual(t, DocFilename("file\x7fname.txt"), "filename.txt")
 }
 
 func TestNilIfEmpty_Empty(t *testing.T) {
-	if NilIfEmpty("") != nil {
-		t.Error("expected nil for empty string")
-	}
+	testkit.AssertNil(t, NilIfEmpty(""))
 }
 
 func TestNilIfEmpty_NonEmpty(t *testing.T) {
 	got := NilIfEmpty("hello")
-	if got == nil || *got != "hello" {
-		t.Errorf("got %v, want pointer to hello", got)
+	if got == nil {
+		t.Fatal("expected non-nil")
 	}
+	testkit.AssertEqual(t, *got, "hello")
 }
 
 func TestIsDuplicateKey_True(t *testing.T) {
 	err := &pgconn.PgError{Code: "23505"}
-	if !IsDuplicateKey(err) {
-		t.Error("expected true for 23505 error")
-	}
+	testkit.AssertTrue(t, IsDuplicateKey(err))
 }
 
 func TestIsDuplicateKey_False(t *testing.T) {
 	err := errors.New("some other error")
-	if IsDuplicateKey(err) {
-		t.Error("expected false for non-duplicate error")
-	}
+	testkit.AssertFalse(t, IsDuplicateKey(err))
 }
 
 func TestIsDuplicateKey_Nil(t *testing.T) {
-	if IsDuplicateKey(nil) {
-		t.Error("expected false for nil error")
-	}
+	testkit.AssertFalse(t, IsDuplicateKey(nil))
 }
 
 func TestDocFilename_Unicode(t *testing.T) {
-	got := DocFilename("résumé_日本語.pdf")
-	if got != "résumé_日本語.pdf" {
-		t.Errorf("got %q, want résumé_日本語.pdf", got)
-	}
+	testkit.AssertEqual(t, DocFilename("résumé_日本語.pdf"), "résumé_日本語.pdf")
 }
 
 func TestDocFilename_LongFilename(t *testing.T) {
 	long := strings.Repeat("a", 300) + ".pdf"
-	got := DocFilename(long)
-	if len(got) != len(long) {
-		t.Errorf("long filename length = %d, want %d (no truncation)", len(got), len(long))
-	}
+	testkit.AssertEqual(t, len(DocFilename(long)), len(long))
 }
 
 func TestDocFilename_OnlySpaces(t *testing.T) {
-	got := DocFilename("   ")
-	if got != "   " {
-		t.Errorf("got %q, want spaces preserved", got)
-	}
+	testkit.AssertEqual(t, DocFilename("   "), "   ")
 }
 
 func TestDocFilename_DotFile(t *testing.T) {
-	got := DocFilename(".gitignore")
-	if got != ".gitignore" {
-		t.Errorf("got %q, want .gitignore", got)
-	}
+	testkit.AssertEqual(t, DocFilename(".gitignore"), ".gitignore")
 }
 
 func TestDocFilename_Emoji(t *testing.T) {
-	got := DocFilename("📄document.pdf")
-	if got != "📄document.pdf" {
-		t.Errorf("got %q, want 📄document.pdf", got)
-	}
+	testkit.AssertEqual(t, DocFilename("📄document.pdf"), "📄document.pdf")
 }
 
 func TestIsDuplicateKey_WrappedError(t *testing.T) {
 	inner := &pgconn.PgError{Code: "23505"}
 	wrapped := fmt.Errorf("insert failed: %w", inner)
-	if !IsDuplicateKey(wrapped) {
-		t.Error("expected true for wrapped 23505 error")
-	}
+	testkit.AssertTrue(t, IsDuplicateKey(wrapped))
 }
 
 func TestNilIfEmpty_Whitespace(t *testing.T) {
@@ -133,9 +92,7 @@ func TestNilIfEmpty_Whitespace(t *testing.T) {
 	if got == nil {
 		t.Fatal("whitespace-only string should not be nil")
 	}
-	if *got != " " {
-		t.Errorf("got %q, want single space", *got)
-	}
+	testkit.AssertEqual(t, *got, " ")
 }
 
 // --- Benchmarks ---
@@ -161,15 +118,11 @@ func BenchmarkIsDuplicateKey(b *testing.B) {
 }
 
 func TestTrimAndNilIfEmpty_Empty(t *testing.T) {
-	if TrimAndNilIfEmpty("") != nil {
-		t.Error("expected nil for empty string")
-	}
+	testkit.AssertNil(t, TrimAndNilIfEmpty(""))
 }
 
 func TestTrimAndNilIfEmpty_WhitespaceOnly(t *testing.T) {
-	if TrimAndNilIfEmpty("   ") != nil {
-		t.Error("expected nil for whitespace-only string")
-	}
+	testkit.AssertNil(t, TrimAndNilIfEmpty("   "))
 }
 
 func TestTrimAndNilIfEmpty_NonEmpty(t *testing.T) {
@@ -177,16 +130,15 @@ func TestTrimAndNilIfEmpty_NonEmpty(t *testing.T) {
 	if got == nil {
 		t.Fatal("expected non-nil for non-empty string after trim")
 	}
-	if *got != "hello" {
-		t.Errorf("got %q, want hello", *got)
-	}
+	testkit.AssertEqual(t, *got, "hello")
 }
 
 func TestTrimAndNilIfEmpty_NoTrimNeeded(t *testing.T) {
 	got := TrimAndNilIfEmpty("world")
-	if got == nil || *got != "world" {
-		t.Errorf("got %v, want &world", got)
+	if got == nil {
+		t.Fatal("expected non-nil")
 	}
+	testkit.AssertEqual(t, *got, "world")
 }
 
 // --- TruncateFilename table-driven tests ---
@@ -219,10 +171,7 @@ func TestTruncateFilename(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := TruncateFilename(tt.input, tt.maxLen)
-			if got != tt.want {
-				t.Errorf("TruncateFilename(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.want)
-			}
+			testkit.AssertEqual(t, TruncateFilename(tt.input, tt.maxLen), tt.want)
 		})
 	}
 }
@@ -252,10 +201,7 @@ func TestMaxLength(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := MaxLength(tt.input, tt.maxLen)
-			if got != tt.want {
-				t.Errorf("MaxLength(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.want)
-			}
+			testkit.AssertEqual(t, MaxLength(tt.input, tt.maxLen), tt.want)
 		})
 	}
 }
@@ -280,10 +226,7 @@ func TestSanitizeEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := SanitizeEmail(tt.input)
-			if got != tt.want {
-				t.Errorf("SanitizeEmail(%q) = %q, want %q", tt.input, got, tt.want)
-			}
+			testkit.AssertEqual(t, SanitizeEmail(tt.input), tt.want)
 		})
 	}
 }
@@ -310,10 +253,7 @@ func TestIsDatabaseError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := IsDatabaseError(tt.err, tt.code)
-			if got != tt.want {
-				t.Errorf("IsDatabaseError(%v, %q) = %v, want %v", tt.err, tt.code, got, tt.want)
-			}
+			testkit.AssertEqual(t, IsDatabaseError(tt.err, tt.code), tt.want)
 		})
 	}
 }
@@ -355,141 +295,94 @@ func int64Ptr(n int64) *int64 { return &n }
 func boolPtr(b bool) *bool    { return &b }
 
 func TestNullString_Nil(t *testing.T) {
-	if got := NullString(nil, "default"); got != "default" {
-		t.Errorf("NullString(nil) = %q, want default", got)
-	}
+	testkit.AssertEqual(t, NullString(nil, "default"), "default")
 }
 
 func TestNullString_Value(t *testing.T) {
-	if got := NullString(strPtr("hello"), "default"); got != "hello" {
-		t.Errorf("NullString(ptr) = %q, want hello", got)
-	}
+	testkit.AssertEqual(t, NullString(strPtr("hello"), "default"), "hello")
 }
 
 func TestNullString_Empty(t *testing.T) {
-	if got := NullString(strPtr(""), "default"); got != "" {
-		t.Errorf("NullString(empty ptr) = %q, want empty", got)
-	}
+	testkit.AssertEqual(t, NullString(strPtr(""), "default"), "")
 }
 
 func TestNullInt64_Nil(t *testing.T) {
-	if got := NullInt64(nil, 42); got != 42 {
-		t.Errorf("NullInt64(nil) = %d, want 42", got)
-	}
+	testkit.AssertEqual(t, NullInt64(nil, 42), int64(42))
 }
 
 func TestNullInt64_Value(t *testing.T) {
-	if got := NullInt64(int64Ptr(99), 0); got != 99 {
-		t.Errorf("NullInt64(ptr) = %d, want 99", got)
-	}
+	testkit.AssertEqual(t, NullInt64(int64Ptr(99), 0), int64(99))
 }
 
 func TestNullInt64_Zero(t *testing.T) {
-	if got := NullInt64(int64Ptr(0), 42); got != 0 {
-		t.Errorf("NullInt64(zero ptr) = %d, want 0", got)
-	}
+	testkit.AssertEqual(t, NullInt64(int64Ptr(0), 42), int64(0))
 }
 
 func TestNullBool_Nil(t *testing.T) {
-	if got := NullBool(nil, true); !got {
-		t.Error("NullBool(nil) should return default true")
-	}
+	testkit.AssertTrue(t, NullBool(nil, true))
 }
 
 func TestNullBool_False(t *testing.T) {
-	if got := NullBool(boolPtr(false), true); got {
-		t.Error("NullBool(false ptr) should return false")
-	}
+	testkit.AssertFalse(t, NullBool(boolPtr(false), true))
 }
 
 func TestNullBool_True(t *testing.T) {
-	if got := NullBool(boolPtr(true), false); !got {
-		t.Error("NullBool(true ptr) should return true")
-	}
+	testkit.AssertTrue(t, NullBool(boolPtr(true), false))
 }
 
 func TestDeref_Nil(t *testing.T) {
 	var p *string
-	if got := Deref(p, "default"); got != "default" {
-		t.Errorf("got %q", got)
-	}
+	testkit.AssertEqual(t, Deref(p, "default"), "default")
 }
 func TestDeref_NonNil(t *testing.T) {
 	s := "hello"
-	if got := Deref(&s, "default"); got != "hello" {
-		t.Errorf("got %q", got)
-	}
+	testkit.AssertEqual(t, Deref(&s, "default"), "hello")
 }
 func TestDeref_NilInt(t *testing.T) {
 	var p *int
-	if got := Deref(p, 42); got != 42 {
-		t.Errorf("got %d", got)
-	}
+	testkit.AssertEqual(t, Deref(p, 42), 42)
 }
 func TestDeref_NonNilInt(t *testing.T) {
 	n := 7
-	if got := Deref(&n, 42); got != 7 {
-		t.Errorf("got %d", got)
-	}
+	testkit.AssertEqual(t, Deref(&n, 42), 7)
 }
 func TestDeref_NilBool(t *testing.T) {
 	var p *bool
-	if got := Deref(p, true); !got {
-		t.Error("got false")
-	}
+	testkit.AssertTrue(t, Deref(p, true))
 }
 func TestDeref_NonNilBool(t *testing.T) {
 	b := false
-	if got := Deref(&b, true); got {
-		t.Error("got true")
-	}
+	testkit.AssertFalse(t, Deref(&b, true))
 }
 
 func TestStripHTML_Basic(t *testing.T) {
-	if got := StripHTML("<p>Hello</p>"); got != "Hello" {
-		t.Errorf("got %q, want %q", got, "Hello")
-	}
+	testkit.AssertEqual(t, StripHTML("<p>Hello</p>"), "Hello")
 }
 
 func TestStripHTML_NoTags(t *testing.T) {
-	if got := StripHTML("plain text"); got != "plain text" {
-		t.Errorf("got %q, want %q", got, "plain text")
-	}
+	testkit.AssertEqual(t, StripHTML("plain text"), "plain text")
 }
 
 func TestStripHTML_Empty(t *testing.T) {
-	if got := StripHTML(""); got != "" {
-		t.Errorf("got %q, want empty string", got)
-	}
+	testkit.AssertEqual(t, StripHTML(""), "")
 }
 
 func TestStripHTML_NestedTags(t *testing.T) {
-	if got := StripHTML("<div><b>bold</b> text</div>"); got != "bold text" {
-		t.Errorf("got %q, want %q", got, "bold text")
-	}
+	testkit.AssertEqual(t, StripHTML("<div><b>bold</b> text</div>"), "bold text")
 }
 
 func TestStripHTML_Attributes(t *testing.T) {
-	input := "<a href=\"https://example.com\">link</a>"
-	if got := StripHTML(input); got != "link" {
-		t.Errorf("got %q, want %q", got, "link")
-	}
+	testkit.AssertEqual(t, StripHTML("<a href=\"https://example.com\">link</a>"), "link")
 }
 
 func TestStripHTML_SelfClosing(t *testing.T) {
-	if got := StripHTML("line1<br/>line2"); got != "line1line2" {
-		t.Errorf("got %q, want %q", got, "line1line2")
-	}
+	testkit.AssertEqual(t, StripHTML("line1<br/>line2"), "line1line2")
 }
 
 func TestStripHTML_Script(t *testing.T) {
-	if got := StripHTML("<script>alert(1)</script>safe"); got != "alert(1)safe" {
-		t.Errorf("StripHTML strips tags not content; got %q", got)
-	}
+	testkit.AssertEqual(t, StripHTML("<script>alert(1)</script>safe"), "alert(1)safe")
 }
 
 func TestStripHTML_OnlyTags(t *testing.T) {
-	if got := StripHTML("<p></p>"); got != "" {
-		t.Errorf("got %q, want empty", got)
-	}
+	testkit.AssertEqual(t, StripHTML("<p></p>"), "")
 }

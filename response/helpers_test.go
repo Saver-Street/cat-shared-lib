@@ -358,11 +358,9 @@ func TestPaginated_EnvelopeFields(t *testing.T) {
 	w := httptest.NewRecorder()
 	Paginated(w, []string{"a", "b", "c"}, 50, 2, 3)
 
-	testkit.RequireEqual(t, w.Code, http.StatusOK)
+		testkit.RequireEqual(t, w.Code, http.StatusOK)
 	var got PagedResult[string]
-	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	testkit.AssertJSON(t, w.Body.Bytes(), &got)
 	testkit.AssertEqual(t, got.Total, 50)
 	testkit.AssertEqual(t, got.Page, 2)
 	testkit.AssertEqual(t, got.Limit, 3)
@@ -375,9 +373,7 @@ func TestPaginated_HasMore_False_OnLastPage(t *testing.T) {
 	Paginated(w, []int{4, 5}, 5, 2, 3)
 
 	var got PagedResult[int]
-	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	testkit.AssertJSON(t, w.Body.Bytes(), &got)
 	testkit.AssertFalse(t, got.HasMore)
 }
 
@@ -386,9 +382,7 @@ func TestPaginated_EmptyData(t *testing.T) {
 	Paginated(w, []string{}, 0, 1, 10)
 
 	var got PagedResult[string]
-	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	testkit.AssertJSON(t, w.Body.Bytes(), &got)
 	testkit.AssertEqual(t, got.Total, 0)
 	testkit.AssertFalse(t, got.HasMore)
 }
@@ -401,7 +395,7 @@ func TestAppError_WithAppError(t *testing.T) {
 	testkit.AssertHeader(t, w, "Content-Type", "application/json")
 
 	var body map[string]any
-	testkit.RequireNoError(t, json.NewDecoder(w.Body).Decode(&body))
+	testkit.AssertJSON(t, w.Body.Bytes(), &body)
 	testkit.AssertEqual(t, body["code"], "NOT_FOUND")
 	testkit.AssertEqual(t, body["message"], "user not found")
 }
@@ -423,6 +417,6 @@ func TestAppError_WithGenericError(t *testing.T) {
 	testkit.AssertStatus(t, w, http.StatusInternalServerError)
 
 	var body map[string]string
-	testkit.RequireNoError(t, json.NewDecoder(w.Body).Decode(&body))
+	testkit.AssertJSON(t, w.Body.Bytes(), &body)
 	testkit.AssertEqual(t, body["error"], "Internal server error")
 }

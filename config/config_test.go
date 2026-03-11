@@ -14,24 +14,18 @@ func setEnv(t *testing.T, key, val string) {
 }
 
 func TestString_Default(t *testing.T) {
-	if got := String("CONFIG_TEST_UNSET_STR", "fallback"); got != "fallback" {
-		t.Errorf("got %q, want %q", got, "fallback")
-	}
+	testkit.AssertEqual(t, String("CONFIG_TEST_UNSET_STR", "fallback"), "fallback")
 }
 
 func TestString_Set(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_STR", "hello")
-	if got := String("CONFIG_TEST_STR", "fallback"); got != "hello" {
-		t.Errorf("got %q, want %q", got, "hello")
-	}
+	testkit.AssertEqual(t, String("CONFIG_TEST_STR", "fallback"), "hello")
 }
 
 func TestStringRequired_Missing(t *testing.T) {
 	os.Unsetenv("CONFIG_TEST_REQ_MISS")
 	_, err := StringRequired("CONFIG_TEST_REQ_MISS")
-	if err == nil {
-		t.Error("expected error for missing required var")
-	}
+	testkit.AssertTrue(t, err != nil)
 }
 
 func TestStringRequired_Present(t *testing.T) {
@@ -40,107 +34,73 @@ func TestStringRequired_Present(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v != "value" {
-		t.Errorf("got %q, want %q", v, "value")
-	}
+	testkit.AssertEqual(t, v, "value")
 }
 
 func TestInt_Default(t *testing.T) {
-	if got := Int("CONFIG_TEST_UNSET_INT", 42); got != 42 {
-		t.Errorf("got %d, want 42", got)
-	}
+	testkit.AssertEqual(t, Int("CONFIG_TEST_UNSET_INT", 42), 42)
 }
 
 func TestInt_Set(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_INT", "99")
-	if got := Int("CONFIG_TEST_INT", 42); got != 99 {
-		t.Errorf("got %d, want 99", got)
-	}
+	testkit.AssertEqual(t, Int("CONFIG_TEST_INT", 42), 99)
 }
 
 func TestInt_Invalid(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_INT_BAD", "abc")
-	if got := Int("CONFIG_TEST_INT_BAD", 42); got != 42 {
-		t.Errorf("got %d, want 42 (default for invalid)", got)
-	}
+	testkit.AssertEqual(t, Int("CONFIG_TEST_INT_BAD", 42), 42)
 }
 
 func TestBool_Default(t *testing.T) {
-	if got := Bool("CONFIG_TEST_UNSET_BOOL", true); !got {
-		t.Error("got false, want true (default)")
-	}
+	testkit.AssertTrue(t, Bool("CONFIG_TEST_UNSET_BOOL", true))
 }
 
 func TestBool_True(t *testing.T) {
 	for _, v := range []string{"true", "1", "yes", "TRUE", "Yes"} {
 		setEnv(t, "CONFIG_TEST_BOOL", v)
-		if got := Bool("CONFIG_TEST_BOOL", false); !got {
-			t.Errorf("Bool(%q) = false, want true", v)
-		}
+		testkit.AssertTrue(t, Bool("CONFIG_TEST_BOOL", false))
 	}
 }
 
 func TestBool_False(t *testing.T) {
 	for _, v := range []string{"false", "0", "no", "FALSE", "No"} {
 		setEnv(t, "CONFIG_TEST_BOOL", v)
-		if got := Bool("CONFIG_TEST_BOOL", true); got {
-			t.Errorf("Bool(%q) = true, want false", v)
-		}
+		testkit.AssertFalse(t, Bool("CONFIG_TEST_BOOL", true))
 	}
 }
 
 func TestBool_Invalid(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_BOOL_BAD", "maybe")
-	if got := Bool("CONFIG_TEST_BOOL_BAD", true); !got {
-		t.Error("invalid bool should return default (true)")
-	}
+	testkit.AssertTrue(t, Bool("CONFIG_TEST_BOOL_BAD", true))
 }
 
 func TestDuration_Default(t *testing.T) {
-	d := Duration("CONFIG_TEST_UNSET_DUR", 5*time.Second)
-	if d != 5*time.Second {
-		t.Errorf("got %v, want 5s", d)
-	}
+	testkit.AssertEqual(t, Duration("CONFIG_TEST_UNSET_DUR", 5*time.Second), 5*time.Second)
 }
 
 func TestDuration_Set(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_DUR", "30s")
-	d := Duration("CONFIG_TEST_DUR", 5*time.Second)
-	if d != 30*time.Second {
-		t.Errorf("got %v, want 30s", d)
-	}
+	testkit.AssertEqual(t, Duration("CONFIG_TEST_DUR", 5*time.Second), 30*time.Second)
 }
 
 func TestDuration_Invalid(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_DUR_BAD", "not-a-duration")
-	d := Duration("CONFIG_TEST_DUR_BAD", 5*time.Second)
-	if d != 5*time.Second {
-		t.Errorf("got %v, want 5s (default for invalid)", d)
-	}
+	testkit.AssertEqual(t, Duration("CONFIG_TEST_DUR_BAD", 5*time.Second), 5*time.Second)
 }
 
 func TestStringSlice_Default(t *testing.T) {
 	def := []string{"a", "b"}
-	got := StringSlice("CONFIG_TEST_UNSET_SLICE", def)
-	if len(got) != 2 || got[0] != "a" || got[1] != "b" {
-		t.Errorf("got %v, want %v", got, def)
-	}
+	testkit.AssertEqual(t, StringSlice("CONFIG_TEST_UNSET_SLICE", def), def)
 }
 
 func TestStringSlice_Set(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_SLICE", "x, y, z")
-	got := StringSlice("CONFIG_TEST_SLICE", nil)
-	if len(got) != 3 || got[0] != "x" || got[1] != "y" || got[2] != "z" {
-		t.Errorf("got %v, want [x y z]", got)
-	}
+	testkit.AssertEqual(t, StringSlice("CONFIG_TEST_SLICE", nil), []string{"x", "y", "z"})
 }
 
 func TestStringSlice_EmptyParts(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_SLICE_EMPTY", ", ,")
-	got := StringSlice("CONFIG_TEST_SLICE_EMPTY", []string{"default"})
-	if len(got) != 1 || got[0] != "default" {
-		t.Errorf("all-empty parts should return default, got %v", got)
-	}
+	testkit.AssertEqual(t, StringSlice("CONFIG_TEST_SLICE_EMPTY", []string{"default"}), []string{"default"})
 }
 
 func TestMustString_Panics(t *testing.T) {
@@ -152,17 +112,13 @@ func TestMustString_Panics(t *testing.T) {
 
 func TestMustString_Returns(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_MUST", "present")
-	if got := MustString("CONFIG_TEST_MUST"); got != "present" {
-		t.Errorf("got %q, want %q", got, "present")
-	}
+	testkit.AssertEqual(t, MustString("CONFIG_TEST_MUST"), "present")
 }
 
 func TestValidate_AllPresent(t *testing.T) {
 	setEnv(t, "CONFIG_V1", "a")
 	setEnv(t, "CONFIG_V2", "b")
-	if err := Validate("CONFIG_V1", "CONFIG_V2"); err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	testkit.AssertNoError(t, Validate("CONFIG_V1", "CONFIG_V2"))
 }
 
 func TestValidate_SomeMissing(t *testing.T) {
@@ -178,16 +134,12 @@ func TestValidate_SomeMissing(t *testing.T) {
 }
 
 func TestValidate_NoneRequired(t *testing.T) {
-	if err := Validate(); err != nil {
-		t.Errorf("empty keys should pass: %v", err)
-	}
+	testkit.AssertNoError(t, Validate())
 }
 
 func TestMustInt_Success(t *testing.T) {
 	setEnv(t, "CONFIG_TEST_MUST_INT", "42")
-	if got := MustInt("CONFIG_TEST_MUST_INT"); got != 42 {
-		t.Errorf("MustInt = %d, want 42", got)
-	}
+	testkit.AssertEqual(t, MustInt("CONFIG_TEST_MUST_INT"), 42)
 }
 
 func TestMustInt_PanicsMissing(t *testing.T) {

@@ -1,4 +1,4 @@
-.PHONY: test test-v test-race lint cover cover-html check-coverage bench fuzz ci clean help
+.PHONY: test test-v test-race lint cover cover-html check-coverage bench fuzz ci clean help fmt vet
 
 .DEFAULT_GOAL := help
 
@@ -7,6 +7,12 @@ help: ## Show this help
 
 test: ## Run unit tests
 	go test ./... -count=1
+
+fmt: ## Format Go source files
+	gofmt -s -w .
+
+vet: ## Run go vet analysis
+	go vet ./...
 
 test-v: ## Run unit tests (verbose)
 	go test ./... -v -count=1
@@ -41,7 +47,7 @@ clean: ## Remove build artifacts
 bench: ## Run all benchmarks
 	go test ./... -bench=. -benchmem -count=1 -run=^$$ -timeout 120s
 
-ci: lint test-race check-coverage ## Run full CI pipeline (lint + race tests + coverage check)
+ci: fmt vet lint test-race check-coverage ## Run full CI pipeline (fmt + vet + lint + race tests + coverage check)
 
 fuzz: ## Run all fuzz tests (short smoke run per target)
 	@echo "Running fuzz tests (5s per target)..."

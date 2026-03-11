@@ -108,3 +108,9 @@ func calcDelay(cfg Config, attempt int) time.Duration {
 	}
 	return time.Duration(delay)
 }
+
+// Simple retries fn up to maxAttempts times with default backoff settings.
+// It is a shorthand for Do with only MaxAttempts configured.
+func Simple(ctx context.Context, maxAttempts int, fn func(ctx context.Context) error) error {
+	return Do(ctx, Config{MaxAttempts: maxAttempts}, fn)
+}

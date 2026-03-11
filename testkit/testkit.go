@@ -481,3 +481,7 @@ func MustMarshalJSON(v any) []byte {
 	}
 	return b
 }
+
+// Ptr returns a pointer to v. Useful for creating pointers to literals in
+// test table entries (e.g. testkit.Ptr("hello"), testkit.Ptr(int64(42))).
+func Ptr[T any](v T) *T { return &v }

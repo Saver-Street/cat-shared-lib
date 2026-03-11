@@ -282,20 +282,16 @@ func BenchmarkTrimAndNilIfEmpty(b *testing.B) {
 	}
 }
 
-func strPtr(s string) *string { return &s }
-func int64Ptr(n int64) *int64 { return &n }
-func boolPtr(b bool) *bool    { return &b }
-
 func TestNullString_Nil(t *testing.T) {
 	testkit.AssertEqual(t, NullString(nil, "default"), "default")
 }
 
 func TestNullString_Value(t *testing.T) {
-	testkit.AssertEqual(t, NullString(strPtr("hello"), "default"), "hello")
+	testkit.AssertEqual(t, NullString(testkit.Ptr("hello"), "default"), "hello")
 }
 
 func TestNullString_Empty(t *testing.T) {
-	testkit.AssertEqual(t, NullString(strPtr(""), "default"), "")
+	testkit.AssertEqual(t, NullString(testkit.Ptr(""), "default"), "")
 }
 
 func TestNullInt64_Nil(t *testing.T) {
@@ -303,11 +299,11 @@ func TestNullInt64_Nil(t *testing.T) {
 }
 
 func TestNullInt64_Value(t *testing.T) {
-	testkit.AssertEqual(t, NullInt64(int64Ptr(99), 0), int64(99))
+	testkit.AssertEqual(t, NullInt64(testkit.Ptr(int64(99)), 0), int64(99))
 }
 
 func TestNullInt64_Zero(t *testing.T) {
-	testkit.AssertEqual(t, NullInt64(int64Ptr(0), 42), int64(0))
+	testkit.AssertEqual(t, NullInt64(testkit.Ptr(int64(0)), 42), int64(0))
 }
 
 func TestNullBool_Nil(t *testing.T) {
@@ -315,11 +311,11 @@ func TestNullBool_Nil(t *testing.T) {
 }
 
 func TestNullBool_False(t *testing.T) {
-	testkit.AssertFalse(t, NullBool(boolPtr(false), true))
+	testkit.AssertFalse(t, NullBool(testkit.Ptr(false), true))
 }
 
 func TestNullBool_True(t *testing.T) {
-	testkit.AssertTrue(t, NullBool(boolPtr(true), false))
+	testkit.AssertTrue(t, NullBool(testkit.Ptr(true), false))
 }
 
 func TestDeref_Nil(t *testing.T) {

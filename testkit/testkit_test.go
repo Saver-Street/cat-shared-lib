@@ -760,3 +760,18 @@ func TestRequireLen_Fail(t *testing.T) {
 		t.Error("expected Fatalf")
 	}
 }
+
+func TestPtr_String(t *testing.T) {
+	p := Ptr("hello")
+	AssertEqual(t, *p, "hello")
+}
+
+func TestPtr_Int(t *testing.T) {
+	p := Ptr(42)
+	AssertEqual(t, *p, 42)
+}
+
+func TestPtr_Bool(t *testing.T) {
+	p := Ptr(true)
+	AssertTrue(t, *p)
+}

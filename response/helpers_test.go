@@ -485,3 +485,14 @@ Stream(w, http.StatusOK, "text/csv", strings.NewReader(csv))
 testkit.AssertEqual(t, w.Header().Get("Content-Type"), "text/csv")
 testkit.AssertEqual(t, w.Body.String(), csv)
 }
+
+func TestDownload(t *testing.T) {
+w := httptest.NewRecorder()
+body := strings.NewReader("csv,data\n1,2\n")
+Download(w, "text/csv", "report.csv", body)
+
+testkit.AssertEqual(t, w.Code, http.StatusOK)
+testkit.AssertEqual(t, w.Header().Get("Content-Type"), "text/csv")
+testkit.AssertEqual(t, w.Header().Get("Content-Disposition"), `attachment; filename="report.csv"`)
+testkit.AssertEqual(t, w.Body.String(), "csv,data\n1,2\n")
+}

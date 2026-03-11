@@ -315,3 +315,35 @@ c.Get("a")
 keys := c.Keys()
 testkit.AssertEqual(t, keys[0], "a")
 }
+
+func TestGetOrSet_Miss(t *testing.T) {
+c := New[string, int](Config{MaxEntries: 10, DefaultTTL: time.Minute})
+defer c.Stop()
+
+calls := 0
+v := c.GetOrSet("key", func() int {
+calls++
+return 42
+})
+testkit.AssertEqual(t, v, 42)
+testkit.AssertEqual(t, calls, 1)
+
+// Should be cached now
+got, ok := c.Get("key")
+testkit.AssertTrue(t, ok)
+testkit.AssertEqual(t, got, 42)
+}
+
+func TestGetOrSet_Hit(t *testing.T) {
+c := New[string, int](Config{MaxEntries: 10, DefaultTTL: time.Minute})
+defer c.Stop()
+c.Set("key", 100)
+
+calls := 0
+v := c.GetOrSet("key", func() int {
+calls++
+return 999
+})
+testkit.AssertEqual(t, v, 100) // should return cached value
+testkit.AssertEqual(t, calls, 0) // fill should not be called
+}

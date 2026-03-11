@@ -210,3 +210,16 @@ func (c *Cache[K, V]) removeExpired() {
 		el = prev
 	}
 }
+
+// GetOrSet returns the cached value for key if present. If absent, it calls
+// fill to compute the value, stores it with the default TTL, and returns it.
+// The fill function is called while the cache lock is NOT held to avoid
+// blocking other cache operations during slow computations.
+func (c *Cache[K, V]) GetOrSet(key K, fill func() V) V {
+if v, ok := c.Get(key); ok {
+return v
+}
+v := fill()
+c.Set(key, v)
+return v
+}

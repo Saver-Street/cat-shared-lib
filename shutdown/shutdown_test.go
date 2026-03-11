@@ -14,21 +14,17 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func TestConfigDefaults(t *testing.T) {
 	cfg := Config{}
 	cfg.defaults()
 
-	if cfg.Timeout != 30*time.Second {
-		t.Errorf("expected default timeout 30s, got %v", cfg.Timeout)
-	}
-	if len(cfg.Signals) != 2 {
-		t.Errorf("expected 2 default signals, got %d", len(cfg.Signals))
-	}
-	if cfg.Logger == nil {
-		t.Error("expected non-nil default logger")
-	}
+	testkit.AssertEqual(t, cfg.Timeout, 30*time.Second)
+	testkit.AssertLen(t, cfg.Signals, 2)
+	testkit.AssertNotNil(t, cfg.Logger)
 }
 
 func TestConfigCustom(t *testing.T) {
@@ -40,12 +36,8 @@ func TestConfigCustom(t *testing.T) {
 	}
 	cfg.defaults()
 
-	if cfg.Timeout != 10*time.Second {
-		t.Errorf("expected custom timeout 10s, got %v", cfg.Timeout)
-	}
-	if len(cfg.Signals) != 1 {
-		t.Errorf("expected 1 signal, got %d", len(cfg.Signals))
-	}
+	testkit.AssertEqual(t, cfg.Timeout, 10*time.Second)
+	testkit.AssertLen(t, cfg.Signals, 1)
 }
 
 func TestDrainer_AddDoneWait(t *testing.T) {
@@ -96,9 +88,7 @@ func TestDrainer_Middleware(t *testing.T) {
 	}
 	wg.Wait()
 
-	if !tracked.Load() {
-		t.Error("inner handler was never called")
-	}
+	testkit.AssertTrue(t, tracked.Load())
 }
 
 func TestListenAndServe_GracefulShutdown(t *testing.T) {
@@ -153,19 +143,13 @@ func TestListenAndServe_GracefulShutdown(t *testing.T) {
 
 	select {
 	case err := <-errCh:
-		if err != nil {
-			t.Errorf("expected nil error, got %v", err)
-		}
+		testkit.AssertNoError(t, err)
 	case <-time.After(10 * time.Second):
 		t.Fatal("shutdown timed out")
 	}
 
-	if !hookCalled {
-		t.Error("OnShutdown hook was not called")
-	}
-	if !bytes.Contains(buf.Bytes(), []byte("server stopped gracefully")) {
-		t.Error("expected graceful stop log message")
-	}
+	testkit.AssertTrue(t, hookCalled)
+	testkit.AssertContains(t, buf.String(), "server stopped gracefully")
 }
 
 func TestListenAndServe_OnShutdownError(t *testing.T) {
@@ -211,16 +195,12 @@ func TestListenAndServe_OnShutdownError(t *testing.T) {
 
 	select {
 	case err := <-errCh:
-		if err != nil {
-			t.Errorf("expected nil error from shutdown, got %v", err)
-		}
+		testkit.AssertNoError(t, err)
 	case <-time.After(10 * time.Second):
 		t.Fatal("shutdown timed out")
 	}
 
-	if !bytes.Contains(buf.Bytes(), []byte("cleanup failed")) {
-		t.Error("expected hook error in logs")
-	}
+	testkit.AssertContains(t, buf.String(), "cleanup failed")
 }
 
 func TestListenAndServe_BindError(t *testing.T) {
@@ -236,9 +216,7 @@ func TestListenAndServe_BindError(t *testing.T) {
 	cfg := Config{Timeout: time.Second}
 
 	err = ListenAndServe(srv, cfg)
-	if err == nil {
-		t.Error("expected bind error")
-	}
+	testkit.AssertTrue(t, err != nil)
 }
 
 // fakeResponseWriter is a minimal http.ResponseWriter for unit tests.
@@ -276,9 +254,7 @@ func TestDrainer_ConcurrentMiddleware(t *testing.T) {
 	wg.Wait()
 	d.Wait() // All should be drained.
 
-	if count.Load() != 50 {
-		t.Errorf("expected 50 requests, got %d", count.Load())
-	}
+	testkit.AssertEqual(t, count.Load(), int64(50))
 }
 
 func TestWaitForSignal(t *testing.T) {
@@ -324,9 +300,7 @@ func TestWaitForSignal(t *testing.T) {
 		t.Fatal("WaitForSignal did not return")
 	}
 
-	if !bytes.Contains(buf.Bytes(), []byte("shutdown signal received")) {
-		t.Error("expected signal log message")
-	}
+	testkit.AssertContains(t, buf.String(), "shutdown signal received")
 }
 
 func TestListenAndServe_ShutdownTimeout(t *testing.T) {
@@ -383,14 +357,10 @@ func TestListenAndServe_ShutdownTimeout(t *testing.T) {
 
 	select {
 	case err := <-errCh:
-		if err == nil {
-			t.Error("expected shutdown timeout error, got nil")
-		}
+		testkit.AssertTrue(t, err != nil)
 	case <-time.After(10 * time.Second):
 		t.Fatal("test timed out")
 	}
 
-	if !bytes.Contains(buf.Bytes(), []byte("server shutdown error")) {
-		t.Error("expected shutdown error in logs")
-	}
+	testkit.AssertContains(t, buf.String(), "server shutdown error")
 }

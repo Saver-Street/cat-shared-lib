@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -89,6 +90,15 @@ func AssertNotEqual(t T, got, notWant any) {
 	t.Helper()
 	if reflect.DeepEqual(got, notWant) {
 		t.Errorf("testkit: expected values to differ, both are %v", got)
+	}
+}
+
+// AssertApprox fails the test if |got - want| > epsilon.
+// Useful for floating-point comparisons that need tolerance.
+func AssertApprox(t T, got, want, epsilon float64) {
+	t.Helper()
+	if math.Abs(got-want) > epsilon {
+		t.Errorf("testkit: got %v, want %v (±%v)", got, want, epsilon)
 	}
 }
 

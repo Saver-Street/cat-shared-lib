@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"math"
 	"net/http/httptest"
 	"sync"
 	"testing"
@@ -92,9 +91,7 @@ func TestGauge_IncDec(t *testing.T) {
 	g.Inc()
 	g.Dec()
 
-	if math.Abs(g.Value()-1.0) > 0.001 {
-		t.Errorf("expected 1.0, got %f", g.Value())
-	}
+	testkit.AssertApprox(t, g.Value(), 1.0, 0.001)
 }
 
 func TestGauge_Add(t *testing.T) {
@@ -102,9 +99,7 @@ func TestGauge_Add(t *testing.T) {
 	g.Add(5)
 	g.Add(-2)
 
-	if math.Abs(g.Value()-3.0) > 0.001 {
-		t.Errorf("expected 3.0, got %f", g.Value())
-	}
+	testkit.AssertApprox(t, g.Value(), 3.0, 0.001)
 }
 
 func TestGauge_Name_Help(t *testing.T) {
@@ -129,9 +124,7 @@ func TestHistogram_Observe(t *testing.T) {
 	h.Observe(1.0)
 
 	testkit.AssertEqual(t, h.Count(), uint64(3))
-	if math.Abs(h.Sum()-1.6) > 0.001 {
-		t.Errorf("expected sum 1.6, got %f", h.Sum())
-	}
+	testkit.AssertApprox(t, h.Sum(), 1.6, 0.001)
 }
 
 func TestHistogram_CustomBuckets(t *testing.T) {
@@ -233,9 +226,7 @@ func TestConcurrent_Gauge(t *testing.T) {
 	}
 	wg.Wait()
 	// After equal incs and decs, should be ~0.
-	if math.Abs(g.Value()) > 0.001 {
-		t.Errorf("expected ~0, got %f", g.Value())
-	}
+	testkit.AssertApprox(t, g.Value(), 0, 0.001)
 }
 
 func TestConcurrent_Histogram(t *testing.T) {

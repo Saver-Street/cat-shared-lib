@@ -52,6 +52,50 @@ func TestAssertNil_Fail(t *testing.T) {
 	}
 }
 
+// ---- AssertTrue / AssertFalse tests ----
+
+func TestAssertTrue_Pass(t *testing.T)  { AssertTrue(t, true) }
+func TestAssertFalse_Pass(t *testing.T) { AssertFalse(t, false) }
+
+func TestAssertTrue_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertTrue(mock, false)
+	if !mock.errored {
+		t.Error("expected error for false")
+	}
+}
+
+func TestAssertFalse_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertFalse(mock, true)
+	if !mock.errored {
+		t.Error("expected error for true")
+	}
+}
+
+// ---- AssertLen tests ----
+
+func TestAssertLen_Slice(t *testing.T)  { AssertLen(t, []int{1, 2, 3}, 3) }
+func TestAssertLen_Map(t *testing.T)    { AssertLen(t, map[string]int{"a": 1}, 1) }
+func TestAssertLen_String(t *testing.T) { AssertLen(t, "hello", 5) }
+func TestAssertLen_Array(t *testing.T)  { AssertLen(t, [2]int{1, 2}, 2) }
+
+func TestAssertLen_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertLen(mock, []int{1}, 5)
+	if !mock.errored {
+		t.Error("expected error for wrong length")
+	}
+}
+
+func TestAssertLen_UnsupportedType(t *testing.T) {
+	mock := &mockT{}
+	AssertLen(mock, 42, 1)
+	if !mock.fatal {
+		t.Error("expected fatal for unsupported type")
+	}
+}
+
 func TestAssertNoError_Pass(t *testing.T) {
 	AssertNoError(t, nil)
 }

@@ -330,3 +330,19 @@ return 0, fmt.Errorf("config: %s: invalid byte size %q: %w", key, v, err)
 }
 return n * multiplier, nil
 }
+
+// Enum reads key from the environment and validates that its value is one
+// of the allowed choices. If the variable is unset or empty, defaultVal is
+// returned. Comparison is case-sensitive.
+func Enum(key, defaultVal string, allowed []string) (string, error) {
+v := strings.TrimSpace(os.Getenv(key))
+if v == "" {
+return defaultVal, nil
+}
+for _, a := range allowed {
+if v == a {
+return v, nil
+}
+}
+return "", fmt.Errorf("config: %s: value %q is not one of %v", key, v, allowed)
+}

@@ -473,3 +473,24 @@ v, err := Bytes("CFG_TEST_BYTES_LC", 0)
 testkit.AssertNoError(t, err)
 testkit.AssertEqual(t, v, int64(10*1024*1024))
 }
+
+func TestEnum_Default(t *testing.T) {
+v, err := Enum("TEST_ENUM_UNSET", "info", []string{"debug", "info", "warn", "error"})
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, "info")
+}
+
+func TestEnum_Valid(t *testing.T) {
+t.Setenv("TEST_ENUM", "warn")
+v, err := Enum("TEST_ENUM", "info", []string{"debug", "info", "warn", "error"})
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, v, "warn")
+}
+
+func TestEnum_Invalid(t *testing.T) {
+t.Setenv("TEST_ENUM", "trace")
+_, err := Enum("TEST_ENUM", "info", []string{"debug", "info", "warn", "error"})
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "trace")
+testkit.AssertContains(t, err.Error(), "not one of")
+}

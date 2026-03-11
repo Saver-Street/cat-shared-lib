@@ -316,3 +316,36 @@ testkit.AssertPanics(t, func() {
 MustInt64("CONFIG_TEST_MUST_INT64_INV")
 })
 }
+
+func TestPort_Valid(t *testing.T) {
+setEnv(t, "CONFIG_TEST_PORT", "8080")
+got, err := Port("CONFIG_TEST_PORT", 3000)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, got, 8080)
+}
+
+func TestPort_Default(t *testing.T) {
+got, err := Port("CONFIG_TEST_PORT_UNSET", 3000)
+testkit.AssertNoError(t, err)
+testkit.AssertEqual(t, got, 3000)
+}
+
+func TestPort_TooHigh(t *testing.T) {
+setEnv(t, "CONFIG_TEST_PORT_HIGH", "99999")
+_, err := Port("CONFIG_TEST_PORT_HIGH", 3000)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "between 1 and 65535")
+}
+
+func TestPort_Zero(t *testing.T) {
+setEnv(t, "CONFIG_TEST_PORT_ZERO", "0")
+_, err := Port("CONFIG_TEST_PORT_ZERO", 3000)
+testkit.AssertError(t, err)
+}
+
+func TestPort_Invalid(t *testing.T) {
+setEnv(t, "CONFIG_TEST_PORT_INV", "abc")
+_, err := Port("CONFIG_TEST_PORT_INV", 3000)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "invalid port number")
+}

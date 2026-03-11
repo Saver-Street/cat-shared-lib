@@ -2,7 +2,6 @@ package health
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -19,10 +18,8 @@ func TestHandler_NoCheckers(t *testing.T) {
 
 	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 
-	var s Status
-	if err := json.NewDecoder(rr.Body).Decode(&s); err != nil {
-		t.Fatal(err)
-	}
+		var s Status
+	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertEqual(t, s.Status, "ok")
 	testkit.AssertEqual(t, s.Service, "test-service")
 	testkit.AssertEqual(t, s.Version, "v1.0.0")
@@ -40,7 +37,7 @@ func TestHandler_AllHealthy(t *testing.T) {
 	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 
 	var s Status
-	json.NewDecoder(rr.Body).Decode(&s)
+	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertEqual(t, s.Status, "ok")
 	testkit.AssertEqual(t, s.Checks["db"], "ok")
 	testkit.AssertEqual(t, s.Checks["cache"], "ok")
@@ -59,7 +56,7 @@ func TestHandler_Degraded(t *testing.T) {
 	testkit.RequireEqual(t, rr.Code, http.StatusServiceUnavailable)
 
 	var s Status
-	json.NewDecoder(rr.Body).Decode(&s)
+	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertEqual(t, s.Status, "degraded")
 	testkit.AssertEqual(t, s.Checks["db"], "ok")
 	testkit.AssertEqual(t, s.Checks["cache"], "connection refused")
@@ -119,7 +116,7 @@ func TestHandler_MultipleUnhealthy(t *testing.T) {
 	testkit.RequireEqual(t, rr.Code, http.StatusServiceUnavailable)
 
 	var s Status
-	json.NewDecoder(rr.Body).Decode(&s)
+	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertEqual(t, s.Checks["db"], "timeout")
 	testkit.AssertEqual(t, s.Checks["redis"], "refused")
 }
@@ -138,7 +135,7 @@ func TestHandler_ContextCancelled(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	var s Status
-	json.NewDecoder(rr.Body).Decode(&s)
+	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertEqual(t, s.Status, "degraded")
 }
 
@@ -150,7 +147,7 @@ func TestHandler_SingleChecker(t *testing.T) {
 
 	testkit.RequireEqual(t, rr.Code, http.StatusOK)
 	var s Status
-	json.NewDecoder(rr.Body).Decode(&s)
+	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertEqual(t, s.Checks["single"], "ok")
 }
 
@@ -219,7 +216,7 @@ func TestHandler_PanicChecker(t *testing.T) {
 
 	testkit.RequireEqual(t, rr.Code, http.StatusServiceUnavailable)
 	var s Status
-	json.NewDecoder(rr.Body).Decode(&s)
+	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertEqual(t, s.Status, "degraded")
 	testkit.AssertEqual(t, s.Checks["db"], "ok")
 	testkit.AssertNotEqual(t, s.Checks["panicker"], "")
@@ -240,9 +237,7 @@ func TestHandler_UptimePresent(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/health", nil))
 
-	var s Status
-	if err := json.NewDecoder(rr.Body).Decode(&s); err != nil {
-		t.Fatal(err)
-	}
+		var s Status
+	testkit.AssertJSON(t, rr.Body.Bytes(), &s)
 	testkit.AssertNotEqual(t, s.Uptime, "")
 }

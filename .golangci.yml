@@ -2,31 +2,68 @@ version: "2"
 
 linters:
   enable:
-    - errcheck
-    - govet
-    - staticcheck
-    - unused
-    - ineffassign
-    - bodyclose
-    - durationcheck
-    - errorlint
-    - gosec
-    - misspell
-    - nilerr
-    - nolintlint
-    - prealloc
-    - unconvert
-    - unparam
+    # Bug detection
+    - errcheck        # unchecked errors
+    - govet           # suspicious constructs
+    - staticcheck     # advanced static analysis
+    - nilerr          # returning nil after checking err != nil
+    - bodyclose       # unclosed HTTP response bodies
+    - durationcheck   # time.Duration multiplication pitfalls
+    - errorlint       # error wrapping best practices
+    - copyloopvar     # loop variable capture bugs
+
+    # Security
+    - gosec           # security-related issues
+
+    # Performance
+    - prealloc        # suggest slice pre-allocation
+    - unconvert       # unnecessary type conversions
+    - ineffassign     # unused variable assignments
+    - unused          # unused code
+
+    # Code quality
+    - unparam         # unused function parameters
+    - misspell        # spelling mistakes in comments/strings
+    - nolintlint      # malformed nolint directives
+    - gocritic        # opinionated style and performance checks
+    - revive          # fast, extensible linter (golint successor)
+    - usestdlibvars   # use stdlib constants (http.StatusOK, etc.)
+    - fatcontext      # detect nested context.WithValue in loops
+
   settings:
     gosec:
       excludes:
-        - G101
-        - G104
-        - G115
+        - G101  # hardcoded credentials (false positives on test data)
+        - G104  # unhandled errors (covered by errcheck)
+        - G115  # integer overflow (too noisy for shared lib)
     errcheck:
       exclude-functions:
         - (net/http.ResponseWriter).Write
         - (*encoding/json.Encoder).Encode
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+      disabled-checks:
+        - ifElseChain    # too opinionated for shared lib style
+        - hugeParam      # structs passed by value are fine for configs
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: increment-decrement
+        - name: var-naming
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+
   exclusions:
     rules:
       - path: _test\.go
@@ -34,3 +71,30 @@ linters:
           - errcheck
           - gosec
           - unparam
+          - gocritic
+          - revive
+          - usestdlibvars
+          - fatcontext
+      - path: doc\.go
+        linters:
+          - revive
+      - path: example_test\.go
+        linters:
+          - errcheck
+          - revive
+          - gocritic
+      - path: fuzz_test\.go
+        linters:
+          - usestdlibvars
+      - path: bench_test\.go
+        linters:
+          - usestdlibvars
+      # The "types" package name triggers var-naming but is intentional.
+      - path: types/
+        linters:
+          - revive
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

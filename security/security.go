@@ -143,18 +143,18 @@ func SanitizeHeader(s string) string {
 // and does not point to a different host. This prevents open redirect
 // vulnerabilities when using user-supplied redirect targets.
 func IsRelativeURL(rawURL string) bool {
-if rawURL == "" || rawURL[0] != '/' {
-return false
-}
-// Reject protocol-relative URLs like //evil.com
-if len(rawURL) > 1 && rawURL[1] == '/' {
-return false
-}
-u, err := url.Parse(rawURL)
-if err != nil {
-return false
-}
-return u.Host == "" && u.Scheme == ""
+	if rawURL == "" || rawURL[0] != '/' {
+		return false
+	}
+	// Reject protocol-relative URLs like //evil.com
+	if len(rawURL) > 1 && rawURL[1] == '/' {
+		return false
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	return u.Host == "" && u.Scheme == ""
 }
 
 // MaskEmail masks an email address for safe logging by keeping the first
@@ -162,27 +162,27 @@ return u.Host == "" && u.Scheme == ""
 // asterisks. For example, "alice@example.com" becomes "a****@example.com".
 // Returns the original string if it does not contain exactly one "@".
 func MaskEmail(email string) string {
-at := strings.LastIndex(email, "@")
-if at <= 0 {
-return email
-}
-local := email[:at]
-domain := email[at:]
-return string(local[0]) + strings.Repeat("*", len(local)-1) + domain
+	at := strings.LastIndex(email, "@")
+	if at <= 0 {
+		return email
+	}
+	local := email[:at]
+	domain := email[at:]
+	return string(local[0]) + strings.Repeat("*", len(local)-1) + domain
 }
 
 // RedactURL removes userinfo (username/password) from a URL string to
 // prevent credential leakage in logs. If the string is not a valid URL,
 // it is returned unchanged.
 func RedactURL(rawURL string) string {
-u, err := url.Parse(rawURL)
-if err != nil {
-return rawURL
-}
-if u.User != nil {
-u.User = url.User("REDACTED")
-}
-return u.String()
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	if u.User != nil {
+		u.User = url.User("REDACTED")
+	}
+	return u.String()
 }
 
 // SanitizeFilename removes path traversal components and dangerous characters
@@ -210,16 +210,16 @@ func SanitizeFilename(name string) string {
 // directives. Keys are directive names (e.g. "default-src") and values
 // are the sources. Directives are sorted alphabetically for determinism.
 func CSPHeader(directives map[string]string) string {
-keys := make([]string, 0, len(directives))
-for k := range directives {
-keys = append(keys, k)
-}
-sort.Strings(keys)
-parts := make([]string, 0, len(keys))
-for _, k := range keys {
-parts = append(parts, k+" "+directives[k])
-}
-return strings.Join(parts, "; ")
+	keys := make([]string, 0, len(directives))
+	for k := range directives {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, k+" "+directives[k])
+	}
+	return strings.Join(parts, "; ")
 }
 
 // IsStrongPassword checks that a password meets minimum complexity
@@ -228,33 +228,33 @@ return strings.Join(parts, "; ")
 // character. Returns a human-readable error describing the first unmet
 // requirement, or nil if all requirements are met.
 func IsStrongPassword(password string, minLen int) error {
-if len(password) < minLen {
-return fmt.Errorf("password must be at least %d characters", minLen)
-}
-var hasUpper, hasLower, hasDigit, hasSpecial bool
-for _, r := range password {
-switch {
-case unicode.IsUpper(r):
-hasUpper = true
-case unicode.IsLower(r):
-hasLower = true
-case unicode.IsDigit(r):
-hasDigit = true
-default:
-hasSpecial = true
-}
-}
-if !hasUpper {
-return fmt.Errorf("password must contain at least one uppercase letter")
-}
-if !hasLower {
-return fmt.Errorf("password must contain at least one lowercase letter")
-}
-if !hasDigit {
-return fmt.Errorf("password must contain at least one digit")
-}
-if !hasSpecial {
-return fmt.Errorf("password must contain at least one special character")
-}
-return nil
+	if len(password) < minLen {
+		return fmt.Errorf("password must be at least %d characters", minLen)
+	}
+	var hasUpper, hasLower, hasDigit, hasSpecial bool
+	for _, r := range password {
+		switch {
+		case unicode.IsUpper(r):
+			hasUpper = true
+		case unicode.IsLower(r):
+			hasLower = true
+		case unicode.IsDigit(r):
+			hasDigit = true
+		default:
+			hasSpecial = true
+		}
+	}
+	if !hasUpper {
+		return fmt.Errorf("password must contain at least one uppercase letter")
+	}
+	if !hasLower {
+		return fmt.Errorf("password must contain at least one lowercase letter")
+	}
+	if !hasDigit {
+		return fmt.Errorf("password must contain at least one digit")
+	}
+	if !hasSpecial {
+		return fmt.Errorf("password must contain at least one special character")
+	}
+	return nil
 }

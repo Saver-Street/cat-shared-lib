@@ -44,7 +44,7 @@ func SetLinkHeader(w http.ResponseWriter, baseURL string, page, limit, total int
 
 	var links []string
 	add := func(p int, rel string) {
-		links = append(links, fmt.Sprintf(`<%s?page=%d&limit=%d>; rel="%s"`, baseURL, p, limit, rel))
+		links = append(links, fmt.Sprintf(`<%s?page=%d&limit=%d>; rel="%s"`, baseURL, p, limit, rel)) //nolint:gocritic // HTTP Link header requires this quoting style
 	}
 
 	add(1, "first")

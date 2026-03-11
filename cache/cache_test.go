@@ -290,6 +290,14 @@ func TestCleanupLoop_RunsAutomatically(t *testing.T) {
 	}
 }
 
+func TestNew_NegativeDefaultTTL_Defaults(t *testing.T) {
+	cfg := Config{DefaultTTL: -1}
+	cfg.defaults()
+	if cfg.DefaultTTL != 5*time.Minute {
+		t.Errorf("expected 5m default TTL for negative value, got %v", cfg.DefaultTTL)
+	}
+}
+
 func BenchmarkSet(b *testing.B) {
 	c := New[int, int](Config{MaxEntries: 10000, DefaultTTL: time.Minute, CleanupInterval: 0})
 	defer c.Stop()

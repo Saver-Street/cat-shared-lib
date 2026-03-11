@@ -841,3 +841,35 @@ func TestDoJSON_UnmarshalablePayload(t *testing.T) {
 		t.Fatal("expected non-empty JSON")
 	}
 }
+
+func TestDoAttempt_InvalidURL(t *testing.T) {
+	c := New()
+	_, err := c.Get(context.Background(), "http://invalid\x7f.example.com/path")
+	if err == nil {
+		t.Fatal("expected error for invalid URL")
+	}
+	if !strings.Contains(err.Error(), "creating request") {
+		t.Errorf("expected 'creating request' error, got: %v", err)
+	}
+}
+
+func TestDoAttempt_ReadBodyError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		// Advertise a body but hijack the connection before writing it.
+		w.Header().Set("Content-Length", "1000")
+		w.WriteHeader(http.StatusOK)
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	}))
+	defer srv.Close()
+
+	c := New(WithRetries(0))
+	_, err := c.Get(context.Background(), srv.URL)
+	if err == nil {
+		t.Fatal("expected error reading body")
+	}
+}

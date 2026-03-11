@@ -29,13 +29,9 @@ func TestHTTPTestServer_BasicRoute(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("status = %d, want 200", resp.StatusCode)
-	}
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusOK)
 	body, _ := io.ReadAll(resp.Body)
-	if string(body) != "pong" {
-		t.Errorf("body = %q, want pong", body)
-	}
+	testkit.AssertEqual(t, string(body), "pong")
 }
 
 func TestHTTPTestServer_MethodNotAllowed(t *testing.T) {
@@ -50,9 +46,7 @@ func TestHTTPTestServer_MethodNotAllowed(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want 405", resp.StatusCode)
-	}
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusMethodNotAllowed)
 }
 
 func TestHTTPTestServer_NotFound(t *testing.T) {
@@ -64,9 +58,7 @@ func TestHTTPTestServer_NotFound(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("status = %d, want 404", resp.StatusCode)
-	}
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusNotFound)
 }
 
 func TestHTTPTestServer_Fallback(t *testing.T) {
@@ -81,9 +73,7 @@ func TestHTTPTestServer_Fallback(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusTeapot {
-		t.Errorf("status = %d, want 418", resp.StatusCode)
-	}
+	testkit.AssertEqual(t, resp.StatusCode, http.StatusTeapot)
 }
 
 func TestHTTPTestServer_WildcardMethod(t *testing.T) {
@@ -99,9 +89,7 @@ func TestHTTPTestServer_WildcardMethod(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp.Body.Close()
-		if resp.StatusCode != http.StatusAccepted {
-			t.Errorf("method=%s: status = %d, want 202", method, resp.StatusCode)
-		}
+		testkit.AssertEqual(t, resp.StatusCode, http.StatusAccepted)
 	}
 }
 
@@ -116,17 +104,13 @@ func TestHTTPTestServer_HandleJSON(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
-		t.Errorf("Content-Type = %q, want application/json", ct)
-	}
+	testkit.AssertEqual(t, resp.Header.Get("Content-Type"), "application/json")
 
 	var got map[string]string
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
-	if got["key"] != "value" {
-		t.Errorf("body key = %q, want value", got["key"])
-	}
+	testkit.AssertEqual(t, got["key"], "value")
 }
 
 func TestHTTPTestServer_RecordsRequests(t *testing.T) {
@@ -151,22 +135,14 @@ func TestHTTPTestServer_RecordsRequests(t *testing.T) {
 	if last == nil {
 		t.Fatal("LastRequest is nil")
 	}
-	if last.Method != "POST" {
-		t.Errorf("Method = %q, want POST", last.Method)
-	}
-	if last.Path != "/data" {
-		t.Errorf("Path = %q, want /data", last.Path)
-	}
-	if string(last.Body) != `{"x":1}` {
-		t.Errorf("Body = %q, want {\"x\":1}", last.Body)
-	}
+	testkit.AssertEqual(t, last.Method, "POST")
+	testkit.AssertEqual(t, last.Path, "/data")
+	testkit.AssertEqual(t, string(last.Body), `{"x":1}`)
 }
 
 func TestHTTPTestServer_LastRequest_Nil(t *testing.T) {
 	s := NewHTTPTestServer(t)
-	if s.LastRequest() != nil {
-		t.Error("expected nil before any requests")
-	}
+	testkit.AssertNil(t, s.LastRequest())
 }
 
 func TestHTTPTestServer_Requests_Copy(t *testing.T) {
@@ -180,9 +156,7 @@ func TestHTTPTestServer_Requests_Copy(t *testing.T) {
 	}
 
 	reqs := s.Requests()
-	if len(reqs) != 1 {
-		t.Errorf("expected 1 request, got %d", len(reqs))
-	}
+	testkit.AssertLen(t, reqs, 1)
 }
 
 func TestHTTPTestServer_Reset(t *testing.T) {
@@ -199,9 +173,7 @@ func TestHTTPTestServer_Reset(t *testing.T) {
 
 	s.Reset()
 
-	if s.RequestCount() != 0 {
-		t.Errorf("expected 0 requests after reset, got %d", s.RequestCount())
-	}
+	testkit.AssertEqual(t, s.RequestCount(), 0)
 
 	// Route should be gone after reset.
 	resp2, err := http.Get(s.URL + "/before") //nolint:noctx
@@ -209,9 +181,7 @@ func TestHTTPTestServer_Reset(t *testing.T) {
 		t.Fatal(err)
 	}
 	resp2.Body.Close()
-	if resp2.StatusCode != http.StatusNotFound {
-		t.Errorf("expected 404 after reset, got %d", resp2.StatusCode)
-	}
+	testkit.AssertEqual(t, resp2.StatusCode, http.StatusNotFound)
 }
 
 func TestHTTPTestServer_ConcurrentRequests(t *testing.T) {
@@ -235,9 +205,7 @@ func TestHTTPTestServer_ConcurrentRequests(t *testing.T) {
 	}
 	wg.Wait()
 
-	if s.RequestCount() != n {
-		t.Errorf("RequestCount = %d, want %d", s.RequestCount(), n)
-	}
+	testkit.AssertEqual(t, s.RequestCount(), n)
 }
 
 // ---- DBTestHelper tests ----
@@ -251,9 +219,7 @@ func TestDBTestHelper_QueryRow_Success(t *testing.T) {
 	if err := row.Scan(&id); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id != "candidate-123" {
-		t.Errorf("id = %q, want candidate-123", id)
-	}
+	testkit.AssertEqual(t, id, "candidate-123")
 }
 
 func TestDBTestHelper_QueryRow_RecordsQuery(t *testing.T) {
@@ -265,9 +231,7 @@ func TestDBTestHelper_QueryRow_RecordsQuery(t *testing.T) {
 	if len(queries) != 1 {
 		t.Fatalf("expected 1 query, got %d", len(queries))
 	}
-	if queries[0].SQL != "SELECT 1" {
-		t.Errorf("SQL = %q, want SELECT 1", queries[0].SQL)
-	}
+	testkit.AssertEqual(t, queries[0].SQL, "SELECT 1")
 }
 
 func TestDBTestHelper_QueryRow_NoRowsQueued(t *testing.T) {
@@ -276,9 +240,7 @@ func TestDBTestHelper_QueryRow_NoRowsQueued(t *testing.T) {
 	row := db.QueryRow(context.Background(), "SELECT 1")
 	var v string
 	err := row.Scan(&v)
-	if err == nil {
-		t.Error("expected error when no rows queued")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestDBTestHelper_QueryRow_ScanError(t *testing.T) {
@@ -300,9 +262,7 @@ func TestDBTestHelper_QueryCount(t *testing.T) {
 	_ = db.QueryRow(context.Background(), "Q1")
 	_ = db.QueryRow(context.Background(), "Q2")
 
-	if db.QueryCount() != 2 {
-		t.Errorf("QueryCount = %d, want 2", db.QueryCount())
-	}
+	testkit.AssertEqual(t, db.QueryCount(), 2)
 }
 
 func TestDBTestHelper_Reset(t *testing.T) {
@@ -311,9 +271,7 @@ func TestDBTestHelper_Reset(t *testing.T) {
 	_ = db.QueryRow(context.Background(), "SELECT 1")
 	db.Reset()
 
-	if db.QueryCount() != 0 {
-		t.Errorf("expected 0 queries after reset, got %d", db.QueryCount())
-	}
+	testkit.AssertEqual(t, db.QueryCount(), 0)
 }
 
 func TestMockRow_ScanInt(t *testing.T) {
@@ -322,9 +280,7 @@ func TestMockRow_ScanInt(t *testing.T) {
 	if err := row.Scan(&v); err != nil {
 		t.Fatal(err)
 	}
-	if v != 42 {
-		t.Errorf("v = %d, want 42", v)
-	}
+	testkit.AssertEqual(t, v, 42)
 }
 
 func TestMockRow_ScanInt64(t *testing.T) {
@@ -333,9 +289,7 @@ func TestMockRow_ScanInt64(t *testing.T) {
 	if err := row.Scan(&v); err != nil {
 		t.Fatal(err)
 	}
-	if v != 99 {
-		t.Errorf("v = %d, want 99", v)
-	}
+	testkit.AssertEqual(t, v, int64(99))
 }
 
 func TestMockRow_ScanInt64_FromInt(t *testing.T) {
@@ -344,9 +298,7 @@ func TestMockRow_ScanInt64_FromInt(t *testing.T) {
 	if err := row.Scan(&v); err != nil {
 		t.Fatal(err)
 	}
-	if v != 7 {
-		t.Errorf("v = %d, want 7", v)
-	}
+	testkit.AssertEqual(t, v, int64(7))
 }
 
 func TestMockRow_ScanBool(t *testing.T) {
@@ -355,57 +307,49 @@ func TestMockRow_ScanBool(t *testing.T) {
 	if err := row.Scan(&v); err != nil {
 		t.Fatal(err)
 	}
-	if !v {
-		t.Error("expected true")
-	}
+	testkit.AssertTrue(t, v)
 }
 
 func TestMockRow_ScanTypeMismatch(t *testing.T) {
 	row := &MockRow{ScanValues: []any{"not-an-int"}}
 	var v int
-	if err := row.Scan(&v); err == nil {
-		t.Error("expected error for type mismatch")
-	}
+	err := row.Scan(&v)
+	testkit.AssertError(t, err)
 }
 
 func TestMockRow_ScanTooFewValues(t *testing.T) {
 	row := &MockRow{ScanValues: []any{"one"}}
 	var a, b string
-	if err := row.Scan(&a, &b); err == nil {
-		t.Error("expected error when too few values")
-	}
+	err := row.Scan(&a, &b)
+	testkit.AssertError(t, err)
 }
 
 func TestMockRow_ScanUnsupportedType(t *testing.T) {
 	row := &MockRow{ScanValues: []any{[]byte("blob")}}
 	var v []byte
-	if err := row.Scan(&v); err == nil {
-		t.Error("expected error for unsupported dest type")
-	}
+	err := row.Scan(&v)
+	testkit.AssertError(t, err)
 }
 
 func TestMockRow_ScanStringTypeMismatch(t *testing.T) {
 	row := &MockRow{ScanValues: []any{123}}
 	var v string
-	if err := row.Scan(&v); err == nil {
-		t.Error("expected error for type mismatch string")
-	}
+	err := row.Scan(&v)
+	testkit.AssertError(t, err)
 }
 
 func TestMockRow_ScanBoolTypeMismatch(t *testing.T) {
 	row := &MockRow{ScanValues: []any{"not-bool"}}
 	var v bool
-	if err := row.Scan(&v); err == nil {
-		t.Error("expected error for type mismatch bool")
-	}
+	err := row.Scan(&v)
+	testkit.AssertError(t, err)
 }
 
 func TestMockRow_ScanInt64TypeMismatch(t *testing.T) {
 	row := &MockRow{ScanValues: []any{"not-int64"}}
 	var v int64
-	if err := row.Scan(&v); err == nil {
-		t.Error("expected error for type mismatch int64")
-	}
+	err := row.Scan(&v)
+	testkit.AssertError(t, err)
 }
 
 // ---- Fixtures tests ----
@@ -418,26 +362,20 @@ func TestFixtures_RegisterAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(b) != `{"id":"u1","name":"Alice"}` {
-		t.Errorf("loaded = %q", b)
-	}
+	testkit.AssertEqual(t, string(b), `{"id":"u1","name":"Alice"}`)
 }
 
 func TestFixtures_Load_NotFound(t *testing.T) {
 	f := NewFixtures()
 	_, err := f.Load("missing")
-	if err == nil {
-		t.Error("expected error for missing fixture")
-	}
+	testkit.AssertError(t, err)
 }
 
 func TestFixtures_MustLoad(t *testing.T) {
 	f := NewFixtures()
 	f.Register("ping", []byte(`"pong"`))
 	b := f.MustLoad("ping")
-	if string(b) != `"pong"` {
-		t.Errorf("got %q", b)
-	}
+	testkit.AssertEqual(t, string(b), `"pong"`)
 }
 
 func TestFixtures_MustLoad_Panics(t *testing.T) {
@@ -461,33 +399,29 @@ func TestFixtures_RegisterJSON(t *testing.T) {
 	if err := f.LoadInto("item", &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.ID != "1" || got.Name != "Widget" {
-		t.Errorf("got %+v", got)
-	}
+	testkit.AssertEqual(t, got.ID, "1")
+	testkit.AssertEqual(t, got.Name, "Widget")
 }
 
 func TestFixtures_RegisterJSON_Error(t *testing.T) {
 	f := NewFixtures()
-	if err := f.RegisterJSON("bad", make(chan int)); err == nil {
-		t.Error("expected error for un-marshalable value")
-	}
+	err := f.RegisterJSON("bad", make(chan int))
+	testkit.AssertError(t, err)
 }
 
 func TestFixtures_LoadInto_NotFound(t *testing.T) {
 	f := NewFixtures()
 	var v any
-	if err := f.LoadInto("missing", &v); err == nil {
-		t.Error("expected error for missing fixture")
-	}
+	err := f.LoadInto("missing", &v)
+	testkit.AssertError(t, err)
 }
 
 func TestFixtures_LoadInto_BadJSON(t *testing.T) {
 	f := NewFixtures()
 	f.Register("bad", []byte(`not json`))
 	var v map[string]any
-	if err := f.LoadInto("bad", &v); err == nil {
-		t.Error("expected error for bad JSON")
-	}
+	err := f.LoadInto("bad", &v)
+	testkit.AssertError(t, err)
 }
 
 func TestFixtures_Names(t *testing.T) {
@@ -496,9 +430,7 @@ func TestFixtures_Names(t *testing.T) {
 	f.Register("b", []byte(`2`))
 
 	names := f.Names()
-	if len(names) != 2 {
-		t.Errorf("expected 2 names, got %d", len(names))
-	}
+	testkit.AssertLen(t, names, 2)
 }
 
 func TestFixtures_ConcurrentAccess(t *testing.T) {

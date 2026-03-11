@@ -608,3 +608,21 @@ func TestValidator_CheckIf_Active(t *testing.T) {
 	testkit.AssertFalse(t, v.Valid())
 	testkit.AssertEqual(t, len(v.Errors()), 1)
 }
+
+func TestPositive_Valid(t *testing.T) {
+	testkit.AssertNoError(t, Positive("count", 1))
+	testkit.AssertNoError(t, Positive("count", 100))
+}
+
+func TestPositive_Zero(t *testing.T) {
+	testkit.AssertError(t, Positive("count", 0))
+}
+
+func TestPositive_Negative(t *testing.T) {
+	testkit.AssertError(t, Positive("count", -5))
+}
+
+func TestPositive_ErrorMessage(t *testing.T) {
+	err := Positive("quantity", 0)
+	testkit.AssertErrorContains(t, err, "must be positive")
+}

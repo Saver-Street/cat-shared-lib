@@ -1,6 +1,8 @@
 package crypto
 
 import (
+	"crypto/rand"
+	"errors"
 	"strings"
 	"testing"
 
@@ -164,4 +166,36 @@ func TestHashPasswordWithCost_InvalidCost(t *testing.T) {
 
 func TestNeedsRehash_InvalidHash(t *testing.T) {
 	testkit.AssertTrue(t, NeedsRehash("badhash", 10))
+}
+
+// failReader always returns an error from Read.
+type failReader struct{}
+
+func (failReader) Read(_ []byte) (int, error) {
+	return 0, errors.New("entropy exhausted")
+}
+
+func TestGenerateToken_RandFailure(t *testing.T) {
+	old := randReader
+	randReader = failReader{}
+	defer func() { randReader = old }()
+
+	_, err := GenerateToken(32)
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "generate token")
+}
+
+func TestGenerateHexToken_RandFailure(t *testing.T) {
+	old := randReader
+	randReader = failReader{}
+	defer func() { randReader = old }()
+
+	_, err := GenerateHexToken(16)
+	testkit.AssertError(t, err)
+	testkit.AssertErrorContains(t, err, "generate hex token")
+}
+
+func TestGenerateToken_UsesDefaultReader(t *testing.T) {
+	// Verify default reader works (crypto/rand).
+	testkit.AssertEqual(t, randReader, rand.Reader)
 }

@@ -12,9 +12,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+// randReader is the source of cryptographic randomness. It defaults to
+// crypto/rand.Reader and can be overridden in tests to simulate failures.
+var randReader io.Reader = rand.Reader
 
 // DefaultCost is the default bcrypt work factor. Increase for more security
 // at the cost of hashing speed.
@@ -67,7 +72,7 @@ func GenerateToken(n int) (string, error) {
 		return "", fmt.Errorf("crypto: token length must be positive, got %d", n)
 	}
 	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
+	if _, err := io.ReadFull(randReader, b); err != nil {
 		return "", fmt.Errorf("crypto: generate token: %w", err)
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
@@ -80,7 +85,7 @@ func GenerateHexToken(n int) (string, error) {
 		return "", fmt.Errorf("crypto: token length must be positive, got %d", n)
 	}
 	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
+	if _, err := io.ReadFull(randReader, b); err != nil {
 		return "", fmt.Errorf("crypto: generate hex token: %w", err)
 	}
 	return hex.EncodeToString(b), nil

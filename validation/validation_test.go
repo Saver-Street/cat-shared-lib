@@ -413,3 +413,31 @@ emails := []string{"a@b.com", "c@d.org"}
 err := EachString("emails", emails, Email)
 testkit.AssertNoError(t, err)
 }
+
+func TestLowercase_Valid(t *testing.T) {
+testkit.AssertNoError(t, Lowercase("code", "abc-123"))
+}
+
+func TestLowercase_Invalid(t *testing.T) {
+err := Lowercase("code", "abcDef")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "lowercase")
+}
+
+func TestLowercase_Empty(t *testing.T) {
+testkit.AssertNoError(t, Lowercase("code", ""))
+}
+
+func TestUppercase_Valid(t *testing.T) {
+testkit.AssertNoError(t, Uppercase("code", "ABC-123"))
+}
+
+func TestUppercase_Invalid(t *testing.T) {
+err := Uppercase("code", "ABCdef")
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "uppercase")
+}
+
+func TestUppercase_Empty(t *testing.T) {
+testkit.AssertNoError(t, Uppercase("code", ""))
+}

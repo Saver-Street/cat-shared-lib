@@ -491,3 +491,14 @@ testkit.AssertError(t, JSON(`not json`))
 testkit.AssertError(t, JSON(``))
 testkit.AssertErrorContains(t, JSON(`{`), "invalid JSON")
 }
+
+func TestBase64_Valid(t *testing.T) {
+testkit.AssertNoError(t, Base64("aGVsbG8="))
+testkit.AssertNoError(t, Base64(""))
+testkit.AssertNoError(t, Base64("dGVzdA=="))
+}
+
+func TestBase64_Invalid(t *testing.T) {
+testkit.AssertError(t, Base64("not!valid!base64"))
+testkit.AssertErrorContains(t, Base64("abc"), "invalid base64")
+}

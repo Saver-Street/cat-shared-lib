@@ -55,6 +55,22 @@ func ExampleRenderText() {
 	// Welcome, Jordan!
 }
 
+func ExampleNewMessage() {
+	msg := email.NewMessage().
+		To("alice@example.com", "bob@example.com").
+		Subject("Welcome").
+		HTML("<h1>Hello</h1>").
+		Text("Hello").
+		Header("X-Priority", "1").
+		Build()
+
+	fmt.Println(msg.Subject)
+	fmt.Println(msg.To)
+	// Output:
+	// Welcome
+	// [alice@example.com bob@example.com]
+}
+
 func ExampleNewMailer() {
 	m := email.NewMailer(email.Config{
 		Host:     "smtp.example.com",

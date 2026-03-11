@@ -6,6 +6,14 @@
 // HTML or plain-text body, then call [Mailer.Send] to deliver it.  Messages
 // are encoded with quoted-printable transfer encoding and proper MIME headers.
 //
+// [MessageBuilder] offers a fluent API for constructing messages:
+//
+//	msg := email.NewMessage().
+//		To("alice@example.com").
+//		Subject("Welcome").
+//		HTML("<h1>Hello</h1>").
+//		Build()
+//
 // Template helpers [ParseHTMLTemplates], [ParseHTMLString], and
 // [ParseTextString] parse Go templates, while [RenderHTML] and [RenderText]
 // execute them into strings suitable for use in [Message.HTML] and

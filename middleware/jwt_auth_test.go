@@ -56,18 +56,10 @@ func TestJWTAuth_ValidToken(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("got status %d, want 200", rr.Code)
-	}
-	if gotUserID != "user-123" {
-		t.Errorf("got userID %q, want %q", gotUserID, "user-123")
-	}
-	if gotEmail != "user@example.com" {
-		t.Errorf("got email %q, want %q", gotEmail, "user@example.com")
-	}
-	if gotRole != "admin" {
-		t.Errorf("got role %q, want %q", gotRole, "admin")
-	}
+	testkit.AssertStatus(t, rr, http.StatusOK)
+	testkit.AssertEqual(t, gotUserID, "user-123")
+	testkit.AssertEqual(t, gotEmail, "user@example.com")
+	testkit.AssertEqual(t, gotRole, "admin")
 }
 
 func TestJWTAuth_MissingToken(t *testing.T) {
@@ -80,9 +72,7 @@ func TestJWTAuth_MissingToken(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("got status %d, want 401", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusUnauthorized)
 }
 
 func TestJWTAuth_InvalidBearerPrefix(t *testing.T) {
@@ -96,9 +86,7 @@ func TestJWTAuth_InvalidBearerPrefix(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("got status %d, want 401", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusUnauthorized)
 }
 
 func TestJWTAuth_MalformedToken(t *testing.T) {
@@ -125,9 +113,7 @@ func TestJWTAuth_MalformedToken(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
-			if rr.Code != http.StatusUnauthorized {
-				t.Errorf("got status %d, want 401", rr.Code)
-			}
+			testkit.AssertStatus(t, rr, http.StatusUnauthorized)
 		})
 	}
 }
@@ -148,9 +134,7 @@ func TestJWTAuth_WrongAlgorithm(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("got status %d, want 401", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusUnauthorized)
 }
 
 func TestJWTAuth_BadSignature(t *testing.T) {
@@ -169,9 +153,7 @@ func TestJWTAuth_BadSignature(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("got status %d, want 401", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusUnauthorized)
 }
 
 func TestJWTAuth_ExpiredToken(t *testing.T) {
@@ -190,9 +172,7 @@ func TestJWTAuth_ExpiredToken(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("got status %d, want 401", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusUnauthorized)
 }
 
 func TestJWTAuth_MissingSubject(t *testing.T) {
@@ -210,9 +190,7 @@ func TestJWTAuth_MissingSubject(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("got status %d, want 401", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusUnauthorized)
 }
 
 func TestJWTAuth_WrongIssuer(t *testing.T) {
@@ -230,9 +208,7 @@ func TestJWTAuth_WrongIssuer(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("got status %d, want 401", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusUnauthorized)
 }
 
 func TestJWTAuth_SkipPaths(t *testing.T) {
@@ -251,12 +227,8 @@ func TestJWTAuth_SkipPaths(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("got status %d, want 200 for skipped path", rr.Code)
-	}
-	if !called {
-		t.Error("handler should have been called for skipped path")
-	}
+	testkit.AssertStatus(t, rr, http.StatusOK)
+	testkit.AssertTrue(t, called)
 }
 
 func TestJWTAuth_NoExpiration(t *testing.T) {
@@ -276,9 +248,8 @@ func TestJWTAuth_NoExpiration(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK || !called {
-		t.Errorf("token with no exp should be accepted, got status %d", rr.Code)
-	}
+	testkit.AssertStatus(t, rr, http.StatusOK)
+	testkit.AssertTrue(t, called)
 }
 
 func TestJWTAuth_EmptyEmailAndRole(t *testing.T) {
@@ -302,12 +273,8 @@ func TestJWTAuth_EmptyEmailAndRole(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("got status %d, want 200", rr.Code)
 	}
-	if gotEmail != "" {
-		t.Errorf("expected empty email, got %q", gotEmail)
-	}
-	if gotRole != "" {
-		t.Errorf("expected empty role, got %q", gotRole)
-	}
+	testkit.AssertEqual(t, gotEmail, "")
+	testkit.AssertEqual(t, gotRole, "")
 }
 
 func TestSignHS256_RoundTrip(t *testing.T) {
@@ -334,9 +301,9 @@ func TestSignHS256_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("validateJWT: %v", err)
 	}
-	if got.Subject != "user-42" || got.Email != "alice@example.com" || got.Role != "editor" {
-		t.Errorf("claims mismatch: %+v", got)
-	}
+	testkit.AssertEqual(t, got.Subject, "user-42")
+	testkit.AssertEqual(t, got.Email, "alice@example.com")
+	testkit.AssertEqual(t, got.Role, "editor")
 }
 
 func TestValidateJWT_BadSignatureBase64(t *testing.T) {
@@ -396,25 +363,21 @@ func TestJWTClaims_JSON(t *testing.T) {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.Subject != c.Subject || got.Email != c.Email || got.Role != c.Role {
-		t.Errorf("round-trip mismatch: %+v vs %+v", got, c)
-	}
+	testkit.AssertEqual(t, got.Subject, c.Subject)
+	testkit.AssertEqual(t, got.Email, c.Email)
+	testkit.AssertEqual(t, got.Role, c.Role)
 }
 
 func TestJWTAuthConfig_NowFunc(t *testing.T) {
 	fixed := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	cfg := JWTAuthConfig{NowFunc: func() time.Time { return fixed }}
-	if got := cfg.now(); !got.Equal(fixed) {
-		t.Errorf("now() = %v, want %v", got, fixed)
-	}
+	testkit.AssertTrue(t, cfg.now().Equal(fixed))
 
 	cfg2 := JWTAuthConfig{}
 	before := time.Now()
 	got := cfg2.now()
 	after := time.Now()
-	if got.Before(before) || got.After(after) {
-		t.Errorf("now() outside expected range")
-	}
+	testkit.AssertFalse(t, got.Before(before) || got.After(after))
 }
 
 func TestValidateJWT_InvalidPayloadBase64(t *testing.T) {

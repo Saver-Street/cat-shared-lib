@@ -324,3 +324,18 @@ return v, fmt.Errorf("request: invalid JSON body: %w", err)
 }
 return v, nil
 }
+
+// OptionalQueryFloat reads a float64 query parameter, returning defaultValue
+// if the parameter is missing or empty. Non-numeric values are silently
+// treated as the default.
+func OptionalQueryFloat(q url.Values, key string, defaultValue float64) float64 {
+val := strings.TrimSpace(q.Get(key))
+if val == "" {
+return defaultValue
+}
+f, err := strconv.ParseFloat(val, 64)
+if err != nil {
+return defaultValue
+}
+return f
+}

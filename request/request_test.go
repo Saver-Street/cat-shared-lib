@@ -618,3 +618,23 @@ _, err := ParseJSONBody[map[string]string](r)
 testkit.AssertError(t, err)
 testkit.AssertContains(t, err.Error(), "invalid JSON body")
 }
+
+func TestOptionalQueryFloat_Present(t *testing.T) {
+q := url.Values{"price": {"19.99"}}
+testkit.AssertEqual(t, OptionalQueryFloat(q, "price", 0), 19.99)
+}
+
+func TestOptionalQueryFloat_Missing(t *testing.T) {
+q := url.Values{}
+testkit.AssertEqual(t, OptionalQueryFloat(q, "price", 9.99), 9.99)
+}
+
+func TestOptionalQueryFloat_Invalid(t *testing.T) {
+q := url.Values{"price": {"abc"}}
+testkit.AssertEqual(t, OptionalQueryFloat(q, "price", 5.0), 5.0)
+}
+
+func TestOptionalQueryFloat_Zero(t *testing.T) {
+q := url.Values{"price": {"0"}}
+testkit.AssertEqual(t, OptionalQueryFloat(q, "price", 10.0), 0.0)
+}

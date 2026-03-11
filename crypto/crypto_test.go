@@ -11,9 +11,7 @@ import (
 
 func TestHashPassword_Basic(t *testing.T) {
 	hash, err := HashPassword("secret123")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	if hash == "" {
 		t.Fatal("expected non-empty hash")
 	}
@@ -27,9 +25,7 @@ func TestHashPassword_Empty(t *testing.T) {
 
 func TestHashPasswordWithCost(t *testing.T) {
 	hash, err := HashPasswordWithCost("password", 4) // min cost for speed
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	cost, _ := BcryptCost(hash)
 	testkit.AssertEqual(t, cost, 4)
 }
@@ -60,9 +56,7 @@ func TestCheckPassword_BadHash(t *testing.T) {
 
 func TestGenerateToken(t *testing.T) {
 	tok, err := GenerateToken(32)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	if len(tok) == 0 {
 		t.Fatal("expected non-empty token")
 	}
@@ -81,9 +75,7 @@ func TestGenerateToken_InvalidLen(t *testing.T) {
 func TestGenerateToken_URLSafe(t *testing.T) {
 	for range 20 {
 		tok, err := GenerateToken(32)
-		if err != nil {
-			t.Fatal(err)
-		}
+		testkit.RequireNoError(t, err)
 		if strings.ContainsAny(tok, "+/=") {
 			t.Errorf("token %q contains non-URL-safe chars", tok)
 		}
@@ -92,9 +84,7 @@ func TestGenerateToken_URLSafe(t *testing.T) {
 
 func TestGenerateHexToken(t *testing.T) {
 	tok, err := GenerateHexToken(16)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, len(tok), 32)
 }
 
@@ -140,9 +130,7 @@ func TestEqual(t *testing.T) {
 func TestBcryptCost(t *testing.T) {
 	hash, _ := HashPasswordWithCost("pw", 4)
 	cost, err := BcryptCost(hash)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertEqual(t, cost, 4)
 }
 

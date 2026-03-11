@@ -18,9 +18,7 @@ func newTestProvider(t *testing.T) *Provider {
 		ServiceVersion: "v0.0.1",
 		Exporter:       ExporterNoop,
 	})
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	t.Cleanup(func() { tp.Shutdown(context.Background()) })
 	return tp
 }
@@ -35,9 +33,7 @@ func TestNewProvider_Stdout(t *testing.T) {
 		ServiceName: "test",
 		Exporter:    ExporterStdout,
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	tp.Shutdown(context.Background())
 }
 
@@ -55,9 +51,7 @@ func TestNewProvider_WithEnvironment(t *testing.T) {
 		Environment: "production",
 		Exporter:    ExporterNoop,
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	tp.Shutdown(context.Background())
 }
 
@@ -84,9 +78,7 @@ func TestProvider_Shutdown(t *testing.T) {
 		ServiceName: "svc",
 		Exporter:    ExporterNoop,
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertNoError(t, tp.Shutdown(context.Background()))
 }
 
@@ -269,9 +261,7 @@ func TestShutdown_CancelledContext(t *testing.T) {
 		ServiceName: "svc",
 		Exporter:    ExporterNoop,
 	})
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
+	testkit.RequireNoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	// A cancelled context may cause the underlying provider shutdown to fail.

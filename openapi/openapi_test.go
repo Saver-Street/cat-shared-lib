@@ -53,9 +53,7 @@ func TestSpec_AddPath_MultipleMethods(t *testing.T) {
 func TestSpec_JSON(t *testing.T) {
 	s := NewSpec("API", "1.0.0")
 	data, err := s.JSON()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 
 	var result map[string]any
 	if err := json.Unmarshal(data, &result); err != nil {
@@ -67,9 +65,7 @@ func TestSpec_JSON(t *testing.T) {
 func TestSpec_JSONIndent(t *testing.T) {
 	s := NewSpec("API", "1.0.0")
 	data, err := s.JSONIndent()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 	testkit.AssertTrue(t, len(data) > 0)
 	// Should contain indentation.
 	testkit.AssertEqual(t, string(data[0:1]), "{")
@@ -236,9 +232,7 @@ func TestFullSpec_Serialization(t *testing.T) {
 	s.AddPath("/pets", "post", createOp)
 
 	data, err := s.JSONIndent()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testkit.RequireNoError(t, err)
 
 	var parsed map[string]any
 	if err := json.Unmarshal(data, &parsed); err != nil {

@@ -3,6 +3,8 @@ package openapi
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/Saver-Street/cat-shared-lib/testkit"
 )
 
 func FuzzNewSpec(f *testing.F) {
@@ -18,9 +20,7 @@ func FuzzNewSpec(f *testing.F) {
 		}
 		// JSON must not panic and must produce valid JSON.
 		data, err := s.JSON()
-		if err != nil {
-			t.Fatalf("JSON() error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		if !json.Valid(data) {
 			t.Error("JSON() produced invalid JSON")
 		}
@@ -39,9 +39,7 @@ func FuzzSpecFluent(f *testing.F) {
 			t.Fatal("fluent chain returned nil")
 		}
 		data, err := s.JSON()
-		if err != nil {
-			t.Fatalf("JSON() error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		if !json.Valid(data) {
 			t.Error("JSON() produced invalid JSON")
 		}
@@ -65,9 +63,7 @@ func FuzzOperation(f *testing.F) {
 		s := NewSpec("test", "1.0").
 			AddPath("/test", "get", op)
 		data, err := s.JSON()
-		if err != nil {
-			t.Fatalf("JSON() error: %v", err)
-		}
+		testkit.RequireNoError(t, err)
 		if !json.Valid(data) {
 			t.Error("JSON() produced invalid JSON")
 		}

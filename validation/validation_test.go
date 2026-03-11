@@ -389,3 +389,27 @@ testkit.AssertNoError(t, Between("rate", 0.5, 0.0, 1.0))
 func TestBetween_String(t *testing.T) {
 testkit.AssertNoError(t, Between("grade", "B", "A", "F"))
 }
+
+func TestEachString_Valid(t *testing.T) {
+tags := []string{"abc", "def", "ghi"}
+err := EachString("tags", tags, Alphanumeric)
+testkit.AssertNoError(t, err)
+}
+
+func TestEachString_Invalid(t *testing.T) {
+tags := []string{"abc", "d-e-f", "ghi"}
+err := EachString("tags", tags, Alphanumeric)
+testkit.AssertError(t, err)
+testkit.AssertContains(t, err.Error(), "tags[1]")
+}
+
+func TestEachString_Empty(t *testing.T) {
+err := EachString("tags", []string{}, Alphanumeric)
+testkit.AssertNoError(t, err)
+}
+
+func TestEachString_Email(t *testing.T) {
+emails := []string{"a@b.com", "c@d.org"}
+err := EachString("emails", emails, Email)
+testkit.AssertNoError(t, err)
+}

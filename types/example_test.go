@@ -1,6 +1,7 @@
 package types_test
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/Saver-Street/cat-shared-lib/types"
@@ -63,4 +64,43 @@ func ExampleSet_Union() {
 	fmt.Println(u.Len())
 	// Output:
 	// 5
+}
+
+func ExampleSome() {
+	opt := types.Some("Alice")
+	fmt.Println(opt.IsPresent())
+	v, ok := opt.Value()
+	fmt.Println(v, ok)
+	// Output:
+	// true
+	// Alice true
+}
+
+func ExampleNone() {
+	opt := types.None[string]()
+	fmt.Println(opt.IsPresent())
+	fmt.Println(opt.ValueOr("default"))
+	// Output:
+	// false
+	// default
+}
+
+func ExampleOption_patchRequest() {
+	type PatchUser struct {
+		Name  types.Option[string] `json:"name"`
+		Email types.Option[string] `json:"email"`
+	}
+
+	raw := []byte(`{"name": "Bob"}`)
+	var req PatchUser
+	_ = json.Unmarshal(raw, &req)
+
+	fmt.Println("name present:", req.Name.IsPresent())
+	fmt.Println("email present:", req.Email.IsPresent())
+	name, _ := req.Name.Value()
+	fmt.Println("name:", name)
+	// Output:
+	// name present: true
+	// email present: false
+	// name: Bob
 }

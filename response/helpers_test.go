@@ -537,3 +537,27 @@ func TestSeeOther(t *testing.T) {
 	testkit.AssertStatus(t, w, http.StatusSeeOther)
 	testkit.AssertHeader(t, w, "Location", "/result")
 }
+
+func TestSSEvent_WithEvent(t *testing.T) {
+w := httptest.NewRecorder()
+SSEvent(w, "update", `{"id":1}`)
+
+expected := "event: update\ndata: {\"id\":1}\n\n"
+testkit.AssertEqual(t, w.Body.String(), expected)
+}
+
+func TestSSEvent_WithoutEvent(t *testing.T) {
+w := httptest.NewRecorder()
+SSEvent(w, "", "hello")
+
+testkit.AssertEqual(t, w.Body.String(), "data: hello\n\n")
+}
+
+func TestSSEHeaders(t *testing.T) {
+w := httptest.NewRecorder()
+SSEHeaders(w)
+
+testkit.AssertEqual(t, w.Header().Get("Content-Type"), "text/event-stream")
+testkit.AssertEqual(t, w.Header().Get("Cache-Control"), "no-cache")
+testkit.AssertEqual(t, w.Header().Get("Connection"), "keep-alive")
+}

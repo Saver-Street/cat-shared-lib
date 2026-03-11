@@ -243,3 +243,20 @@ func NotModified(w http.ResponseWriter) {
 func SeeOther(w http.ResponseWriter, r *http.Request, url string) {
 	http.Redirect(w, r, url, http.StatusSeeOther)
 }
+
+// SSEvent writes a single Server-Sent Event to w. The event field is optional;
+// pass an empty string to omit it. Data is written as-is (no JSON encoding).
+// Call Flush() on the ResponseWriter afterward if it implements http.Flusher.
+func SSEvent(w http.ResponseWriter, event, data string) {
+if event != "" {
+fmt.Fprintf(w, "event: %s\n", event)
+}
+fmt.Fprintf(w, "data: %s\n\n", data)
+}
+
+// SSEHeaders sets the standard headers for a Server-Sent Events stream.
+func SSEHeaders(w http.ResponseWriter) {
+w.Header().Set("Content-Type", "text/event-stream")
+w.Header().Set("Cache-Control", "no-cache")
+w.Header().Set("Connection", "keep-alive")
+}

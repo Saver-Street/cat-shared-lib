@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Pagination holds parsed page/limit/offset values from query parameters.
@@ -203,4 +204,22 @@ func ParseSortOrder(q url.Values, allowed []string, defaultField, defaultDir str
 		dir = defaultDir
 	}
 	return field, dir
+}
+
+// ParseDateParam parses a date query parameter. It accepts RFC 3339
+// ("2024-01-15T10:30:00Z") and date-only ("2024-01-15") formats.
+// Returns the zero time and nil if the parameter is absent or empty.
+// Returns an error if the value cannot be parsed.
+func ParseDateParam(q url.Values, key string) (time.Time, error) {
+	raw := strings.TrimSpace(q.Get(key))
+	if raw == "" {
+		return time.Time{}, nil
+	}
+	if t, err := time.Parse(time.RFC3339, raw); err == nil {
+		return t, nil
+	}
+	if t, err := time.Parse(time.DateOnly, raw); err == nil {
+		return t, nil
+	}
+	return time.Time{}, fmt.Errorf("query parameter %q: invalid date format %q (expected RFC 3339 or YYYY-MM-DD)", key, raw)
 }

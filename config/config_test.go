@@ -169,3 +169,37 @@ func BenchmarkInt(b *testing.B) {
 		Int("CONFIG_BENCH_INT", 0)
 	}
 }
+
+func TestFloat64_Default(t *testing.T) {
+	os.Unsetenv("CONFIG_TEST_FLOAT")
+	testkit.AssertEqual(t, Float64("CONFIG_TEST_FLOAT", 3.14), 3.14)
+}
+
+func TestFloat64_Set(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_FLOAT", "2.718")
+	testkit.AssertApprox(t, Float64("CONFIG_TEST_FLOAT", 0), 2.718, 0.001)
+}
+
+func TestFloat64_Invalid(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_FLOAT", "not-a-number")
+	testkit.AssertEqual(t, Float64("CONFIG_TEST_FLOAT", 1.5), 1.5)
+}
+
+func TestMustFloat64_Valid(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MUST_F64", "9.81")
+	testkit.AssertApprox(t, MustFloat64("CONFIG_TEST_MUST_F64"), 9.81, 0.001)
+}
+
+func TestMustFloat64_PanicsMissing(t *testing.T) {
+	os.Unsetenv("CONFIG_TEST_MUST_F64_MISS")
+	testkit.AssertPanics(t, func() {
+		MustFloat64("CONFIG_TEST_MUST_F64_MISS")
+	})
+}
+
+func TestMustFloat64_PanicsInvalid(t *testing.T) {
+	setEnv(t, "CONFIG_TEST_MUST_F64_BAD", "abc")
+	testkit.AssertPanics(t, func() {
+		MustFloat64("CONFIG_TEST_MUST_F64_BAD")
+	})
+}

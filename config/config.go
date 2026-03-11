@@ -40,6 +40,19 @@ func Int(key string, defaultVal int) int {
 	return n
 }
 
+// Float64 reads a float64 environment variable or returns the default.
+func Float64(key string, defaultVal float64) float64 {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return defaultVal
+	}
+	return f
+}
+
 // Bool reads a boolean environment variable or returns the default.
 // Truthy values: "true", "1", "yes" (case-insensitive).
 func Bool(key string, defaultVal bool) bool {
@@ -111,6 +124,20 @@ func MustInt(key string) int {
 		panic(fmt.Sprintf("config: environment variable %s=%q is not a valid integer", key, v))
 	}
 	return n
+}
+
+// MustFloat64 reads a required environment variable as a float64.
+// Panics if unset, empty, or not a valid floating-point number.
+func MustFloat64(key string) float64 {
+	v := os.Getenv(key)
+	if v == "" {
+		panic(fmt.Sprintf("config: required environment variable %s is not set", key))
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		panic(fmt.Sprintf("config: environment variable %s=%q is not a valid float", key, v))
+	}
+	return f
 }
 
 // Validate checks that all required keys are set and non-empty.

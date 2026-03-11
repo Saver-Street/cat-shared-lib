@@ -684,3 +684,66 @@ var errSentinel = errors.New("sentinel")
 type testCustomError struct{ code int }
 
 func (e *testCustomError) Error() string { return fmt.Sprintf("custom error %d", e.code) }
+
+// ---- Require helpers tests ----
+
+func TestRequireNoError_Pass(t *testing.T) {
+	RequireNoError(t, nil)
+}
+
+func TestRequireNoError_Fail(t *testing.T) {
+	mt := &mockT{}
+	RequireNoError(mt, errors.New("fail"))
+	if !mt.fatal {
+		t.Error("expected Fatalf")
+	}
+}
+
+func TestRequireEqual_Pass(t *testing.T) {
+	RequireEqual(t, 42, 42)
+	RequireEqual(t, "hello", "hello")
+}
+
+func TestRequireEqual_Fail(t *testing.T) {
+	mt := &mockT{}
+	RequireEqual(mt, 1, 2)
+	if !mt.fatal {
+		t.Error("expected Fatalf")
+	}
+}
+
+func TestRequireNil_Pass(t *testing.T) {
+	RequireNil(t, nil)
+}
+
+func TestRequireNil_Fail(t *testing.T) {
+	mt := &mockT{}
+	RequireNil(mt, "non-nil")
+	if !mt.fatal {
+		t.Error("expected Fatalf")
+	}
+}
+
+func TestRequireNotNil_Pass(t *testing.T) {
+	RequireNotNil(t, "something")
+}
+
+func TestRequireNotNil_Fail(t *testing.T) {
+	mt := &mockT{}
+	RequireNotNil(mt, nil)
+	if !mt.fatal {
+		t.Error("expected Fatalf")
+	}
+}
+
+func TestRequireLen_Pass(t *testing.T) {
+	RequireLen(t, []int{1, 2, 3}, 3)
+}
+
+func TestRequireLen_Fail(t *testing.T) {
+	mt := &mockT{}
+	RequireLen(mt, []int{1}, 5)
+	if !mt.fatal {
+		t.Error("expected Fatalf")
+	}
+}

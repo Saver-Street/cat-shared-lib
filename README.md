@@ -421,7 +421,7 @@ err := mailer.Send(ctx, email.Message{
     CC:      []string{"manager@example.com"},
     Subject: "Welcome to Catherine",
     HTML:    "<h1>Hello!</h1><p>Your account is ready.</p>",
-    Text:    "Hello!\n\nYour account is ready.",
+    Text:    "Hello!\n| \x60maputil\x60 | Generic map utilities: Keys, Values, Merge, Pick, Omit, Filter, Invert | 100% |\n\nYour account is ready.",
     Headers: map[string]string{"X-Priority": "1"},
 })
 

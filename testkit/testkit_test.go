@@ -227,6 +227,51 @@ func TestAssertNotContains_Fail(t *testing.T) {
 	}
 }
 
+// ---- AssertMatch tests ----
+
+func TestAssertMatch_Pass(t *testing.T) {
+	AssertMatch(t, "abc-123", `^[a-z]+-\d+$`)
+	AssertMatch(t, "2024-01-15T10:30:00Z", `\d{4}-\d{2}-\d{2}`)
+}
+
+func TestAssertMatch_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertMatch(mock, "hello", `^\d+$`)
+	if !mock.errored {
+		t.Error("expected Errorf for non-matching string")
+	}
+}
+
+func TestAssertMatch_InvalidRegex(t *testing.T) {
+	mock := &mockT{}
+	AssertMatch(mock, "hello", `[invalid`)
+	if !mock.fatal {
+		t.Error("expected Fatalf for invalid regex")
+	}
+}
+
+// ---- AssertNoMatch tests ----
+
+func TestAssertNoMatch_Pass(t *testing.T) {
+	AssertNoMatch(t, "hello", `^\d+$`)
+}
+
+func TestAssertNoMatch_Fail(t *testing.T) {
+	mock := &mockT{}
+	AssertNoMatch(mock, "123", `^\d+$`)
+	if !mock.errored {
+		t.Error("expected Errorf for matching string")
+	}
+}
+
+func TestAssertNoMatch_InvalidRegex(t *testing.T) {
+	mock := &mockT{}
+	AssertNoMatch(mock, "hello", `[invalid`)
+	if !mock.fatal {
+		t.Error("expected Fatalf for invalid regex")
+	}
+}
+
 // ---- AssertNotNil tests ----
 
 func TestAssertNotNil_Pass(t *testing.T) {

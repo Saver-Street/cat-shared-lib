@@ -624,3 +624,30 @@ func containsStr(s, substr string) bool {
 		}()
 }
 
+func TestNew(t *testing.T) {
+	r := New(nil)
+	if r.table != DefaultTable {
+		t.Errorf("expected table %q, got %q", DefaultTable, r.table)
+	}
+}
+
+func TestNewWithTable_Wrapper(t *testing.T) {
+	r := NewWithTable(nil, "my_migrations")
+	if r.table != "my_migrations" {
+		t.Errorf("expected table %q, got %q", "my_migrations", r.table)
+	}
+}
+
+func TestApplied_InitError(t *testing.T) {
+	db := &mockDB{
+		execFn: func(_ context.Context, _ string, _ ...any) (pgconn.CommandTag, error) {
+			return pgconn.CommandTag{}, errors.New("init failed")
+		},
+	}
+	r := newRunner(db)
+	_, err := r.Applied(context.Background())
+	if err == nil {
+		t.Fatal("expected init error to propagate")
+	}
+}
+

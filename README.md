@@ -89,6 +89,7 @@ require github.com/Saver-Street/cat-shared-lib v1.0.0
 | `servicetest` | Integration test helpers: HTTP test server, mock Querier, fixture loader | 100% |
 | `randutil` | Random utilities: Pick, Shuffle, Sample, WeightedPick, string generators | 100% |
 | `stringutil` | String utilities: case conversion, padding, word wrap, blank check | 100% |
+| `timeout` | Timeout utilities: Do, DoSimple, After, Race with deadlines | 100% |
 | `pubsub` | Typed, in-process publish/subscribe event bus | 100% |
 | `worker` | Bounded, context-aware worker pool for concurrent job processing | 100% |
 | `schedule` | Lightweight in-process periodic task scheduler with named tasks | 100% |

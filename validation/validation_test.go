@@ -628,21 +628,21 @@ func TestPositive_ErrorMessage(t *testing.T) {
 }
 
 func TestHex_Valid(t *testing.T) {
-testkit.AssertNoError(t, Hex("token", "deadBEEF09"))
+	testkit.AssertNoError(t, Hex("token", "deadBEEF09"))
 }
 
 func TestHex_Invalid(t *testing.T) {
-err := Hex("token", "GHIJK")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "hexadecimal")
+	err := Hex("token", "GHIJK")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "hexadecimal")
 }
 
 func TestHex_Empty(t *testing.T) {
-err := Hex("token", "")
-testkit.AssertError(t, err)
-testkit.AssertContains(t, err.Error(), "is required")
+	err := Hex("token", "")
+	testkit.AssertError(t, err)
+	testkit.AssertContains(t, err.Error(), "is required")
 }
 
 func TestHex_Trimmed(t *testing.T) {
-testkit.AssertNoError(t, Hex("token", "  abc123  "))
+	testkit.AssertNoError(t, Hex("token", "  abc123  "))
 }

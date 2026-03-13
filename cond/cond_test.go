@@ -210,7 +210,10 @@ func TestZero_String(t *testing.T) {
 }
 
 func TestZero_Struct(t *testing.T) {
-	type S struct{ A int; B string }
+	type S struct {
+		A int
+		B string
+	}
 	if got := cond.Zero[S](); got != (S{}) {
 		t.Errorf("Zero[S]() = %v; want zero", got)
 	}

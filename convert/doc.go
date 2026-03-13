@@ -9,7 +9,7 @@
 //
 // Example:
 //
-//port := convert.ToInt(os.Getenv("PORT"), 8080)
-//debug := convert.ToBool(os.Getenv("DEBUG"), false)
-//timeout := convert.ToDuration(os.Getenv("TIMEOUT"), 30*time.Second)
+// port := convert.ToInt(os.Getenv("PORT"), 8080)
+// debug := convert.ToBool(os.Getenv("DEBUG"), false)
+// timeout := convert.ToDuration(os.Getenv("TIMEOUT"), 30*time.Second)
 package convert

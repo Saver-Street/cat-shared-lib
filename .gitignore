@@ -17,3 +17,7 @@ cov.out
 .vscode/
 *.swp
 *.swo
+
+# Hygiene reports
+.hygiene-report.json
+.hygiene.yml

@@ -21,3 +21,4 @@ cov.out
 # Hygiene reports
 .hygiene-report.json
 .hygiene.yml
+.hygiene-audit.jsonl
